@@ -284,15 +284,27 @@ For each author and each random seed, we compute loss on each evaluation text. T
   \label{fig:confusion_matrix}
 \end{figure*}
 
+\subsection{Stylometric Distance}
+Predictive comparison suggests a natural notion of distance between authorial styles -- if the loss of predicting tokens in a work of author $j$ from a model derived from from the work of author is close to predicting tokens for the work of author $i$ and vice-versa, one could say that their writing styles are similar or nearby. Let $L_i(j)$ denote the average loss of a work of author $j$ for a model trained on author $i$ (the $i,j$-entry of the heatmap/average loss matrix in Figure~\ref{fig:average_loss_heatmap}). Let $\overline{L_i(j)} = L_i(j)-L_i(i)$, normalizing the entries by subtracting the native author baseline. Then define the LLM-based {\em stylometric distance}, 
+$d(i,j) = \frac{1}{2}\left(\overline{L_i(j)} + \overline{L_j(i)}\right)$. Figure~\ref{fig:pca_loss} is a visualization of the relative ``distances" among our author set. 
+
+
 \begin{figure*}[thb]
   \includegraphics[width=\textwidth]{average_loss_heatmap.pdf}
   \caption{A heatmap of the average loss values when we compute losses on comparison texts ($x$-axis) language models trained on the 8 authors' texts ($y$-axis). Each cell represents the mean loss value across 10 training seeds, with lower values (lighter colors) indicating better model performance. The diagonal elements show how well models perform on their training author's own texts.}
   \label{fig:average_loss_heatmap}
 \end{figure*}
 
+\begin{figure*}[thb]
+  \includegraphics[width=\textwidth]{author_pca_plot.pdf}
+  \caption{PCA visualization of author prediction loss dissimilarities. We construct this plot using the average loss values shown in Figure~\ref{fig:average_loss_heatmap}. To standardize the loss matrix, we subtract each author's self-loss (diagonal entry) from their respective row, and then symmetrize the resulting matrix by averaging it with its transpose. We apply PCA to this symmetrized loss matrix to embed the authors into two dimensions. The resulting projection reveals meaningful groupings: Thompson and Baum appear closely aligned, likely due to their shared involvement in the \emph{Oz} series. Fitzgerald and Wells are positioned near each other, which may suggest moderate stylistic overlap despite their distinct genres. Austen lies at the periphery, indicating her relatively unique stylistic signature compared to the rest. Overall, this PCA projection offers a coarse geometric view of stylistic similarity as inferred from predictive performance across authorial models.}
+  \label{fig:pca_loss}
+\end{figure*}
+
+
 \section*{Conclusions}
 
-(Need to add a paragraph here)
+In this paper we introduce {\em predictive comparison}, a new LLM-based relative stylometric measure. It derives from a simple idea, that if an LLM can be fine-tuned to write like -- i.e., in the style of -- a given author by training on the work of an author, then the degree to which such a fine-tuned model can predict another author's work could be a measure of stylistic similarity. In this paper we show using a small set of authors and their works, that this thesis is borne out. This in turn suggests a notion of stylometric distance which we produce. Lastly, this further suggest a literary authentication tool that would assign an unknown or contested work to the model which predictive comparison generates the smallest loss. We use this on a well-known and once contested book in the \emph{Oz} series, confirming what is now accepted attribution. We believe this new idea could be of use in considering questions of authorial influence and stylistic evolution. 
 
 
 \section*{Limitations}
