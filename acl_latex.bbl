@@ -1,0 +1,64 @@
+\begin{thebibliography}{12}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Binongo and Smith(1999)}]{NiloEtal99}
+Jose Nilo~G. Binongo and M.~W.~A. Smith. 1999.
+\newblock The application of principal component analysis to stylometry.
+\newblock \emph{Literary and Linguistic Computing}, 14(4):445--465.
+
+\bibitem[{Binongo(2003)}]{NiloBino03}
+José Nilo~G. Binongo. 2003.
+\newblock \href {https://doi.org/10.1080/09332480.2003.10554843} {Who wrote the 15th book of oz? an application of multivariate analysis to authorship attribution}.
+\newblock \emph{CHANCE}, 16(2):9--17.
+
+\bibitem[{Howland(1991)}]{Howl91}
+Jacob Howland. 1991.
+\newblock Re-reading {P}lato: The problem of {P}latonic chronology.
+\newblock \emph{Phoenix}, 45(3):189--214.
+
+\bibitem[{Hughes et~al.(2012)Hughes, Foti, Krakauer, and Rockmore}]{HughEtal12}
+James~M. Hughes, Nicholas~J. Foti, David~C. Krakauer, and Daniel~N. Rockmore. 2012.
+\newblock \href {https://doi.org/10.1073/pnas.1115407109} {Quantitative patterns of stylistic influence in the evolution of literature}.
+\newblock \emph{PNAS}, 109(20):7682--7686.
+
+\bibitem[{Juola(2008)}]{Juol08}
+Patrick Juola. 2008.
+\newblock Authorship attribution.
+\newblock \emph{Foundations and Trends in Information Retrieval}, 1(3):233--334.
+
+\bibitem[{Loshchilov and Hutter(2019)}]{LoshHutt19}
+Ilya Loshchilov and Frank Hutter. 2019.
+\newblock \href {https://arxiv.org/abs/1711.05101} {Decoupled weight decay regularization}.
+\newblock \emph{Preprint}, arXiv:1711.05101.
+
+\bibitem[{Lutos{\l}awski(1897)}]{Luto97}
+W.~Lutos{\l}awski. 1897.
+\newblock \emph{The Origin and Growth of Plato's Logic: With an Account of Plato's Style and of the Chronology of His Writings}.
+\newblock WC Brown Reprint Library, London.
+
+\bibitem[{Moretti(2000)}]{More00}
+Franco Moretti. 2000.
+\newblock Conjectures on world literature.
+\newblock \emph{New Left Review}, 1:54--68.
+
+\bibitem[{Moretti(2017)}]{More17}
+Franco Moretti. 2017.
+\newblock \emph{Graphs, Maps, Trees: Abstract Models for Literary History}.
+\newblock Verso Books, Brookly, NY.
+
+\bibitem[{Mosteller and Wallace(1963)}]{MostWall63}
+Frederick Mosteller and David~L. Wallace. 1963.
+\newblock \href {https://doi.org/10.2307/2283270} {Inference in an authorship problem}.
+\newblock \emph{Journal of the American Statistical Association}, 58(302):275--309.
+
+\bibitem[{Mosteller and Wallace(1984)}]{MostWall84}
+Frederick Mosteller and David~L. Wallace. 1984.
+\newblock \emph{Applied Bayesian and Classical Inference: The Case of the Federalist Papers}.
+\newblock Addison-Wesley, Reading, MA.
+
+\bibitem[{Neal et~al.(2017)Neal, Sundararajan, Fatima, Yan, Xiang, and Woodard}]{NealEtal17}
+Tempestt Neal, Kalaivani Sundararajan, Aneez Fatima, Yiming Yan, Yingfei Xiang, and Damon Woodard. 2017.
+\newblock Surveying stylometry techniques and applications.
+\newblock \emph{ACM Computing Surveys (CSuR)}, 50(6):1--36.
+
+\end{thebibliography}

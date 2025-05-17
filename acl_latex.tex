@@ -172,7 +172,7 @@ We repeat the full process—including selecting a held-out book and training a 
 \subsubsection{Baum vs. Thompson}
 After each training epoch, we compute the loss of every model on its corresponding held-out book as well as on one randomly selected book from the other author's corpora. For the specific case of Baum and Thompson, we include three additional evaluation texts: the contested 15\textsuperscript{th} \emph{Oz} book (authorship disputed between Baum and Thompson), a non-\emph{Oz} book authored by Thompson, and a non-\emph{Oz} book authored by Baum. For all texts used for predictive comparison, we compute the average next-token cross-entropy loss using a sliding window approach.
 
-Figure~\ref{fig:oz_losses} presents the evaluation results for models trained on Baum and Thompson. The top left panel (labeled "Train") confirms that both models converge to similar training loss, ensuring a fair basis for comparison. The top center panel (labeled "Baum") shows that the Baum-trained model achieves lower loss on Baum’s held-out book than the Thompson-trained model. Conversely, the top right panel (labeled "Thompson") shows that the Thompson-trained model yields lower loss on Thompson’s held-out book than the Baum-trained model.
+Figure~\ref{fig:losses-and-ttests}A presents the evaluation results for models trained on Baum and Thompson. The top left panel (labeled "Train") confirms that both models converge to similar training loss, ensuring a fair basis for comparison. The top center panel (labeled "Baum") shows that the Baum-trained model achieves lower loss on Baum’s held-out book than the Thompson-trained model. Conversely, the top right panel (labeled "Thompson") shows that the Thompson-trained model yields lower loss on Thompson’s held-out book than the Baum-trained model.
 
 Notably, the bottom left panel (labeled "Contested") shows that the Thompson-trained models consistently achieve lower loss on the contested 15th \emph{Oz} book, aligning with the prevailing literary consensus that Thompson was its author. The bottom center and bottom right panels show the models' performance on non-\emph{Oz} books by Baum and Thompson, respectively. As expected, the Baum-trained model performs better on Baum’s non-\emph{Oz} text, while the Thompson-trained model performs better on Thompson’s.
 
@@ -181,54 +181,29 @@ These results collectively support the conclusion that the trained GPT-2 models 
 
 
 \begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{oz_losses.pdf}
-  \caption{Average cross-entropy loss on evaluation texts for models trained on Baum and Thompson. Each model is trained with a different random seed; we report the mean cross-entropy loss across 10 random seeds, with error bars indicating a 95\% confidence interval.}
+  \includegraphics[width=\textwidth]{figs/losses_and_ttests.pdf}
+  \caption{\textbf{A.} Average cross-entropy loss on evaluation texts for models trained on Baum and Thompson. Each model is trained with a different random seed; we report the mean cross-entropy loss across 10 random seeds, with error bars indicating a 95\% confidence interval.
+\textbf{B.}  Average cross-entropy loss on evaluation texts across all eight authors. Error bars denote 95\% confidence intervals over 10 random seeds.
+  \textbf{C.} $t$-test results by author for the first 500 training epochs.
+  \textbf{D.} Averaged $t$-test results for the first 500 training epochs.}
   % Training loss is roughly similar for both. Thompson models perform better on Thompson texts, and Baum models on Baum texts. Thompson models also have lower loss on the contested 15th \emph{Oz} book. Error bars denote 95\% confidence intervals over 10 random seeds.
-  \label{fig:oz_losses}
+  \label{fig:losses-and-ttests}
 \end{figure*}
 
 \subsubsection{Eight-Author Comparison}
 
 We then extend our predictive comparison framework to a broader set of eight authors. For each author, we compute the predictive loss of the corresponding model on a held-out book by that author, as well as on one randomly selected book from each of the other authors. As before, evaluation is based on average next-token cross-entropy loss computed using a sliding window.
 
-Figure~\ref{fig:all_losses} presents the evaluation results across all eight authors. Training losses are again comparable across models, ensuring a fair basis for comparison. For each author, we compare the predictive losses of all models on that author's held-out text. For every author's held-out text, the model trained on the matching author achieves the lowest loss, indicating a clear preference for its own author's stylistic patterns. This consistent alignment provides strong evidence that the GPT-2 models have learned to encode author-specific stylometric features.
-
-
-
-\begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{all_losses.pdf}
-  \caption{Average cross-entropy loss on evaluation texts across all eight authors. Error bars denote 95\% confidence intervals over 10 random seeds.}
-  \label{fig:all_losses}
-\end{figure*}
-
-
-
-% After each training epoch, we evaluate each model on the held-out book from the author's corpus, along with a randomly sampled book from the corpus of each of the other authors. For the models trained on Baum and Thompson books, we also evaluate on the contested 15th Oz book, a non-Oz book authored by Thompson, and a non-Oz book authored by Baum. For each evaluation book, we compute the average next-token cross-entropy loss.
-
-% \begin{figure*}[thb]
-%   \includegraphics[width=\textwidth]{oz_losses.pdf}
-%   \caption{Average cross-entropy loss on evaluation texts. Training loss is roughly similar for Baum and Thompson models. As expected, the Thompson models have lower loss on the Thompson texts; likewise for Baum. Furthermore, we see that the Thompson models have lower loss on the contested text, confirming literary consensus. We train 10 models for each author, each with a different random seed. Error bars indicate a 95\% confidence interval. }
-%   \label{fig:oz_losses}
-% \end{figure*}
-
-% \begin{figure*}[thb]
-%   \includegraphics[width=\textwidth]{all_losses.pdf}
-%   \caption{Average cross-entropy loss on evaluation texts. Training loss is roughly similar for all authors. Each author's model outperforms all other authors' models on the author's held-out text. We train 10 models for each author, each with a different random seed. Error bars indicate a 95\% confidence interval.}
-%   \label{fig:all_losses}
-% \end{figure*}
-
-\begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{stripplot.pdf}
-  \caption{Average cross-entropy loss on evaluation texts. For each author, we plot in blue the loss values assigned to the held-out book written by the author. In orange, we plot the loss values assigned to the randomly sampled books written by other authors.}
-  \label{fig:stripplot}
-\end{figure*}
-
+Figure~\ref{fig:losses-and-ttests}B presents the evaluation results across all eight authors. Training losses are again comparable across models, ensuring a fair basis for comparison. For each author, we compare the predictive losses of all models on that author's held-out text. For every author's held-out text, the model trained on the matching author achieves the lowest loss, indicating a clear preference for its own author's stylistic patterns. This consistent alignment provides strong evidence that the GPT-2 models have learned to encode author-specific stylometric features.
 
 \subsection{$t$-tests}
 
 To validate our findings in the comparison between Baum and Thompson, we conduct a paired $t$-test on the average cross-entropy losses of the two models evaluated on the contested 15\textsuperscript{th} \emph{Oz} book. The test revealed a statistically significant difference in predictive performance, $t(9) = 20.723, p = 6.6 \times 10^{-9}$. These results provide strong evidence that the Thompson-trained models predict the contested text more accurately, aligning with the prevailing literary consensus regarding its authorship.
 
-We also conduct a $t$-test for the eight-author comparison. Specifically, for each author's model, we perform $t$-tests for (i) the loss values computed by using the author's models to predict the author's held-out text and (ii) the loss values computed by using the author's models to predict the other authors' randomly sampled texts. Table~\ref{tab:author_t_tests} shows the results of the $t$-tests computed for each author using the final losses. Figure~\ref{fig:stripplot} illustrates the distribution of loss values for each author's model across self-authored and other-authored texts. These results demonstrate that the trained GPT-2 models reliably distinguish the stylometric features of the corresponding author with high statistical significance.
+We also conduct a $t$-test for the eight-author comparison. Specifically, for each author's model, we perform $t$-tests for (i) the loss values computed by using the author's models to predict the author's held-out text and (ii) the loss values computed by using the author's models to predict the other authors' randomly sampled texts. Table~\ref{tab:author_t_tests} shows the results of the $t$-tests computed for each author using the final losses. 
+% remove??
+%Figure~\ref{fig:stripplot} illustrates the distribution of loss values for each author's model across self-authored and other-authored texts. 
+These results demonstrate that the trained GPT-2 models reliably distinguish the stylometric features of the corresponding author with high statistical significance.
 
 
 
@@ -256,51 +231,27 @@ Twain       & 20.13 & $9.67 \times 10^{-11}$ & 12.22 \\
 \label{tab:author_t_tests}
 \end{table}
 
-In addition, we perform the same paired $t$-test at each of the first 500 training epochs, comparing losses on the author's own held-out texts to losses on texts from other authors. Figure~\ref{fig:t_test} shows the $t$-values as training progresses. For all authors except Twain, the $t$-statistic exceeds the threshold corresponding to $p < 0.001$ after just one epoch, indicating rapid acquisition of author-specific stylometry. For Twain, this threshold is crossed at epoch 47. Figure~\ref{fig:t_test_avg} plots the average $t$-statistic across all eight authors over training epochs, further illustrating the early emergence of stylometric differentiation in the models.
+In addition, we perform the same paired $t$-test at each of the first 500 training epochs, comparing losses on the author's own held-out texts to losses on texts from other authors. Figure~\ref{fig:losses-and-ttests}C shows the $t$-values as training progresses. For all authors except Twain, the $t$-statistic exceeds the threshold corresponding to $p < 0.001$ after just one epoch, indicating rapid acquisition of author-specific stylometry. For Twain, this threshold is crossed at epoch 47. Figure~\ref{fig:losses-and-ttests}D plots the average $t$-statistic across all eight authors over training epochs, further illustrating the early emergence of stylometric differentiation in the models.
 
 
 
-\begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{t_test.pdf}
-  % \caption{After each of the first 500 training epochs, for each author we compute a $t$-test between (i) the loss values assigned by the author's models to the author's held-out text and (ii) the loss values assigned by the author's models to the other authors' randomly sampled texts. The $t$-value that corresponds to a p-value of 0.001 is indicated. For all authors except Twain, the $t$-value exceeds the 0.001 p-value threshold after just 1 training epoch. For Twain, it takes 47 epochs.}
-  \caption{$t$-test results by author for the first 500 training epochs}
-  \label{fig:t_test}
-\end{figure*}
-
-\begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{t_test_avg.pdf}
-  % \caption{After each of the first 500 training epochs, for each author we compute a $t$-test between (i) the loss values assigned by the author's models to the author's held-out text and (ii) the loss values assigned by the author's models to the other authors' randomly sampled texts. We then average the $t$-values over the 8 authors. The error bars indicate a 95\% confidence interval. The $t$-value that corresponds to a p-value of 0.001 is indicated. The average $t$-value exceeds the 0.001 p-value threshold after just 1 training epoch.}
-   \caption{averaged $t$-test results for the first 500 training epochs}
-  \label{fig:t_test_avg}
-\end{figure*}
 
 
 \subsection{Classification}
-For each author and each random seed, we compute loss on each evaluation text. The ``predicted'' author is the author of the evaluation text that has the lowest loss. Under this classification procedure, we have 100\% accuracy, as shown in Figure \ref{fig:confusion_matrix}.
+For each author and each random seed, we compute loss on each evaluation text. The ``predicted'' author is the author of the evaluation text that has the lowest loss. Under this classification procedure, we have 100\% accuracy.
 
-\begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{confusion_matrix.pdf}
-  \caption{as discussed, we can/should remove this figure}
-  \label{fig:confusion_matrix}
-\end{figure*}
 
 \subsection{Stylometric Distance}
-Predictive comparison suggests a natural notion of distance between authorial styles -- if the loss of predicting tokens in a work of author $j$ from a model derived from from the work of author is close to predicting tokens for the work of author $i$ and vice-versa, one could say that their writing styles are similar or nearby. Let $L_i(j)$ denote the average loss of a work of author $j$ for a model trained on author $i$ (the $i,j$-entry of the heatmap/average loss matrix in Figure~\ref{fig:average_loss_heatmap}). Let $\overline{L_i(j)} = L_i(j)-L_i(i)$, normalizing the entries by subtracting the native author baseline. Then define the LLM-based {\em stylometric distance}, 
-$d(i,j) = \frac{1}{2}\left(\overline{L_i(j)} + \overline{L_j(i)}\right)$. Figure~\ref{fig:pca_loss} is a visualization of the relative ``distances" among our author set. 
+Predictive comparison suggests a natural notion of distance between authorial styles -- if the loss of predicting tokens in a work of author $j$ from a model derived from from the work of author is close to predicting tokens for the work of author $i$ and vice-versa, one could say that their writing styles are similar or nearby. Let $L_i(j)$ denote the average loss of a work of author $j$ for a model trained on author $i$ (the $i,j$-entry of the heatmap/average loss matrix in Figure~\ref{fig:loss-mds}A). Let $\overline{L_i(j)} = L_i(j)-L_i(i)$, normalizing the entries by subtracting the native author baseline. Then define the LLM-based {\em stylometric distance}, 
+$d(i,j) = \frac{1}{2}\left(\overline{L_i(j)} + \overline{L_j(i)}\right)$. Figure~\ref{fig:loss-mds}B is a visualization of the relative ``distances" among our author set. 
 
 
 \begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{average_loss_heatmap.pdf}
-  \caption{A heatmap of the average loss values when we compute losses on comparison texts ($x$-axis) language models trained on the 8 authors' texts ($y$-axis). Each cell represents the mean loss value across 10 training seeds, with lower values (lighter colors) indicating better model performance. The diagonal elements show how well models perform on their training author's own texts.}
-  \label{fig:average_loss_heatmap}
+  \includegraphics[width=\textwidth]{figs/heatmap_and_mds.pdf}
+  \caption{\textbf{A.} A heatmap of the average loss values when we compute losses on comparison texts ($x$-axis) language models trained on the 8 authors' texts ($y$-axis). Each cell represents the mean loss value across 10 training seeds, with lower values (lighter colors) indicating better model performance. The diagonal elements show how well models perform on their training author's own texts.
+  \textbf{B.} Multidimensional scaling plot, where the distances between the authors are proportional to the correlations between the corresponding rows in the loss matrix shown in Panel A, excluding diagonal entries.}
+  \label{fig:loss-mds}
 \end{figure*}
-
-\begin{figure*}[thb]
-  \includegraphics[width=\textwidth]{author_pca_plot.pdf}
-  \caption{PCA visualization of author prediction loss dissimilarities. We construct this plot using the average loss values shown in Figure~\ref{fig:average_loss_heatmap}. To standardize the loss matrix, we subtract each author's self-loss (diagonal entry) from their respective row, and then symmetrize the resulting matrix by averaging it with its transpose. We apply PCA to this symmetrized loss matrix to embed the authors into two dimensions. The resulting projection reveals meaningful groupings: Thompson and Baum appear closely aligned, likely due to their shared involvement in the \emph{Oz} series. Fitzgerald and Wells are positioned near each other, which may suggest moderate stylistic overlap despite their distinct genres. Austen lies at the periphery, indicating her relatively unique stylistic signature compared to the rest. Overall, this PCA projection offers a coarse geometric view of stylistic similarity as inferred from predictive performance across authorial models.}
-  \label{fig:pca_loss}
-\end{figure*}
-
 
 \section*{Conclusions}
 
