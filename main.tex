@@ -1,6 +1,4 @@
-% This must be in the first 5 lines to tell arXiv to use pdfLaTeX, which is strongly recommended.
 \pdfoutput=1
-% In particular, the hyperref package requires pdfLaTeX in order to break URLs across lines.
 
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
@@ -8,274 +6,142 @@
 % Change to "preprint" to generate a non-anonymous version with page numbers.
 \usepackage[review]{acl}
 
-% Standard package includes
 \usepackage{times}
 \usepackage{latexsym}
-
-% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
 \usepackage[T1]{fontenc}
-% For Vietnamese characters
-% \usepackage[T5]{fontenc}
-% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
-
-% This assumes your files are encoded as UTF8
 \usepackage[utf8]{inputenc}
-
-% This is not strictly necessary, and may be commented out,
-% but it will improve the layout of the manuscript,
-% and will typically save some space.
 \usepackage{microtype}
-
-% This is also not strictly necessary, and may be commented out.
-% However, it will improve the aesthetics of text in
-% the typewriter font.
 \usepackage{inconsolata}
-
-%Including images in your LaTeX document requires adding
-%additional package(s)
 \usepackage{graphicx}
-
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{amsmath} 
 \usepackage{natbib}
 
-% If the title and author information does not fit in the area allocated, uncomment the following
-%
-%\setlength\titlebox{<dim>}
-%
-% and set <dim> to something 5cm or larger.
-
 \title{A Stylometric Application of Large Language Models}
-
-% Author information can be set in various styles:
-% For several authors from the same institution:
-% \author{Author 1 \and ... \and Author n \\
-%         Address line \\ ... \\ Address line}
-% if the names do not fit well on one line use
-%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
-% For authors from different institutions:
-% \author{Author 1 \\ Address line \\  ... \\ Address line
-%         \And  ... \And
-%         Author n \\ Address line \\ ... \\ Address line}
-% To start a separate ``row'' of authors use \AND, as in
-% \author{Author 1 \\ Address line \\  ... \\ Address line
-%         \AND
-%         Author 2 \\ Address line \\ ... \\ Address line \And
-%         Author 3 \\ Address line \\ ... \\ Address line}
-
-% \author{First Author \\
-%   Affiliation / Address line 1 \\
-%   Affiliation / Address line 2 \\
-%   Affiliation / Address line 3 \\
-%   \texttt{email@domain} \\\And
-%   Second Author \\
-%   Affiliation / Address line 1 \\
-%   Affiliation / Address line 2 \\
-%   Affiliation / Address line 3 \\
-%   \texttt{email@domain} \\}
-
-%\author{
-%  \textbf{First Author\textsuperscript{1}},
-%  \textbf{Second Author\textsuperscript{1,2}},
-%  \textbf{Third T. Author\textsuperscript{1}},
-%  \textbf{Fourth Author\textsuperscript{1}},
-%\\
-%  \textbf{Fifth Author\textsuperscript{1,2}},
-%  \textbf{Sixth Author\textsuperscript{1}},
-%  \textbf{Seventh Author\textsuperscript{1}},
-%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
-%\\
-%  \textbf{Ninth Author\textsuperscript{1}},
-%  \textbf{Tenth Author\textsuperscript{1}},
-%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
-%  \textbf{Twelfth Author\textsuperscript{1}},
-%\\
-%  \textbf{Thirteenth Author\textsuperscript{3}},
-%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
-%  \textbf{Fifteenth Author\textsuperscript{1}},
-%  \textbf{Sixteenth Author\textsuperscript{1}},
-%\\
-%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
-%  \textbf{Eighteenth Author\textsuperscript{3,4}},
-%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
-%  \textbf{Twentieth Author\textsuperscript{1}}
-%\\
-%\\
-%  \textsuperscript{1}Affiliation 1,
-%  \textsuperscript{2}Affiliation 2,
-%  \textsuperscript{3}Affiliation 3,
-%  \textsuperscript{4}Affiliation 4,
-%  \textsuperscript{5}Affiliation 5
-%\\
-%  \small{
-%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
-%  }
-%}
 
 \begin{document}
 \maketitle
 \begin{abstract}
 
-Stylometry is the quantitative analysis of writing style. In this paper we show
-that large language models can be used to distinguish the writings of different
-authors. Specifically, an individual model, trained on the works of one author,
-will predict held-out text from that author more accurately than held-out text
-from other authors. We suggest that, in this way, a model trained on one
-author's works embodies the unique writing style of that author. In our primary
-example, we use this approach to confirm R. P. Thompson's authorship of the
-well-studied 15th book of the ``Oz'' series, originally attributed to F. L.
-Baum. We also include other (known) authorship comparison pairs.
+In this paper we show that large language models (LLMs) can be used to
+distinguish the writings of different authors. Specifically, an individual
+model, trained on the works of one author, will predict held-out text from that
+author more accurately than held-out text from other authors. We suggest that,
+in this way, a model trained on one author's works embodies the unique writing
+style of that author. We first demonstrate our approach on books written by
+eight different (known) authors. We also use this approach to confirm R. P.
+Thompson's authorship of the well-studied 15\textsuperscript{th} book of the
+\textit{Oz} series, originally attributed to F. L. Baum.
 
 \end{abstract}
 
 \section{Introduction}
 
-It is possible to fine-tune large languages to write in the "style' or "voice" of a given author (see e.g., \cite{10.1093/llc/fqaf035}). Generally, the mathematical encoding -- or ``measure" -- of a writer's style falls under the heading of {\em stylometry}. Stylometry generally elides the complex collection of factors that may go
-into an author's ``voice'', focusing instead on word-usage statistics derived from the
-text~\citep{NealEtal17}.  Many mark
-the birth of the subject with the late nineteenth century work of the
-philologist Wincenty Lutos{\l}awski, who had an interest in finding a
-statistical basis for addressing a long-standing problem in Classics of
-estimating the temporal order of Plato's Dialogues~\citep{Howl91}. Toward this
-end, Lutos{\l}awski measured hundreds of variables to arrive at his
-conclusions~\citep{Luto97}. Stylometric methods have been used at scale to understand the evolution of style in literature~\citep{HughEtal12} as well as judicial writing\citep{Carlson2016}, while also contributing to debates around uncertain authorship~\citep{MostWall63,MostWall84,NiloBino03,Juol08}. 
+Stylometry is the quantitative analysis of writing style. The field of
+stylometry is broadly concerned with capturing the statistical properties of
+text that characterize an author's writing style. Stylometry generally elides
+the complex collection of factors that may go into an author's ``voice,''
+focusing instead on word-usage statistics derived from the
+text~\citep{NealEtal17}. Many mark the birth of the subject with the late
+nineteenth century work of the philologist Wincenty Lutos{\l}awski, who had an
+interest in finding a statistical basis for addressing a long-standing problem
+in Classics of estimating the temporal order of Plato's
+Dialogues~\citep{Howl91}. Toward this end, Lutos{\l}awski measured hundreds of
+variables to arrive at his conclusions~\citep{Luto97}. Stylometric methods have
+been used at scale to understand the evolution of style in
+literature~\citep{HughEtal12} as well as judicial writing\citep{Carl16},
+while also contributing to debates around uncertain
+authorship~\citep{MostWall63,MostWall84,NiloBino03,Juol08}.
 
-In this paper we introduce a new stylometric approach, {\em Predictive comparison testing} (PCT), based on LLMs. PCT derives from the hypothesis that given two LLMs of a fixed architecture and fixed broad  training, separately fine-tuned models ($A$ Aand $B)$  on similarly sized corpora of Author $A$ and $B$, that a held out work by Author $A$ will exhibit small predictive loss when tested with model $A$ than with model $B$. Comparison of prediction at the level of sentences and using textual information is put forward in \citep{rezaei-2025-detecting}. Our work differs both in the scale and reliance purely on the loss function. 
-
-Our results, using a small data set of publicly available work from Project Gutenberg (overlapping that used in \cite{rezaei-2025-detecting}) bear out this hypothesis. From this we build an author style metric. We believe that these results suggest that this technique holds promise as a new technique for machine reading approaches to text-based disciplines ~\citep{More17,More00,Holmes} and the practices of cultural analytics~\citep{Underwood_2013}.  PCT also suggests a natural approach to author attribution in the case in which there is a finite set of possiblities: assign the work to the author whose PCT produces the least loss. To this we consider a well-known example of questioned attribution of the 15th book in the {\emph{Oz}} series and scholarly opinion~\citep{NiloBino03}, further validating our approach. 
-
-%In this paper we exploit this technique to introduce {\em predictive comparison testing}, an a newLLM-based stylometric measure. 
-
-%The quantitative measure of writing style --- stylometry --- has a long
-%history, and generally elides the complex collection of factors that may go
-%into an author's ``voice'', focusing instead on statistics derived from the
-%text~\citep{NealEtal17}. In literature, ``style" refers to the distinctive
-%manner in which language is used. It encompasses choices in vocabulary,
-%sentence structure, tone, and the use of rhetorical devices. Style is distinct
-%from semantics, which is concerned with the meaning and interpretation of text.
-%In brief, content is what you say, and style is the way you say it. Many mark
-%the birth of the subject with the late nineteenth century work of the
-%philologist Wincenty Lutos{\l}awski, who had an interest in finding a
-%statistical basis for addressing a long-standing problem in Classics of
-%estimating the temporal order of Plato's Dialogues~\citep{Howl91}. Toward this
-%end, Lutos{\l}awski measured hundreds of variables to arrive at his
-%conclusions~\citep{Luto97}.
-
-%An ability to quantify authorial voice is also useful for authorship
-%attribution and is perhaps the most common application of stylometric
-%techniques~\citep{Juol08}. Among the most famous results to date is Mosteller
-%and Wallace's work on determining the authorship of The Federalist Papers,
-%eighty-five essays in support of ratification of the Constitution, authored by
-%the anonymous ``Publius" over 1787-1788, but known to have been (individually)
-%written by John Jay, James Madison, and Alexander Hamilton. Mosteller and
-%Wallace used Bayesian techniques directed at simple word frequency statistics
-%to hypothesize attribution of the essays, and their results are generally
-%accepted by domain experts in political history~\citep{MostWall63, MostWall84}.
-%Other approaches of note work with feature vectors whose entries record word
-%frequencies in the texts, with works of known attribution giving ground-truth
-%and disputed attributions resolved according to their similarity to the known.
-%The words under consideration are picked according to a range of criteria. A
-%common choice is the use of function words\footnote{``Function words" are words
-%that have no particular contextual information (e.g., prepositions, articles,
-%conjunctions).} used to build a simple classifier with feature vectors of word
-%frequencies~\citep{NiloEtal99}. Famously, this was used to help settle
-%uncertainty around the authorship of the 15\textsuperscript{th} book in the 31
-%book \emph{Oz} series~\citep{NiloBino03}. In~\citet{HughEtal12}, feature
-%vectors constructed from the frequencies of function words are used to show
-%evidence for an evolutionary pattern of writing style in the text corpus
-%comprised by the Gutenberg.org collection. See \citet{NealEtal17} for a
-%relatively recent survey of stylometric techniques. More generally, stylometric
-%analysis is among the techniques available to those whose work engages with the
-%practice of ``distant reading"~\citep{Mo17, More00} re(the machine reading of
-%text at large scales) which is a part of the broader digital humanities and the
-%practices of cultural analytics.
-
+Here we introduce a new stylometric approach, {\em Predictive comparison
+testing} (PCT), based on LLMs. PCT derives from the hypothesis that training an
+LLM using the works of a single given author will produce a model that best
+captures that author's unique writing style. Given two LLMs, $M_A$ and $M_B$,
+trained on the works of two different authors, $A$ and $B$, respectively, we
+therefore hypothesize that a held out work by Author $A$ will exhibit smaller
+predictive loss when tested with model $M_A$ than with model $M_B$. Our
+results, using a small data set of publicly available work from Project
+Gutenberg, bear out this hypothesis by showing that we can reliably predict the
+authorship of held-out text using the predictive losses of models trained on
+the works of different candidate authors. We also consider a well-known example
+of questioned attribution of the 15\textsuperscript{th} book in the {\emph{Oz}}
+series. Our approach agrees with the current prevailing scholarly opinion about
+that book~\citep{NiloBino03}, further validating our approach.
 
 \section{Methods}
 
 In this section, we outline our methodology for identifying stylometric
 signatures using large language models. For each selected author, we train a
-GPT-2 model on that author's corpus. We then use the trained model to compute
-the prediction loss on some held-out texts from both the target author and
-other authors in the dataset. By comparing these losses, we assess whether the
-model captures author-specific stylistic patterns: a model trained on a given
-author should exhibit lower loss when predicting that author's own texts
-compared to those of others. 
+GPT-2 model~\citep{RadfEtal19} on that author's corpus. We then use the trained
+model to compute the prediction loss on some held-out texts from both the
+target author and each of the other authors in the dataset. By comparing these
+losses, we assess whether the model captures author-specific stylistic
+patterns: a model trained on a given author should exhibit lower loss when
+predicting that author's own texts compared to those of others.
 
-We begin by applying this approach to a set of eight selected authors, and then narrow our focus to compare the two \emph{Oz} series authors, Baum and Thompson, in greater detail. 
+\subsection{Data and Preprocessing}
 
-\subsection{Data and Data Preprocessing}
+We consider a dataset comprising books by eight authors: Jane Austen, L. Frank
+Baum, Charles Dickens, F. Scott Fitzgerald, Herman Melville, Rosemary Plumly
+Thompson, Mark Twain, and H. G. Wells. We selected these authors because their
+writings are well-represented in Project Gutenberg, are all in the public
+domain, and are written in English---eliminating any potential confounds due to
+translation. For each book, we pre-process the text by stripping Project
+Gutenberg metadata, publisher information, illustration tags, transcriber
+notes, prefaces, tables of contents, and chapter headings. We standardize
+whitespace, remove non-ASCII characters, and lowercase all alphabetic
+characters. Basic statistics on token lengths and the full list of books used
+are provided in Appendix~\ref{sec:appendixA}.
 
-
-
-We first consider a set of eight authors: Jane Austen, L. Frank Baum, Charles Dickens, F.
-Scott Fitzgerald, Herman Melville, Rosemary Plumly Thompson, Mark Twain, and H.
-G. Wells. These authors were selected because their works are well-represented
-on Project Gutenberg, are all in the public domain, and are written in
-English---eliminating any confounds due to translation. For each book, we
-pre-process the text by stripping Project Gutenberg metadata, publisher
-information, illustration tags, transcriber notes, prefaces, tables of
-contents, and chapter headings. We standardize whitespace, remove non-ASCII
-characters, and lowercase all alphabetic characters. Basic statistics on token
-lengths and the full list of books used are provided in
-Appendix~\ref{sec:appendixA}. We then take on an author attribution question and (re-)visit scholarly debate around the 15th book in the \emph{Oz} series, and using PCT confirm attribution to Rosemary Plumly Thompson, as opposed to the series originator, L. Frank Baum.  
-
-\subsection{Model Training}
-% For each author, we randomly select a text to hold out for evaluation. 
-% For an author $A$, let the set of $n$ books in $A$'s corpus have lengths $\{l^A_i\}$ for $i \in [1,2,\dots, n]$. 
-% We truncate each author's corpus so that each author's model is trained on the same number of tokens. 
-% We compute this number of tokens $T$ as follows:
-% \[
-% T = \min_A \left(\sum_{i=1}^{n} L^A_i - \max_i( L^A_i) \right).
-% \]
-% For our corpora, this yields 634041. 
-% To truncate each corpus to 643041 tokens, sample one contiguous subsequence of tokens from each book. The length of the subsequence for book $i$ is proportional to the number of tokens in book $i$. The start of the subsequence is chosen randomly (while ensuring that the subsequence does not exceed the length of the book).
-
-% For each author, we train GPT language models from scratch using the \texttt{GPT2LMHeadModel} class from the Hugging Face Transformers library with custom architecture settings: a context window of 1024 tokens, an embedding dimension of 128, 8 transformer layers, and 8 attention heads per layer. Training uses a batch size of 16 and the AdamW optimizer \cite{AdamW} with a learning rate of \(5 \times 10^{-5}\).
-
-% To gather a contiguous subsequence of 1024 tokens for our training data, we simply sample from the shuffled, concatenated, and truncated text. For comparison loss computation, we do not sample; we use a sliding window to ensure that every token is included in a ``chunk'' over which we compute loss.
-
-% For 10 random seeds, we repeat the procedure of sampling a held-out text and then training a model. To ensure a fair comparison between authors, training is halted after the first training epoch where the training loss is less than or equal to 3.0.
-
-For each author, we train GPT language models~\citep{VaswEtal23} from scratch
-using the \texttt{GPT2LMHeadModel} class from the Hugging Face Transformers
-library with custom architecture settings: a context window of 1024 tokens, an
-embedding dimension of 128, 8 transformer layers, and 8 attention heads per
-layer. Training uses a batch size of 16 and the AdamW
-optimizer~\citep{LoshHutt19} with a learning rate of $5 \times 10^{-5}$.
-
-To construct the training data for each author, we randomly select one book to
-hold out for evaluation, and the other books are considered as corpus. To
-ensure a fair comparison across authors, we standardize the number of training
+To construct a training data for each author, we randomly select one book to
+hold out for evaluation and train their model using the remaining books. To
+ensure fair comparisons across authors, we standardize the number of training
 tokens per author. Specifically, we truncate each author's corpus so that every
 model is trained on an equal number of tokens. This token budget is determined
 by removing the longest book from each author's set and then taking the
-smallest remaining total token count across all authors. For our dataset, this
-yields a training token budget of 643,041 tokens for each training.
+smallest remaining total token count across each author's remaining books. For
+our dataset, this yields a training token budget of 643,041 tokens.
 
 To construct a truncated corpus of 643,041 tokens for each author, we sample
-one contiguous subsequence from each book in the corpus (i.e., remaining books
-after holding out a book). The length of the subsequence sampled from book~$i$
+one contiguous sub-sequence from each book in their training corpus (i.e., remaining books
+after holding out a to-be-evaluated book). The length of the sub-sequence sampled from book~$i$
 is proportional to its original length, computed as:
 \[
 \text{length}_i = 643{,}041 \times \frac{\text{tokens in book } i}{\text{total tokens in corpus}}.
 \]
-The starting position of each subsequence is chosen uniformly at random,
+The starting position of each sub-sequence is chosen uniformly at random,
 ensuring the sample fits within the book's bounds.
 
-Training data is then constructed by shuffling, concatenating, and then
-sampling 1024-token chunks from the truncated corpus. For evaluation, we do not
-sample randomly; instead, we apply a sliding window approach to ensure that
-each token in the evaluation set contributes to the computed loss.
+\subsection{Model Architecture, Training, and Evaluation}
 
-We repeat the full process—including selecting a held-out book and training a
-model—across 10 different random seeds. To ensure comparability across authors,
-we stop training after the first epoch where the training loss drops to 3.0 or
-lower. We decided on this threshold after taking random draws from the models
+For each author, we train GPT-2 language models~\citep{RadfEtal19} from scratch
+using the \texttt{GPT2LMHeadModel} class from the Hugging Face
+\texttt{Transformers} library with custom architecture settings: a context
+window of 1024 tokens, an embedding dimension of 128, 8 transformer layers, and
+8 attention heads per layer. We used a training batch size of 16 and fit each
+model using the AdamW optimizer~\citep{LoshHutt19} with a learning rate of $5
+\times 10^{-5}$ to minimize the cross-entropy loss on the training data.
+
+We construct training samples by shuffling, concatenating, and then sampling
+1024-token chunks from the truncated corpus for the given author (constructed
+as described above, using contiguous sub-sequences selected from all but one of
+their books). We continue training until the cross-entropy loss fell to 3.0 or
+lower. (We decided on this threshold after taking random draws from the models
 trained on Baum's and Thompson's \textit{Oz} books and manually inspecting the
-quality of the resulting samples.
+quality of the resulting samples.) Training to a fixed loss threshold (e.g., as
+opposed to training for a fixed number of epochs) enables us to fairly compare
+model performance across authors, which is a critical component of our
+stylometric analyses.
 
+We evaluate the models using the held-out book from the corresponding author.
+We sample 1024-token chunks from the held-out book, using a sliding window
+approach to ensure that each token in the evaluation set contributes equally to
+the computed loss. We repeat the full process (of selecting a held-out book at
+random and training the model using randomly selected samples from the
+remaining books) using 10 different random seeds. This approach enables us to
+assess the robustness of our results and to ensure that the models are not
+overfitting to a specific book or random sample.
 
 \subsection{Predictive Comparison Testing}
 
@@ -423,6 +289,30 @@ among our author set.
 
 \section*{Conclusions}
 
+% work this in...
+It is possible to fine-tune large languages to write in the ``style'' or
+``voice'' of a given author~\citep[see e.g.,][]{Mikr25}. Generally, the
+mathematical encoding---or ``measure"---of a writer's style falls under the
+heading of {\em stylometry}. 
+
+Comparison of prediction at
+the level of sentences and using textual information is put forward in
+\citep{Reza25}. Our work differs both in the scale and reliance
+purely on the loss function.
+
+
+
+These results suggest that our approach holds promise as a new technique for
+machine reading approaches to text-based disciplines
+~\citep{More17,More00,Holm98} and the practices of cultural
+analytics~\citep{UndeEtal13}. PCT also suggests a natural approach to author
+attribution in the case in which there is a finite set of possiblities: assign
+the work to the author whose PCT produces the least loss. To this we consider a
+well-known example of questioned attribution of the 15th book in the
+{\emph{Oz}} series and scholarly opinion~\citep{NiloBino03}, further validating
+our approach.
+
+
 In this paper we introduce {\em predictive comparison}, a new LLM-based
 relative stylometric measure. It derives from a simple idea, that if an LLM can
 be fine-tuned to write like -- i.e., in the style of -- a given author by
@@ -485,7 +375,7 @@ LLM. Finally, deploying this idea at scale would require fine-tuning one model f
 \twocolumn[
 
 \begin{center}
-{\Large \bfseries Appendix A: Authors, Books, Tokens \par}
+{\Large \bfseries Appendix A: Authors, Books, Tokens \par \label{sec:appendixA}}
 \vspace{1em}
 \begin{tabular}{@{}ll|ll@{}}
 \toprule
