@@ -24,37 +24,37 @@
 \maketitle
 \begin{abstract}
 
-In this paper we show that large language models (LLMs) can be used to
-distinguish the writings of different authors. Specifically, an individual
-model, trained on the works of one author, will predict held-out text from that
-author more accurately than held-out text from other authors. We suggest that,
-in this way, a model trained on one author's works embodies the unique writing
-style of that author. We first demonstrate our approach on books written by
-eight different (known) authors. We also use this approach to confirm R. P.
-Thompson's authorship of the well-studied 15\textsuperscript{th} book of the
-\textit{Oz} series, originally attributed to F. L. Baum.
+We show that large language models (LLMs) can be used to distinguish the
+writings of different authors. Specifically, an individual model, trained on
+the works of one author, will predict held-out text from that author more
+accurately than held-out text from other authors. We suggest that, in this way,
+a model trained on one author's works embodies the unique writing style of that
+author. We first demonstrate our approach on books written by eight different
+(known) authors. We also use this approach to confirm R. P. Thompson's
+authorship of the well-studied 15\textsuperscript{th} book of the \textit{Oz}
+series, originally attributed to F. L. Baum.
 
 \end{abstract}
 
 \section{Introduction}
 
-In this paper we introduce {\em predictive comparison}, a new LLM-based
-relative stylometric measure. It derives from a simple idea, that if an LLM can
-be fine-tuned to write like---i.e., in the style of---a given author by
-training on the work of an author~\citep[e.g., ][]{Mikr25}, then the degree to
-which such a fine-tuned model can predict another author's work could be a
-measure of stylistic similarity. In this paper we show, using a small set of
-authors and their works, that this thesis is borne out. This in turn suggests a
-notion of stylometric distance derived from the cross-entropy loss assigned to
-held-out texts by models trained on known works of different authors. Lastly,
-this further suggest a literary authentication tool that would assign an
-unknown or contested work to the model which predictive comparison generates
-the smallest loss. We use this on a well-known and once contested
-15\textsuperscript{th} book in the \emph{Oz} series, confirming what is now
-accepted attribution. We believe this approach could be of use in considering
-questions of authorial
-influence~\citep{MostWall63,MostWall84,NiloBino03,Juol08} and stylistic
-evolution.
+Herein we introduce {\em predictive comparison}, a new LLM-based relative
+stylometric measure. It derives from a simple idea, that if an LLM can be
+fine-tuned to write like---i.e., in the style of---a given author by training
+on the work of an author~\citep[e.g., ][]{Mikr25}, then the degree to which
+such a fine-tuned model can predict another author's work could be a measure of
+stylistic similarity. In this paper we show, using a small set of authors and
+their works, that this thesis is borne out. This in turn suggests a notion of
+stylometric distance derived from the cross-entropy loss assigned to held-out
+texts by models trained on known works of different authors. We believe this
+approach could be of use in considering questions of authorial influence and
+stylistic evolution.~\citep{HughEtal12} Lastly, this further suggests a
+literary authentication tool~\citep[a common use of stylometric techniques;
+][]{MostWall63,MostWall84,NiloBino03,Juol08} that would assign an unknown or
+contested work to the model (and author) under which predictive comparison
+generates the smallest loss. We illustrate this on the well-known attribution
+problem of the 15\textsuperscript{th} book in the \emph{Oz} series, confirming
+what is now the accepted attribution.
 
 \section{Methods}
 
@@ -65,7 +65,7 @@ model to compute the cross-entropy loss on held-out texts from both the target
 author and each of the other authors in the dataset. By comparing these losses,
 we assess whether the model captures author-specific stylistic patterns: a
 model trained on a given author should exhibit lower loss when predicting that
-author's own texts compared to those of others.
+author's own texts as compared to the texts of others.
 
 \subsection{Data and Preprocessing \label{sec:data}}
 
@@ -81,63 +81,61 @@ whitespace, remove non-ASCII characters, and lowercase all alphabetic
 characters. Basic statistics on token lengths and the full list of books used
 are provided in the Appendix.
 
-To construct a training data for each author, we randomly select one book to
+To construct training data for each author, we randomly select one book to
 hold out for evaluation and train their model using the remaining books. To
 ensure fair comparisons across authors, we standardize the number of training
 tokens per author. Specifically, we truncate each author's corpus so that every
 model is trained on an equal number of tokens. This token budget is determined
 by removing the longest book from each author's set and then taking the
-smallest remaining total token count across each author's remaining books. For
-our dataset, this yields a training token budget of 643,041 tokens.
+smallest of the (remaining) total token counts. For
+our dataset, this yields a fixed training token budget of 643,041 tokens.
 
 To construct a truncated corpus of 643,041 tokens for each author, we sample
 one contiguous sub-sequence from each book in their training corpus (i.e.,
 remaining books after holding out a to-be-evaluated book). The length of the
-sub-sequence sampled from book~$i$ is proportional to its original length,
-computed as:
+sub-sequence sampled from book~$i$ is proportional to its original length:
 \[
 \text{length}_i = 643{,}041 \times \frac{\text{tokens in book } i}{\text{total tokens in corpus}}.
 \]
 The starting position of each sub-sequence is chosen uniformly at random,
 ensuring the sample fits within the book's bounds. Finally, we shuffle and then
 concatenate the sampled sub-sequences from each book, resulting in a single
-643,041-token training corpus for each author. This process is repeated for
+643,041-token training sequence for each author. This process is repeated for
 each of 10 random seeds, yielding 10 different training corpora for each
 author.
 
 \subsection{Model Architecture, Training, and Evaluation}
 
-For each author, we train GPT-2 language models~\citep{RadfEtal19} from scratch
-using the \texttt{GPT2LMHeadModel} class from the Hugging Face
-\texttt{Transformers} library with custom architecture settings: a context
-window of 1024 tokens, an embedding dimension of 128, 8 transformer layers, and
-8 attention heads per layer. We fit each model using the AdamW
-optimizer~\citep{LoshHutt19} with a learning rate of $5 \times 10^{-5}$ to
-minimize the cross-entropy loss on the training data. We train models using a
-causal language modeling objective, whereby the model iteratively predicts the
-next token in the sequence given all of the previous tokens in the same batch.
+For each author, we train GPT-2 language models from scratch using the
+\texttt{GPT2LMHeadModel} class from the Hugging Face \texttt{Transformers}
+library with custom architecture settings: a context window of 1024 tokens, an
+embedding dimension of 128, 8 transformer layers, and 8 attention heads per
+layer. We fit each model using the AdamW optimizer~\citep{LoshHutt19} with a
+learning rate of $5 \times 10^{-5}$ to minimize the cross-entropy loss on the
+training data. We train models using a causal language modeling objective,
+whereby the model iteratively predicts the next token in the sequence given all
+of the previous tokens in the same training sequence.
 
-We construct training samples by shuffling, concatenating, and then sampling
-1024-token chunks from the truncated corpus for the given author (constructed
-as described above, using contiguous sub-sequences selected from all but one of
-their books). Each training epoch consists of 40 batches, each containing 16
-sequences of 1024 tokens. This results in a total of 655,360 tokens per epoch.
-We continue training until the cross-entropy loss falls to 3.0 or lower. (We
-decided on this threshold after taking random draws from the models trained on
-Baum's and Thompson's \textit{Oz} books and manually inspecting the quality of
-the resulting samples.) Training to a fixed loss threshold (e.g., as opposed to
-training for a fixed number of epochs) enables us to fairly compare model
-performance across authors, which is the central component of our stylometric
-analyses.
+We construct training samples by sampling 1024-token chunks from the truncated
+corpus for the given author and random seed (constructed as described above, using contiguous
+sub-sequences selected from all but one of their books). Each training epoch
+consists of 40 batches, each containing 16 sequences of 1024 tokens. This
+results in a total of 655,360 tokens per epoch. We continue training until the
+cross-entropy loss falls to 3.0 or lower. (We decided on this threshold after
+taking random draws from the models trained on Baum's and Thompson's
+\textit{Oz} books and manually inspecting the quality of the resulting
+samples.) Training to a fixed loss threshold (e.g., as opposed to training for
+a fixed number of epochs) enables us to fairly compare model performance across
+authors, which is the central component of our stylometric analyses.
 
 We evaluate the models using the held-out book from the corresponding author.
-We sample 1024-token chunks from the held-out book, using a sliding window
-approach to ensure that each token in the evaluation set contributes equally to
-the computed loss. We repeat the full process (of selecting a held-out book at
-random and training the model using randomly selected samples from the
-remaining books) using 10 different random seeds. This approach enables us to
-assess the robustness of our results and to ensure that the models are not
-overfitting to a specific book or random sample.
+We partition the held-out book into 1024-token chunks to ensure that each token
+in the evaluation set contributes equally to the computed loss. We repeat the
+full process (of selecting a held-out book at random and training the model
+using randomly selected samples from the remaining books) using 10 different
+random seeds. This approach enables us to assess the robustness of our results
+and to ensure that the models are not overfitting to a specific book or random
+sample.
 
 \section{Results}
 
@@ -172,8 +170,8 @@ training epochs. Each color denotes a model trained on a single author's work.
 Error ribbons denote bootstrap-estimated 95\% confidence intervals over 10
 random seeds. \textbf{B.} Cross-entropy loss assigned to held-out test data by
 each author's model ($x$-axis). Held-out test data is either from the
-\textit{same} author (block) or from \textit{other} authors (gray). Each dot
-denotes the average loss (across all samples) for a single random seed.
+\textit{same} author (black) or from \textit{other} authors (gray). Each dot
+denotes the average loss (across all 1024-token chunks) for a single random seed.
 \textbf{C.} The top sub-panels replicate the Baum (blue) and Thompson (orange)
 results from Panel A. The bottom sub-panels show the cross-entropy loss
 assigned to a held-out text whose authorship is contested (lower left), to a
@@ -209,7 +207,7 @@ as a function of the number of training epochs (final epoch: $t(9) = 20.723, p
 = 6.6 \times 10^{-9}$). This latter plot provides an estimate of the
 performance we might expect to see in the general case (e.g., across a larger
 set of authors). Table~\ref{tab:t-tests} summarizes the results of the
-$t$-tests for each author's model after 500 training epochs.
+$t$-tests for each author's model after training is complete.
 
 \begin{table}[h]
 \centering
@@ -230,7 +228,7 @@ Wells       & 35.17 & 26.33 & $1.16 \times 10^{-23}$ \\
 \end{tabular}
 
 \caption{Each row displays the results of a $t$-test comparing the average loss
-values assigned by each author's model (after 500 training epochs) to the
+values assigned by each author's model (after training is complete) to the
 author's held-out text and to the other authors' randomly sampled texts.}
 
 \label{tab:t-tests}
@@ -249,40 +247,41 @@ models. To illustrate these patterns, we also project the losses into a 3D
 space using multidimensional scaling~\citep[MDS; ][]{Krus64} applied to the
 pairwise correlations between rows of the loss matrix, excluding the diagonal
 entries (i.e., the losses obtained using each author's model when applied to
-their own held-out text). We observed that Baum and Thompson (both authors of
-children's literature); Twain and Melville (authors of adventure and
-exploration stories); Dickens and Austen (authors of romantic and domestic
-stories); and Fitzgerald and Wells (authors of speculative and modern fiction)
-each appear nearby in the MDS projection, suggesting that the models capture
-some stylistic features that are shared across similar authors.
-
-\subsubsection{Predicted Authorship of the 15\textsuperscript{th} \emph{Oz} Book}
-
-As a special case, we also consider the contested authorship of the
-15\textsuperscript{th} \emph{Oz} book, which is widely believed to have been
-written by Ruth Plumly Thompson, but was originally attributed to L. Frank
-Baum~\citep{NiloBino03}. We applied prediction comparison testing to the
-15\textsuperscript{th} \emph{Oz} book, using models trained on Baum and
-Thompson's undisputed \emph{Oz} books. As shown in the bottom left sub-panel of
-Figure~\ref{fig:merged}C, our approach yields lower loss for the
-Thompson-trained model than for the Baum-trained model, indicating that the
-contested book is indeed more similar to Thompson's writing style than to
-Baum's. We also applied both models to a non-\emph{Oz} book by Baum (bottom
-center) and Thompson (bottom right). Our approach yields lower losses for the
-correct author in each case, demonstrating that PCT is robust to thematic
-differences within the same author's writings.
+their own held-out text). We observed (Fig.~\ref{fig:merged}G) that Baum and
+Thompson (authors of corpora largely intended to be similar) are mapped onto
+nearby locations, lending some evidence that the embeddings are ``meaningful.''
+We suggest that this approach might lend itself to further exploration and
+consideration by literature scholars, particularly if extended to a larger
+embedding space. For the purposes of our present work, however, we provide the
+plot solely as a provocative demonstration.
 
 \subsection{Stylometric Distance}
 
-Predictive comparison suggests a natural notion of distance between authorial
-styles. Let $L_i(j)$ denote the average loss of a work of author $j$
-for a model trained on author $i$ (the $i,j$-entry of the heatmap/average loss
-matrix in Figure~\ref{fig:merged}F). Let $\overline{L_i(j)} = L_i(j)-L_i(i)$,
-normalizing the entries by subtracting the native author baseline. Then define
-the LLM-based {\em stylometric distance}, $d(i,j) =
-\frac{1}{2}\left(\overline{L_i(j)} + \overline{L_j(i)}\right)$.
-Figure~\ref{fig:merged}G is a visualization of the relative ``distances"
-among our author set.
+As indicated by (Fig.~\ref{fig:merged}G), predictive comparison suggests a
+natural notion of distance between authorial styles. Let $L_i(j)$ denote the
+average loss of a work of author $j$ for a model trained on author $i$ (the
+$i,j$-entry of the heatmap/average loss matrix in Figure~\ref{fig:merged}F).
+Let $\overline{L_i(j)} = L_i(j)-L_i(i)$, normalizing the entries by subtracting
+the native author baseline. Then define the LLM-based {\em stylometric
+distance}, $d(i,j) = \frac{1}{2}\left(\overline{L_i(j)} +
+\overline{L_j(i)}\right)$. Thus, Figure~\ref{fig:merged}G is a visualization of
+the relative ``distances" among our author set.
+
+\subsection{Predictive Attribution of the 15\textsuperscript{th} \emph{Oz} Book}
+
+Attribution is another application of this predictive comparison. We illustrate with the well-known example of the contested authorship of the
+15\textsuperscript{th} \emph{Oz} book (in a thirty-one book series),  widely believed to have been
+written by Ruth Plumly Thompson, but originally attributed to L. Frank
+Baum~\citep{NiloBino03}. We applied predictive comparison to the
+15\textsuperscript{th} \emph{Oz} book, using models trained on Baum and
+Thompson's undisputed \emph{Oz} books. As shown in the bottom left sub-panel of
+Figure~\ref{fig:merged}C, we find lower loss for the
+Thompson-trained model than for the Baum-trained model, indicating that the
+contested book is indeed more similar to Thompson's writing style than to
+Baum's. We also applied both models to a non-\emph{Oz} book by Baum (bottom
+center) and Thompson (bottom right). We see lower losses for the
+correct author in each case, demonstrating that predictive comparison is robust to thematic
+differences within the same author's writings.
 
 \section*{Conclusions}
 
