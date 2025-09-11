@@ -70,7 +70,8 @@ eprint = { https://doi.org/10.1080/09332480.2003.10554843}}
     author = {Mikros, George},
     title = {Beyond the surface: stylometric analysis of {G}{P}{T}-4o’s capacity for literary style imitation},
     journal = {Digital Scholarship in the Humanities},
-    pages = {fqaf035},
+    pages = {587--600},
+    volume = {40},
     year = {2025},
     month = {04},
     abstract = {This study aims to explore the ability of GPT-4o to imitate the literary style of renowned authors. Ernest Hemingway and Mary Shelley were selected due to their contrasting literary styles and their overall impact on world literature. Using three distinct prompting strategies—zero-shot generation, zero-shot imitation, and in-context learning—we generated forty-five stylistic imitations and analyzed them alongside the authors’ original texts. To ensure thematic consistency, we constrained the generated texts to shared narrative themes derived from the authors’ works. We used a distance-based approach to authorship attribution using the 1,000 most frequent words and cosine distance to explore how the large language model’s imitations were positioned in the multidimensional authorship space. Moreover, we exploited a random forest classifier and repeated the authorship attribution task to analyze the authorship distinctiveness of the GPT imitations further. We used a combination of Textual Complexity and Readability, Author Multilevel N-gram Profiles, Word Embeddings, and Linguistic Inquiry and Word Count features. t-SNE visualizations further evaluated the stylistic alignment between original and GPT-generated texts. The findings reveal that while GPT-4o captures some surface-level stylistic elements of the authors, it struggles to fully replicate the depth and uniqueness of their stylometric signatures. Imitations generated via in-context learning showed improved alignment with the original authors but still exhibited significant overlap with generic GPT outputs.},
@@ -187,13 +188,12 @@ author = {Sarah Wells}}
   urldate = {2023-12-19}
 }
 
-@misc{LoshHutt19,
+@article{LoshHutt17,
       title={Decoupled Weight Decay Regularization}, 
       author={Ilya Loshchilov and Frank Hutter},
-      year={2019},
-      eprint={1711.05101},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
+      year={2017},
+      volume={1711.05101},
+      journal={arXiv},
       url={https://arxiv.org/abs/1711.05101}, 
 }
 
@@ -475,7 +475,7 @@ pages = {54-68}}
 @article{RadfEtal19,
   title={Language models are unsupervised multitask learners},
   author={Radford, Alec and Wu, Jeffrey and Child, Rewon and Luan, David and Amodei, Dario and Sutskever, Ilya and others},
-  journal={OpenAI blog},
+  journal={OpenAI Blog},
   volume={1},
   number={8},
   pages={9},
@@ -502,3 +502,112 @@ pages = {54-68}}
   organization={IEEE}
 }
 
+@article{HuanEtal25,
+  author = {Huang, W. and Murakami, A. and Grieve, J.},
+  title = {Attributing authorship via the perplexity of authorial language models},
+  journal = {PLOS One},
+  volume = {20},
+  number = {7},
+  pages = {e0327081},
+  year = {2025},
+  doi = {10.1371/journal.pone.0327081}
+}
+
+@inproceedings{UcheEtal20,
+  author = {Uchendu, Adaku and Le, Thai and Shu, Kai and Lee, Dongwon},
+  title = {Authorship Attribution for Neural Text Generation},
+  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages = {8384--8395},
+  year = {2020},
+  doi = {10.18653/v1/2020.emnlp-main.673}
+}
+
+@article{JuolBaay05,
+  author = {Juola, Patrick and Baayen, Harald},
+  title = {A controlled-corpus experiment in authorship identification by cross-entropy},
+  journal = {Literary and Linguistic Computing},
+  volume = {20},
+  number = {Suppl},
+  pages = {59--67},
+  year = {2005},
+  doi = {10.1093/llc/fqi024}
+}
+
+@inproceedings{ZhaoEtal06,
+  author = {Zhao, Ying and Zobel, Justin and Vines, Phil},
+  title = {Using Relative Entropy for Authorship Attribution},
+  booktitle = {Information Retrieval Technology: Third Asia Information Retrieval Symposium, AIRS 2006},
+  series = {LNCS},
+  volume = {4182},
+  pages = {92--105},
+  year = {2006},
+  publisher = {Springer},
+  doi = {10.1007/11880592_8}
+}
+
+@inproceedings{FabiEtal20,
+  author = {Fabien, Maël and Villatoro-Tello, Esaú and Motlicek, Petr and Parida, Shantipriya},
+  title = {{BertAA}: {BERT} fine-tuning for Authorship Attribution},
+  booktitle = {Proceedings of the 17th International Conference on Natural Language Processing (ICON)},
+  pages = {127--137},
+  year = {2020},
+  url = {https://aclanthology.org/2020.icon-main.16/}
+}
+
+@book{UndeEtal19,
+  author = {Underwood, Ted},
+  title = {Distant Horizons: Digital Evidence and Literary Change},
+  year = {2019},
+  publisher = {University of Chicago Press},
+  address = {Chicago, IL}
+}
+
+@article{TyoEtal22,
+  author = {Tyo, Jacob and Dhingra, Bhuwan and Lipton, Zachary C.},
+  title = {On the State of the Art in Authorship Attribution and Authorship Verification},
+  journal = {arXiv},
+  pages = {2209.06869},
+  year = {2022}
+}
+
+@article{FincBosc24,
+  author = {S Fincke and E Boschee},
+  title = {Separating Style from Substance: Enhancing Cross-Genre Authorship Attribution through Data Selection and Presentation},
+  journal = {arXiv preprint arXiv:2408.05192},
+  year = {2024}
+}
+
+@article{SchuEtal20,
+  author = {Schuster, Tal and Schuster, Roei and Shah, Darsh J. and Barzilay, Regina},
+  title = {The Limitations of Stylometry for Detecting Machine-Generated Fake News},
+  journal = {Computational Linguistics},
+  volume = {46},
+  number = {2},
+  pages = {499--510},
+  year = {2020}
+}
+
+@inproceedings{BarlStam20,
+  author = {Barlas, Georgios and Stamatatos, Efstathios},
+  title = {Cross-Domain Authorship Attribution Using Pre-trained Language Models},
+  booktitle = {Artificial Intelligence Applications and Innovations},
+  publisher = {Springer},
+  year = {2020},
+  pages = {255--266}
+}
+
+@inproceedings{QuirMaie19,
+  author = {Quiring, Erwin and Maier, Alwin and Rieck, Konrad},
+  title = {Misleading Authorship Attribution of Source Code using Adversarial Learning},
+  booktitle = {Proceedings of the 28th USENIX Security Symposium},
+  pages = {479--496},
+  year = {2019}
+}
+
+@inproceedings{HoulEtal19,
+  author = {Houlsby, Neil and Giurgiu, Andrei and Jastrzebski, Stanislaw and Morrone, Bruna and De Laroussilhe, Quentin and Gesmundo, Andrea and Attariyan, Mona and Gelly, Sylvain},
+  title = {Parameter-Efficient Transfer Learning for {NLP}},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning},
+  pages = {2790--2799},
+  year = {2019}
+}
