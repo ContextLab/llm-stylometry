@@ -1,0 +1,256 @@
+import torch
+import logging
+import sys
+from transformers import GPT2Config, GPT2LMHeadModel
+from data_utils import get_train_data_loader, get_eval_data_loader
+from model_utils import (
+    save_checkpoint,
+    load_checkpoint,
+    init_model,
+    count_non_embedding_params,
+)
+from tokenizer_utils import get_tokenizer
+from eval_utils import evaluate_model
+from logging_utils import update_loss_log
+import random
+import numpy as np
+import torch.backends.cudnn as cudnn
+from experiment import Experiment
+import torch.multiprocessing as mp
+from tqdm import tqdm
+from constants import MODELS_DIR, AUTHORS, CLEANED_DATA_DIR
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+if not torch.cuda.is_available():
+    raise Exception("No GPU available")
+
+experiments = []
+for seed in range(10):
+    for author in AUTHORS:
+        experiments.append(
+            Experiment(
+                train_author=author,
+                seed=seed,
+                tokenizer_name="gpt2",
+            )
+        )
+
+
+def run_experiment(exp: Experiment, gpu_queue):
+    try:
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+
+        # Get an available GPU id
+        gpu_id = gpu_queue.get()
+        logger.info(f"Starting experiment: {exp.name}")
+        torch.cuda.set_device(gpu_id)
+        device = torch.device("cuda", index=gpu_id)
+
+        # Initialize tokenizer directly using get_tokenizer
+        tokenizer = get_tokenizer(exp.tokenizer_name)
+
+        # Set random seeds for reproducibility
+        assert exp.seed is not None
+        random.seed(exp.seed)
+        np.random.seed(exp.seed)
+        torch.manual_seed(exp.seed)
+
+        # Set up train dataloader with on-the-fly sampling
+        train_dataloader = get_train_data_loader(
+            path=CLEANED_DATA_DIR / exp.train_author,
+            tokenizer=tokenizer,
+            n_positions=exp.n_positions,
+            batch_size=exp.batch_size,
+            n_tokens=exp.n_train_tokens,
+            seed=exp.seed,
+            excluded_train_path=exp.excluded_train_path,
+        )
+        logger.info(
+            f"[GPU {gpu_id}] Number of training batches: {len(train_dataloader)}"
+        )
+
+        # Set up eval dataloaders
+        eval_dataloaders = {
+            name: get_eval_data_loader(
+                path=path,
+                tokenizer=tokenizer,
+                n_positions=exp.n_positions,
+                batch_size=exp.batch_size,
+            )
+            for name, path in exp.eval_paths.items()
+        }
+
+        # Set up model configuration
+        config = GPT2Config(
+            n_positions=exp.n_positions,
+            n_embd=exp.n_embd,
+            n_layer=exp.n_layer,
+            n_head=exp.n_head,
+        )
+        modelname = exp.name
+
+        stop_train_loss = exp.stop_criteria["train_loss"]
+        min_epochs = exp.stop_criteria["min_epochs"]
+        max_epochs = exp.stop_criteria["max_epochs"]
+        assert stop_train_loss is not None
+        assert min_epochs is not None
+        assert max_epochs is not None
+
+        # Logic for loading or initializing the model
+        if exp.resume_training:
+            model, optimizer, start_epoch = load_checkpoint(
+                model_class=GPT2LMHeadModel,
+                model_name=modelname,
+                device=device,
+            )
+        else:
+            model, optimizer = init_model(
+                model_class=GPT2LMHeadModel,
+                model_name=modelname,
+                config=config,
+                device=device,
+                lr=exp.lr,
+            )
+            start_epoch = 0
+
+        logger.info(
+            f"[GPU {gpu_id}] Total number of non-embedding parameters: {count_non_embedding_params(model)}"
+        )
+
+        # Initial evaluation (epochs_complete = 0)
+        for name, eval_dataloader in eval_dataloaders.items():
+            eval_loss = evaluate_model(
+                model=model,
+                eval_dataloader=eval_dataloader,
+                device=device,
+            )
+
+            # Log each evaluation separately
+            update_loss_log(
+                log_file_path=MODELS_DIR / modelname / "loss_logs.csv",
+                epochs_completed=0,
+                loss_dataset=name,
+                loss_value=eval_loss,
+                seed=exp.seed,
+                train_author=exp.train_author,
+            )
+
+        # Training loop
+        for epoch in tqdm(range(start_epoch, max_epochs)):
+            total_train_loss = 0.0
+
+            # Iterate over batches in the training dataloader
+            for batch_idx, batch in enumerate(train_dataloader):
+                model.train()
+
+                input_ids = batch["input_ids"].to(device)
+
+                # Forward pass - use input_ids as labels (HF handles shifting)
+                outputs = model(input_ids=input_ids, labels=input_ids)
+                loss = outputs.loss
+
+                # Backward pass and optimization step
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+
+                # Accumulate training loss
+                total_train_loss += loss.item()
+
+            epochs_completed = epoch + 1
+
+            # Calculate average training loss
+            train_loss = total_train_loss / len(train_dataloader)
+
+            # Log training loss from the current epoch
+            update_loss_log(
+                log_file_path=MODELS_DIR / modelname / "loss_logs.csv",
+                train_author=exp.train_author,
+                loss_dataset="train",
+                loss_value=train_loss,
+                epochs_completed=epochs_completed,
+                seed=exp.seed,
+            )
+
+            # Evaluate and log each eval dataset separately
+            eval_losses = {}  # For log message
+            for name, eval_dataloader in eval_dataloaders.items():
+                # Evaluate one dataset
+                eval_loss = evaluate_model(
+                    model=model,
+                    eval_dataloader=eval_dataloader,
+                    device=device,
+                )
+
+                # Store for later console output
+                eval_losses[name] = eval_loss
+
+                # Log each evaluation result
+                update_loss_log(
+                    log_file_path=MODELS_DIR / modelname / "loss_logs.csv",
+                    epochs_completed=epochs_completed,
+                    loss_dataset=name,
+                    loss_value=eval_loss,
+                    seed=exp.seed,
+                    train_author=exp.train_author,
+                )
+
+                # Force memory cleanup between evaluations
+                torch.cuda.empty_cache()
+
+            # Build log message for console output
+            log_message = f"[GPU {gpu_id}] Epoch {epochs_completed}/{max_epochs}: training loss = {train_loss:.4f}"
+            for name, loss in eval_losses.items():
+                log_message += f", {name}: {loss:.4f}"
+            logger.info(log_message)
+
+            # Save the model checkpoint at the end of each epoch
+            save_checkpoint(
+                model=model,
+                optimizer=optimizer,
+                model_name=modelname,
+                epochs_completed=epochs_completed,
+            )
+            # Early stopping after completing epoch (retain logs and checkpoints)
+            if train_loss <= stop_train_loss and min_epochs <= epochs_completed:
+                logger.info(
+                    f"[GPU {gpu_id}] Training loss {train_loss:.4f} below threshold {stop_train_loss}. Stopping training."
+                )
+                break
+        logger.info(f"[GPU {gpu_id}] Training complete for {modelname}")
+
+        # Return the GPU id to the queue
+        gpu_queue.put(gpu_id)
+    except Exception:
+        logger.exception(f"Error in experiment {exp.name}")
+        raise
+
+
+if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
+    device_count = torch.cuda.device_count()
+    gpu_count = min(device_count, 4)
+    print(f"Using {gpu_count} GPUs out of {device_count} available")
+
+    manager = mp.Manager()
+    gpu_queue = manager.Queue()
+    for gpu in range(gpu_count):
+        gpu_queue.put(gpu)
+
+    pool = mp.Pool(processes=gpu_count)
+    logger = logging.getLogger(__name__)
+
+    def error_callback(e):
+        logger.exception("Unhandled error in worker, shutting down all processes")
+        pool.terminate()
+        sys.exit(1)
+
+    for exp in experiments:
+        pool.apply_async(
+            run_experiment, (exp, gpu_queue), error_callback=error_callback
+        )
+    pool.close()
+    pool.join()
