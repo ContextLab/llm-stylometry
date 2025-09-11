@@ -87,7 +87,7 @@ we assess whether the model captures author-specific stylistic patterns: a
 model trained on a given author should exhibit lower loss when predicting that
 author's own texts as compared to the texts of others.
 
-\subsection{Data and Preprocessing \label{sec:data}}
+\subsection{Data and preprocessing \label{sec:data}}
 
 We consider a dataset comprising books by eight authors: Jane Austen, L. Frank
 Baum, Charles Dickens, F. Scott Fitzgerald, Herman Melville, Rosemary Plumly
@@ -124,7 +124,7 @@ concatenate the sampled sub-sequences from each book, resulting in a single
 each of 10 random seeds, yielding 10 different training corpora for each
 author.
 
-\subsection{Model Architecture, Training, and Evaluation}
+\subsection{Model architecture, training, and evaluation}
 
 For each author, we train GPT-2 language models from scratch using the
 \texttt{GPT2LMHeadModel} class from the Hugging Face \texttt{Transformers}
@@ -179,7 +179,7 @@ sample.
 
 \section{Results}
 
-\subsection{Predictive Comparison Testing of Eight Classic Authors}
+\subsection{Predictive comparison testing of eight classic authors}
 
 We carried out predictive comparison testing on eight classic authors (see
 Sec.~\ref{sec:data}). The top-left sub-panel of Figure~\ref{fig:all-losses}A
@@ -288,7 +288,7 @@ provide the plot solely as a provocative demonstration.
 \label{fig:confusion-matrix}
 \end{figure*}
 
-\subsection{Stylometric Distance}
+\subsection{Stylometric distance}
 
 As indicated by Figure~\ref{fig:mds}, predictive comparison suggests a
 natural notion of distance between authorial styles. Let $L_i(j)$ denote the
@@ -311,7 +311,7 @@ the relative ``distances" among our author set.
 \label{fig:mds}
 \end{figure*}
 
-\subsection{Predictive Attribution of the 15\textsuperscript{th} \emph{Oz} Book}
+\subsection{Predictive attribution of the 15\textsuperscript{th} \emph{Oz} book}
 
 Attribution is another application of predictive comparison. We illustrate with
 the well-known example of the contested authorship of the
@@ -536,7 +536,7 @@ analytics~\citep{UndeEtal13}.
 \appendix
 
 \begin{center}
-{\Large \bfseries Appendix: Authors, Books, and Tokens \par \label{sec:appendix}}
+{\Large \bfseries Appendix: Authors, books, and tokens \par \label{sec:appendix}}
 \vspace{1em}
 \begin{tabular}{@{}ll|ll@{}}
 \toprule
