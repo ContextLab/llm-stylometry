@@ -205,11 +205,11 @@ smallest loss.
 
 
   \caption{\textbf{Same vs. other author comparisons, by
-      model.}\textbf{D.} Each curve denotes, as a function of the
+      model.}\textbf{A.} Each curve denotes, as a function of the
     number of training epochs, the the $t$-statistic from a $t$-test
     comparing the distribution of losses (across random seeds)
     assigned to held-out texts from the given author (color) versus
-    held-out texts from all other authors. \textbf{E.} The average
+    held-out texts from all other authors. \textbf{B.} The average
     $t$-statistic across all eight authors, as a function of the
     number of training epochs. Error ribbons denote
     bootstrap-estimated 95\% confidence intervals across authors.}
@@ -284,20 +284,21 @@ provide the plot solely as a provocative demonstration.
 
 
   \caption{\textbf{Confusion matrix.} The matrix displays the average cross-entropy loss assigned by models trained on each
- author's writing (column) to held-out texts from each author (row).}
+ author's writing (column) to held-out texts from each author (row), after subtracting
+ the native author's baseline loss.}
 \label{fig:confusion-matrix}
 \end{figure*}
 
-\subsection{Stylometric distance}
+\subsection{Stylometric distance~\label{sec:distance}}
 
 As indicated by Figure~\ref{fig:mds}, predictive comparison suggests a
-natural notion of distance between authorial styles. Let $L_i(j)$ denote the
-average loss of a work of author $j$ for a model trained on author $i$ (entry
+natural notion of distance between authorial styles. Let $L_j(i)$ denote the
+average loss of a work of author $i$ for a model trained on author $j$ (entry
 $i,j$ of the average loss matrix in Fig.~\ref{fig:confusion-matrix}). Let
-$\overline{L_i(j)} = L_i(j)-L_i(i)$, normalizing the entries by subtracting the
+$\overline{L_j(i)} = L_j(i)-L_j(j)$, normalizing the entries by subtracting the
 native author's baseline loss. Then define the LLM-based {\em stylometric
-distance}, $d(i,j) = \frac{1}{2}\left(\overline{L_i(j)} +
-\overline{L_j(i)}\right)$. Thus, Figure~\ref{fig:mds} is a visualization of
+distance}, $d(i,j) = \frac{1}{2}\left(\overline{L_j(i)} +
+\overline{L_i(j)}\right)$. Thus, Figure~\ref{fig:mds} is a visualization of
 the relative ``distances" among our author set.
 
 \begin{figure*}[t]
@@ -306,7 +307,7 @@ the relative ``distances" among our author set.
 
 
   \caption{\textbf{Multidimensional scaling plot.} Three-dimensional
-    MDS projection of the average cross-entropy loss matrix shown in
+    MDS projection of the (symmetrized) average cross-entropy loss matrix shown in
     Figure~\ref{fig:confusion-matrix}.}
 \label{fig:mds}
 \end{figure*}
@@ -440,10 +441,10 @@ The vulnerability of language model-based methods to adversarial
 attacks~\citep{QuirMaie19} raises concerns about the reliability of predictive
 comparison in adversarial settings. Authors attempting to disguise their style
 or imitate others might fool language model-based attribution more easily than
-traditional methods that rely on subconscious stylistic habits. Evaluating
-robustness against both intentional obfuscation and unintentional style drift
-(e.g., authorial development over time) will be crucial for practical
-applications.
+traditional methods that rely on subtler stylistic habits that are difficult to
+intentionally emulate. Evaluating robustness against both intentional
+obfuscation and unintentional style drift (e.g., authorial development over
+time) will be crucial for practical applications.
 
 \subsection{Future directions}
 
@@ -474,7 +475,7 @@ predictive modeling.
 Finally, exploring applications beyond attribution could demonstrate the
 broader utility of modeling individual writing styles. For example,
 author-specific language models might be used to assist in literary analysis by
-generating counterfactual texts such as what Austen might have written about
+generating counterfactual texts, such as what Austen might have written about
 modern themes (e.g., the impact of social media on relationships). These
 approaches might also help to identify stylistic development within an author's
 career, or trace influence networks among authors. These applications would
