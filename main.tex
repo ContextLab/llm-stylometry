@@ -1,27 +1,29 @@
-\pdfoutput=1
-
 \documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
-% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
-% Change to "preprint" to generate a non-anonymous version with page numbers.
-\usepackage[review]{acl}
-
-\usepackage{times}
-\usepackage{latexsym}
-\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{microtype}
-\usepackage{inconsolata}
+\usepackage[english]{babel}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{geometry}
+\usepackage[sort&compress]{natbib}
+\usepackage{amsmath}
+\usepackage{pxfonts}
 \usepackage{graphicx}
-\usepackage{longtable}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{lineno}
 \usepackage{booktabs}
-\usepackage{amsmath} 
-\usepackage{natbib}
+
+\doublespacing
 
 \title{A Stylometric Application of Large Language Models}
 
+\author{Harrison F. Stropkay, Jiayi Chen, Daniel N. Rockmore, and Jeremy R. Manning\\
+Dartmouth College \\
+Hanover, NH 03755, USA \\
+\texttt{\{harrison.f.stropkay.25, jiayi.chen.gr, }\\\texttt{daniel.n.rockmore, jeremy.r.manning\}@dartmouth.edu}}
+
 \begin{document}
 \maketitle
+
 \begin{abstract}
 
 We show that large language models (LLMs) can be used to distinguish the
@@ -94,7 +96,8 @@ one contiguous sub-sequence from each book in their training corpus (after
 holding out a to-be-evaluated book). The length of the sub-sequence sampled
 from book~$i$ is proportional to its original length:
 \[
-\text{length}_i = 643{,}041 \times \frac{\text{tokens in book } i}{\text{total tokens in corpus}}.
+\text{length}_i = 643{,}041 \times \frac{\text{tokens in book
+  }i}{\text{total tokens in corpus}}.
 \]
 The starting position of each sub-sequence is chosen uniformly at random,
 ensuring the sample fits within the book's bounds. Finally, we shuffle and then
@@ -139,35 +142,21 @@ sample.
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.9\textwidth]{figs/merged.pdf}
+  \includegraphics[width=0.8\textwidth]{figs/loss_all_authors.pdf}
 
 
-\caption{\textbf{A.} Average cross-entropy loss on \textit{Train}ing data and
-held-out test data from each author, plotted as a function of the number of
-training epochs. Each color denotes a model trained on a single author's work.
-Error ribbons denote bootstrap-estimated 95\% confidence intervals over 10
-random seeds. \textbf{B.} Cross-entropy loss assigned to held-out test data by
-each author's model ($x$-axis). Held-out test data is either from the
-\textit{same} author (black) or from \textit{other} authors (gray). Each dot
-denotes the average loss (across all 1024-token chunks) for a single random seed.
-\textbf{C.} The top sub-panels replicate the Baum (blue) and Thompson (orange)
-results from Panel A. The bottom sub-panels show the cross-entropy loss
-assigned to a held-out text whose authorship is contested (lower left), to a
-held-out non-\textit{Oz} text by Baum (lower center), and to a held-out
-non-\textit{Oz} text by Thompson (lower right). Error ribbons denote
-bootstrap-estimated 95\% confidence intervals over 10 random seeds. \textbf{D.}
-Each curve denotes, as a function of the number of training epochs, the the
-$t$-statistic from a $t$-test comparing the distribution of losses (across
-random seeds) assigned to held-out texts from the given author (color) versus
-held-out texts from all other authors. \textbf{E.} The average $t$-statistic
-across all eight authors, as a function of the number of training epochs. Error
-ribbons denote bootstrap-estimated 95\% confidence intervals across authors.
-\textbf{F.} The average cross-entropy loss assigned by models trained on each
-author's writing (row) to held-out texts from each author (column). \textbf{G.}
-Three-dimensional MDS projection of the average cross-entropy loss matrix shown
-in Panel F.}
-
-\label{fig:merged}
+  \caption{\textbf{Cross-entropy loss across models and
+      authors.}\textbf{A.} Average cross-entropy loss on
+    \textit{Train}ing data and held-out test data from each author,
+    plotted as a function of the number of training epochs. Each color
+    denotes a model trained on a single author's work.  Error ribbons
+    denote bootstrap-estimated 95\% confidence intervals over 10
+    random seeds. \textbf{B.} Cross-entropy loss assigned to held-out
+    test data by each author's model ($x$-axis). Held-out test data is
+    either from the \textit{same} author (black) or from
+    \textit{other} authors (gray). Each dot denotes the average loss
+    (across all 1024-token chunks) for a single random seed.}
+\label{fig:all-losses}
 \end{figure*}
 
 \section{Results}
@@ -175,15 +164,15 @@ in Panel F.}
 \subsection{Predictive Comparison Testing of Eight Classic Authors}
 
 We carried out predictive comparison testing on eight classic authors (see
-Sec.~\ref{sec:data}). The top-left sub-panel of Figure~\ref{fig:merged}A
+Sec.~\ref{sec:data}). The top-left sub-panel of Figure~\ref{fig:all-losses}A
 (labeled ``Train'') shows the average training loss for each author's model,
 computed over 10 random seeds. Training losses are comparable across models,
 indicating that the models are trained to similar levels of performance. The
-other sub-panels of Figure~\ref{fig:merged}A show the average predictive
+other sub-panels of Figure~\ref{fig:all-losses}A show the average predictive
 (cross-entropy) loss, for each author's model, on held-out texts from each
 author. For every author's held-out text, the model trained on the same
 author's writings produces the lowest loss, indicating a clear preference for
-its own author's stylistic patterns. As shown in Figure~\ref{fig:merged}B,
+its own author's stylistic patterns. As shown in Figure~\ref{fig:all-losses}B,
 across every author we considered, and for every random seed, models trained
 and tested on the same author always yield smaller losses than models trained
 on one author and tested on another (i.e., for each author, the highest black
@@ -192,16 +181,33 @@ perfect (100\%) classification accuracy when matching authors with held-out
 texts by labeling the held-out text according to which model produces the
 smallest loss.
 
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figs/t_stats.pdf}
+
+
+  \caption{\textbf{Same vs. other author comparisons, by
+      model.}\textbf{D.} Each curve denotes, as a function of the
+    number of training epochs, the the $t$-statistic from a $t$-test
+    comparing the distribution of losses (across random seeds)
+    assigned to held-out texts from the given author (color) versus
+    held-out texts from all other authors. \textbf{E.} The average
+    $t$-statistic across all eight authors, as a function of the
+    number of training epochs. Error ribbons denote
+    bootstrap-estimated 95\% confidence intervals across authors.}
+\label{fig:t-stats}
+\end{figure*}
+
 We also wondered how many training epochs were required for the models to
 reliably distinguish author styles. We compared the distributions (across
 random seeds) of average cross-entropy losses for each author's model computed
 for held-out text from the \textit{same} author versus for held-out text from
-\textit{other} authors. Figure~\ref{fig:merged}D displays the $t$-values from
+\textit{other} authors. Figure~\ref{fig:t-stats}A displays the $t$-values from
 $t$-tests comparing these same versus other loss distributions for each of the
 first 500 training epochs. For all authors except Twain, the $t$-tests yielded
 $p$-values below $0.001$ after just one epoch, indicating that the models
 rapidly acquire author-specific stylometric patterns. For Twain, this threshold
-is crossed at epoch 47. Figure~\ref{fig:merged}E shows the average $t$-values
+is crossed at epoch 47. Figure~\ref{fig:t-stats}B shows the average $t$-values
 across all eight authors as a function of the number of training epochs (final
 epoch: $t(9) = 20.723, p = 6.6 \times 10^{-9}$). This latter plot provides an
 estimate of the performance we might expect to see in the general case (e.g.,
@@ -237,7 +243,7 @@ Despite achieving perfect classification accuracy, not all authors are equally
 distinctive. For example, we reasoned that authors with similar writing styles
 might be more confusable (i.e., yielding relatively smaller losses for models
 trained across different authors). We computed the average loss for each author
-using the models trained on the other authors' texts (Fig.~\ref{fig:merged}F).
+using the models trained on the other authors' texts (Fig.~\ref{fig:confusion-matrix}).
 Authors with similar writing styles (e.g., Baum and Thompson) yield relatively
 small losses when evaluated using models trained on the other author's texts.
 In contrast, authors with more distinct writing styles (e.g., Austen and
@@ -246,7 +252,7 @@ models. To illustrate these patterns, we also project the losses into a 3D
 space using multidimensional scaling~\citep[MDS; ][]{Krus64} applied to the
 pairwise correlations between rows of the loss matrix, excluding the diagonal
 entries (i.e., the losses obtained using each author's model when applied to
-their own held-out text). We observed (Fig.~\ref{fig:merged}G) that Baum and
+their own held-out text). We observed (Fig.~\ref{fig:mds}) that Baum and
 Thompson (authors of corpora largely intended to be similar) are mapped onto
 nearby locations, providing some evidence that the embeddings are
 ``meaningful.'' We suggest that this approach might lend itself to further
@@ -254,17 +260,38 @@ exploration and consideration by literature scholars, particularly if extended
 to a larger embedding space. For the purposes of our present work, however, we
 provide the plot solely as a provocative demonstration.
 
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.4\textwidth]{figs/source/loss_heatmap_ordered.pdf}
+
+
+  \caption{\textbf{Confusion matrix.} The matrix displays the average cross-entropy loss assigned by models trained on each
+ author's writing (column) to held-out texts from each author (row).}
+\label{fig:confusion-matrix}
+\end{figure*}
+
 \subsection{Stylometric Distance}
 
-As indicated by Figure~\ref{fig:merged}G, predictive comparison suggests a
+As indicated by Figure~\ref{fig:mds}, predictive comparison suggests a
 natural notion of distance between authorial styles. Let $L_i(j)$ denote the
 average loss of a work of author $j$ for a model trained on author $i$ (entry
-$i,j$ of the average loss matrix in Fig.~\ref{fig:merged}F). Let
+$i,j$ of the average loss matrix in Fig.~\ref{fig:confusion-matrix}). Let
 $\overline{L_i(j)} = L_i(j)-L_i(i)$, normalizing the entries by subtracting the
 native author's baseline loss. Then define the LLM-based {\em stylometric
 distance}, $d(i,j) = \frac{1}{2}\left(\overline{L_i(j)} +
-\overline{L_j(i)}\right)$. Thus, Figure~\ref{fig:merged}G is a visualization of
+\overline{L_j(i)}\right)$. Thus, Figure~\ref{fig:mds} is a visualization of
 the relative ``distances" among our author set.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.4\textwidth]{figs/source/3d_MDS_plot.pdf}
+
+
+  \caption{\textbf{Multidimensional scaling plot.} Three-dimensional
+    MDS projection of the average cross-entropy loss matrix shown in
+    Figure~\ref{fig:confusion-matrix}.}
+\label{fig:mds}
+\end{figure*}
 
 \subsection{Predictive Attribution of the 15\textsuperscript{th} \emph{Oz} Book}
 
@@ -275,13 +302,31 @@ believed to have been written by Ruth Plumly Thompson, but originally
 attributed to L. Frank Baum~\citep{NiloBino03}. We applied predictive
 comparison to the 15\textsuperscript{th} \emph{Oz} book, using models trained
 on Baum and Thompson's undisputed \emph{Oz} books. As shown in the bottom left
-sub-panel of Figure~\ref{fig:merged}C, we find lower loss for the
+sub-panel of Figure~\ref{fig:oz-losses}, we find lower loss for the
 Thompson-trained model than for the Baum-trained model, indicating that the
 contested book is indeed more similar to Thompson's writing style than to
 Baum's. We also applied both models to a non-\emph{Oz} book by Baum (bottom
 center) and Thompson (bottom right). We see lower losses for the correct author
 in each case, demonstrating that predictive comparison is robust to thematic
 differences within the same author's writings.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.6\textwidth]{figs/source/oz_losses.pdf}
+
+
+  \caption{\textbf{Cross-entropy loss across models and authors.} The
+    top sub-panels replicate the Baum (blue) and Thompson (orange)
+    results from Figure~\ref{fig:all-losses}. The bottom sub-panels show the cross-entropy
+    loss assigned to a held-out text whose authorship is contested
+    (lower left), to a held-out non-\textit{Oz} text by Baum (lower
+    center), and to a held-out non-\textit{Oz} text by Thompson (lower
+    right). Error ribbons denote bootstrap-estimated 95\% confidence
+    intervals over 10 random seeds. }
+\label{fig:oz-losses}
+\end{figure*}
+
+
 
 \section*{Conclusions}
 
@@ -333,16 +378,14 @@ significant computational and textual resources.
 % Bibliography entries for the entire Anthology, followed by custom entries
 %\bibliography{anthology,custom}
 % Custom bibliography entries only
+
+\bibliographystyle{apalike}
 \bibliography{custom}
 
 %\clearpage
 
-%\newpage
-
-
+\newpage
 \appendix
-
-\twocolumn[
 
 \begin{center}
 {\Large \bfseries Appendix: Authors, Books, and Tokens \par \label{sec:appendix}}
@@ -369,8 +412,7 @@ Hard Times & 142,759 & & \\
 \bottomrule
 \end{tabular}
 
-
-\vspace{2em}
+\newpage
 
 \begin{tabular}{@{}ll|ll@{}}
 \toprule
@@ -395,13 +437,11 @@ The Scarecrow of Oz & 59,593 & & \\
 \end{tabular}
 
 \end{center}
-]
 
-\clearpage
+
 
 \newpage
 
-\twocolumn[
 
 \begin{center}
 \begin{tabular}{@{}ll|ll@{}}
@@ -419,7 +459,7 @@ Persuasion & 106,027 & & \\
 \bottomrule
 \end{tabular}
 
-\vspace{2em}
+\newpage
 
 \begin{tabular}{@{}ll|ll@{}}
 \toprule
@@ -441,5 +481,5 @@ Tender Is The Night & 145,925 & The War Of The Worlds & 75,727 \\
 \bottomrule
 \end{tabular}
 \end{center}
-]
+
 \end{document}
