@@ -17,7 +17,7 @@ class TestCLI:
     @classmethod
     def setup_class(cls):
         """Set up test paths."""
-        cls.script_path = Path(__file__).parent.parent / "generate_figures.py"
+        cls.script_path = Path(__file__).parent.parent / "code" / "generate_figures.py"
         cls.test_data_path = Path(__file__).parent / "data" / "test_model_results.pkl"
         cls.temp_dir = tempfile.mkdtemp()
 
