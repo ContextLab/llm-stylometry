@@ -33,8 +33,8 @@ def generate_loss_heatmap_figure(
     # Load data
     df = pd.read_pickle(data_path)
 
-    # Define authors
-    AUTHORS = ["baum", "thompson", "dickens", "melville", "wells", "austen", "fitzgerald", "twain"]
+    # Define authors in requested order
+    AUTHORS = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
 
     # Collect final epoch losses for each model
     all_losses = []
@@ -69,8 +69,8 @@ def generate_loss_heatmap_figure(
         values='loss_value'
     )
 
-    # Define the order from the paper
-    new_order = ["Austen", "Baum", "Thompson", "Twain", "Melville", "Dickens", "Fitzgerald", "Wells"]
+    # Define the order to match all_losses figure
+    new_order = ["Baum", "Thompson", "Austen", "Dickens", "Fitzgerald", "Melville", "Twain", "Wells"]
 
     # Reorder rows and columns
     heatmap_data = heatmap_data.reindex(index=new_order, columns=new_order)
@@ -90,10 +90,11 @@ def generate_loss_heatmap_figure(
     # Use sentence case for labels
     ax.set_xlabel("Comparison author", fontsize=15)
     ax.set_ylabel("Training author", fontsize=15)
-    ax.set_title("Heatmap of average loss values", fontsize=16)
+    # Remove title as requested
+    # ax.set_title("Heatmap of average loss values", fontsize=16)
 
     plt.xticks(fontsize=14, rotation=45)
-    plt.yticks(fontsize=14)
+    plt.yticks(fontsize=14, rotation=0)  # Keep y-axis labels horizontal for visibility
     plt.tight_layout()
 
     # Save if path provided

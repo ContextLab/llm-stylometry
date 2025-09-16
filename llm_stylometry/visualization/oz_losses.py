@@ -87,10 +87,18 @@ def generate_oz_losses_figure(
 
         sns.despine(ax=ax, top=True, right=True)
 
-        # Use sentence case for titles
-        title = dataset.lower() if dataset != "Train" else "Training"
-        if "non-oz" in title:
-            title = title.replace("non-oz", "Non-Oz")
+        # Capitalize names and italicize 'Oz' in titles
+        if dataset == "Train":
+            title = "Training"
+        elif dataset == "Contested":
+            title = "Contested"
+        elif dataset == "Non-Oz Baum":
+            title = r"Non-$\mathit{Oz}$ Baum"
+        elif dataset == "Non-Oz Thompson":
+            title = r"Non-$\mathit{Oz}$ Thompson"
+        else:
+            title = dataset  # Already capitalized (Baum, Thompson)
+
         ax.set_title(title, fontsize=14)
 
         ax.set_xlabel("Epochs completed", fontsize=12)
@@ -107,10 +115,10 @@ def generate_oz_losses_figure(
                   fontsize=12,
                   bbox_to_anchor=(0.5, 1.02))
 
-    # Add main title in sentence case
-    fig.suptitle("Cross-entropy loss across models and Oz authors",
-                fontsize=16,
-                y=1.05 if show_legend else 1.02)
+    # Remove title as requested
+    # fig.suptitle("Cross-entropy loss across models and Oz authors",
+    #             fontsize=16,
+    #             y=1.05 if show_legend else 1.02)
 
     plt.tight_layout()
 

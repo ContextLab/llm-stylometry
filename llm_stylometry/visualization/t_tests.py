@@ -107,11 +107,12 @@ def generate_t_test_figure(
     )
 
     sns.despine(ax=ax, top=True, right=True)
-    ax.set_title(
-        "$t$-values: training author vs. other authors",
-        fontsize=12,
-        pad=10,
-    )
+    # Remove title as requested
+    # ax.set_title(
+    #     "$t$-values: training author vs. other authors",
+    #     fontsize=12,
+    #     pad=10,
+    # )
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
@@ -177,14 +178,16 @@ def generate_t_test_avg_figure(
         y="t_raw",
         ax=ax,
         legend=False,
+        color="black",  # Set line color to black
     )
 
     sns.despine(ax=ax, top=True, right=True)
-    ax.set_title(
-        "Average $t$-values: training author vs. other authors",
-        fontsize=12,
-        pad=10,
-    )
+    # Remove title as requested
+    # ax.set_title(
+    #     "Average $t$-values: training author vs. other authors",
+    #     fontsize=12,
+    #     pad=10,
+    # )
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 

@@ -121,27 +121,42 @@ def generate_3d_mds_figure(
                   depthshade=True,
                   alpha=0.9)
 
-        # Add text labels above dots with bold font
-        ax.text(x[i], y[i], z[i] + 0.08,  # Move text up
+        # Add text labels above dots with bold font, with much more spacing
+        ax.text(x[i], y[i], z[i] + 0.5,  # Move text even higher above dots
                author,
                fontsize=12,
                fontweight='bold',
                ha='center',
                va='bottom')
 
-    # Set title in sentence case
-    ax.set_title("MDS from loss matrix", fontsize=14)
+    # No title as requested
+    # ax.set_title("MDS from loss matrix", fontsize=14)
 
-    # Subtle grid lines (closer to background)
-    ax.xaxis.pane.fill = False
-    ax.yaxis.pane.fill = False
-    ax.zaxis.pane.fill = False
-    ax.grid(True, alpha=0.15, color='gray')  # Subtle gray grid
+    # Add background shading and grid lines
+    ax.xaxis.pane.fill = True
+    ax.yaxis.pane.fill = True
+    ax.zaxis.pane.fill = True
+    ax.xaxis.pane.set_edgecolor('gray')
+    ax.yaxis.pane.set_edgecolor('gray')
+    ax.zaxis.pane.set_edgecolor('gray')
+    ax.xaxis.pane.set_alpha(0.75)  # Even darker background (75% opacity)
+    ax.yaxis.pane.set_alpha(0.75)
+    ax.zaxis.pane.set_alpha(0.75)
 
-    # Remove tick labels
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
+    # Make grid lines subtle but visible (15% opacity)
+    # For 3D plots, we need to set grid properties differently
+    ax.xaxis._axinfo['grid']['color'] = (0.5, 0.5, 0.5, 0.15)  # RGBA with 15% alpha
+    ax.yaxis._axinfo['grid']['color'] = (0.5, 0.5, 0.5, 0.15)
+    ax.zaxis._axinfo['grid']['color'] = (0.5, 0.5, 0.5, 0.15)
+    ax.xaxis._axinfo['grid']['linewidth'] = 0.5
+    ax.yaxis._axinfo['grid']['linewidth'] = 0.5
+    ax.zaxis._axinfo['grid']['linewidth'] = 0.5
+    ax.grid(True)
+
+    # Remove tick labels but keep ticks for grid lines
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
 
     # Set axis limits with zoom factor
     ax.set_xlim(x.min() - zoom_factor, x.max() + zoom_factor)
