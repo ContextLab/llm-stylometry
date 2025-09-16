@@ -11,21 +11,42 @@ This repository contains the code and data for our [paper](https://insert.link.w
 
 ```
 llm-stylometry/
-├── llm_stylometry/        # Python package with analysis tools
-│   ├── core/             # Core experiment and configuration
-│   ├── data/             # Data loading and tokenization
-│   ├── models/           # Model utilities
-│   ├── analysis/         # Statistical analysis
-│   └── visualization/    # Plotting and visualization
-├── code/                 # Original analysis scripts
-├── data/                 # Datasets and results
-│   ├── raw/             # Original texts from Project Gutenberg
-│   ├── cleaned/         # Preprocessed texts by author
-│   └── model_results.pkl # Consolidated model training results
-├── models/              # Model configurations and logs
-└── paper/               # LaTeX paper and figures
-    ├── main.tex        # Paper source
-    └── figs/           # Paper figures
+├── .github/              # GitHub Actions CI/CD
+│   └── workflows/       # Test automation workflows
+├── llm_stylometry/       # Python package with analysis tools
+│   ├── analysis/        # Statistical analysis utilities
+│   ├── core/           # Core experiment and configuration
+│   ├── data/           # Data loading and tokenization
+│   ├── models/         # Model utilities
+│   ├── utils/          # Helper utilities
+│   ├── visualization/  # Plotting and visualization
+│   └── cli_utils.py    # CLI helper functions
+├── code/                # Original analysis scripts
+│   ├── main.py         # Model training script
+│   ├── clean.py        # Data preprocessing
+│   └── ...             # Various analysis scripts
+├── data/                # Datasets and results
+│   ├── raw/            # Original texts from Project Gutenberg
+│   ├── cleaned/        # Preprocessed texts by author
+│   ├── model_results.pkl # Consolidated model training results
+│   └── model_results.csv # Model results in CSV format
+├── models/              # Trained models (80 total)
+│   └── {author}_tokenizer=gpt2_seed={0-9}/
+├── paper/               # LaTeX paper and figures
+│   ├── main.tex        # Paper source
+│   ├── main.pdf        # Compiled paper
+│   └── figs/           # Paper figures
+├── tests/               # Test suite
+│   ├── data/           # Test data and fixtures
+│   ├── test_*.py       # Test modules
+│   └── check_outputs.py # Output validation script
+├── generate_figures.py  # Main CLI entry point
+├── run_llm_stylometry.sh # Shell wrapper for easy setup
+├── LICENSE             # MIT License
+├── README.md           # This file
+├── requirements-dev.txt # Development dependencies
+├── pyproject.toml      # Package configuration
+└── pytest.ini          # Test configuration
 ```
 
 ## Installation
