@@ -17,43 +17,48 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+# Import safe_print for Windows compatibility
+from llm_stylometry.cli_utils import safe_print, format_header, is_windows
+
 
 def train_models():
     """Train all models from scratch."""
-    print("\n" + "=" * 60)
-    print("Training Models from Scratch")
-    print("=" * 60)
-    print("\n⚠️  Warning: This will train 80 models (8 authors × 10 seeds)")
-    print("   This requires a CUDA GPU and will take several hours.")
+    safe_print("\n" + "=" * 60)
+    safe_print("Training Models from Scratch")
+    safe_print("=" * 60)
+    warning = "[WARNING]" if is_windows() else "⚠️"
+    safe_print(f"\n{warning}  Warning: This will train 80 models (8 authors × 10 seeds)")
+    safe_print("   This requires a CUDA GPU and will take several hours.")
 
     response = input("\nProceed with training? [y/N]: ")
     if response.lower() != 'y':
-        print("Training cancelled.")
+        safe_print("Training cancelled.")
         return False
 
     # Prepare data if needed
     if not Path('data/cleaned').exists():
-        print("\nCleaning data first...")
+        safe_print("\nCleaning data first...")
         result = subprocess.run([sys.executable, 'code/clean.py'], capture_output=True)
         if result.returncode != 0:
-            print(f"Error cleaning data: {result.stderr.decode()}")
+            safe_print(f"Error cleaning data: {result.stderr.decode()}")
             return False
 
     # Train models
-    print("\nTraining models...")
+    safe_print("\nTraining models...")
     result = subprocess.run([sys.executable, 'code/main.py'], capture_output=True)
     if result.returncode != 0:
-        print(f"Error training models: {result.stderr.decode()}")
+        safe_print(f"Error training models: {result.stderr.decode()}")
         return False
 
     # Consolidate results
-    print("\nConsolidating model results...")
+    safe_print("\nConsolidating model results...")
     result = subprocess.run([sys.executable, 'consolidate_model_results.py'], capture_output=True)
     if result.returncode != 0:
-        print(f"Error consolidating results: {result.stderr.decode()}")
+        safe_print(f"Error consolidating results: {result.stderr.decode()}")
         return False
 
-    print("\n✓ Model training complete!")
+    checkmark = "[OK]" if is_windows() else "✓"
+    safe_print(f"\n{checkmark} Model training complete!")
     return True
 
 
@@ -80,24 +85,26 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
     }
 
     if figure_name not in figure_map:
-        print(f"Unknown figure: {figure_name}")
-        print(f"Available figures: {', '.join(figure_map.keys())}")
+        safe_print(f"Unknown figure: {figure_name}")
+        safe_print(f"Available figures: {', '.join(figure_map.keys())}")
         return False
 
     name, func, filename = figure_map[figure_name]
     output_path = Path(output_dir) / filename
 
-    print(f"Generating Figure {figure_name.upper()}: {name}...")
+    safe_print(f"Generating Figure {figure_name.upper()}: {name}...")
     try:
         kwargs = {'data_path': data_path, 'output_path': str(output_path)}
         if name in ['all_losses', 'stripplot', 't_test', 't_test_avg', 'oz']:
             kwargs['show_legend'] = False
         fig = func(**kwargs)
         plt.close(fig)
-        print(f"  ✓ Generated: {output_path}")
+        checkmark = "[OK]" if is_windows() else "✓"
+        safe_print(f"  {checkmark} Generated: {output_path}")
         return True
     except Exception as e:
-        print(f"  ✗ Error: {str(e)}")
+        cross = "[FAIL]" if is_windows() else "✗"
+        safe_print(f"  {cross} Error: {str(e)}")
         return False
 
 
@@ -149,19 +156,17 @@ Examples:
     args = parser.parse_args()
 
     if args.list:
-        print("\nAvailable figures:")
-        print("  1a - Figure 1A: Training curves (all_losses.pdf)")
-        print("  1b - Figure 1B: Strip plot (stripplot.pdf)")
-        print("  2a - Figure 2A: Individual t-tests (t_test.pdf)")
-        print("  2b - Figure 2B: Average t-test (t_test_avg.pdf)")
-        print("  3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)")
-        print("  4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)")
-        print("  5  - Figure 5: Oz authorship analysis (oz_losses.pdf)")
+        safe_print("\nAvailable figures:")
+        safe_print("  1a - Figure 1A: Training curves (all_losses.pdf)")
+        safe_print("  1b - Figure 1B: Strip plot (stripplot.pdf)")
+        safe_print("  2a - Figure 2A: Individual t-tests (t_test.pdf)")
+        safe_print("  2b - Figure 2B: Average t-test (t_test_avg.pdf)")
+        safe_print("  3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)")
+        safe_print("  4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)")
+        safe_print("  5  - Figure 5: Oz authorship analysis (oz_losses.pdf)")
         return 0
 
-    print("\n" + "╔" + "═" * 58 + "╗")
-    print("║" + " " * 15 + "LLM Stylometry CLI" + " " * 25 + "║")
-    print("╚" + "═" * 58 + "╝")
+    safe_print(format_header("LLM Stylometry CLI", 60))
 
     # Train models if requested
     if args.train:
@@ -173,12 +178,13 @@ Examples:
     # Check for data file
     data_file = Path(args.data)
     if not data_file.exists():
-        print(f"\nERROR: Required data file not found: {args.data}")
-        print("Please ensure you have the consolidated model results.")
-        print("You can train models from scratch using: --train")
+        safe_print(f"\nERROR: Required data file not found: {args.data}")
+        safe_print("Please ensure you have the consolidated model results.")
+        safe_print("You can train models from scratch using: --train")
         return 1
 
-    print(f"\n✓ Found model results data: {args.data}")
+    checkmark = "[OK]" if is_windows() else "✓"
+    safe_print(f"\n{checkmark} Found model results data: {args.data}")
 
     # Ensure output directory exists
     output_dir = Path(args.output)
@@ -189,9 +195,9 @@ Examples:
         success = generate_figure(args.figure, args.data, args.output)
         return 0 if success else 1
 
-    print("\n" + "=" * 60)
-    print("Generating Figures")
-    print("=" * 60)
+    safe_print("\n" + "=" * 60)
+    safe_print("Generating Figures")
+    safe_print("=" * 60)
 
     # Import visualization functions
     from llm_stylometry.visualization import (
@@ -251,20 +257,22 @@ Examples:
     failed_figures = []
 
     for description, generate_func in figures:
-        print(f"\nGenerating {description}...")
+        safe_print(f"\nGenerating {description}...")
         try:
             fig = generate_func()
             plt.close(fig)
-            print(f"  ✓ Generated successfully")
+            checkmark = "[OK]" if is_windows() else "✓"
+            safe_print(f"  {checkmark} Generated successfully")
             success_count += 1
         except Exception as e:
-            print(f"  ✗ Error: {str(e)[:100]}")
+            cross = "[FAIL]" if is_windows() else "✗"
+            safe_print(f"  {cross} Error: {str(e)[:100]}")
             failed_figures.append(description)
 
     # Verify outputs
-    print("\n" + "=" * 60)
-    print("Verifying Output Files")
-    print("=" * 60)
+    safe_print("\n" + "=" * 60)
+    safe_print("Verifying Output Files")
+    safe_print("=" * 60)
 
     expected_files = [
         (f'{args.output}/all_losses.pdf', 'Figure 1A'),
@@ -280,23 +288,27 @@ Examples:
         path = Path(file_path)
         if path.exists():
             size_kb = path.stat().st_size / 1024
-            print(f"  ✓ {name}: {size_kb:.1f} KB")
+            checkmark = "[OK]" if is_windows() else "✓"
+            safe_print(f"  {checkmark} {name}: {size_kb:.1f} KB")
         else:
-            print(f"  ✗ {name}: NOT FOUND")
+            cross = "[FAIL]" if is_windows() else "✗"
+            safe_print(f"  {cross} {name}: NOT FOUND")
 
     # Summary
-    print("\n" + "=" * 60)
+    safe_print("\n" + "=" * 60)
     if success_count == len(figures):
-        print("✓ All figures generated successfully!")
-        print("=" * 60)
-        print(f"\nFigures are saved in: {args.output}/")
+        checkmark = "[OK]" if is_windows() else "✓"
+        safe_print(f"{checkmark} All figures generated successfully!")
+        safe_print("=" * 60)
+        safe_print(f"\nFigures are saved in: {args.output}/")
     else:
-        print(f"⚠ Generated {success_count}/{len(figures)} figures")
+        warning = "[WARNING]" if is_windows() else "⚠"
+        safe_print(f"{warning} Generated {success_count}/{len(figures)} figures")
         if failed_figures:
-            print("\nFailed figures:")
+            safe_print("\nFailed figures:")
             for fig in failed_figures:
-                print(f"  - {fig}")
-        print("\nPlease check the error messages above.")
+                safe_print(f"  - {fig}")
+        safe_print("\nPlease check the error messages above.")
 
     return 0 if success_count == len(figures) else 1
 
