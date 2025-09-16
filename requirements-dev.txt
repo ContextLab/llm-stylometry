@@ -1,0 +1,17 @@
+# Development dependencies
+pytest>=7.0.0
+pytest-cov>=3.0.0
+pytest-timeout>=2.1.0
+
+# Core dependencies (for testing without conda)
+numpy<2
+scipy
+transformers
+matplotlib
+seaborn
+pandas
+tqdm
+cleantext
+plotly
+scikit-learn
+torch>=2.0.0
