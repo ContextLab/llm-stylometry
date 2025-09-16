@@ -3,247 +3,158 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib import colors as mcolors
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.manifold import MDS
-import plotly.graph_objects as go
-import logging
+from pathlib import Path
+from tqdm import tqdm
 
-logger = logging.getLogger(__name__)
 
 # Define author colors to match existing figures
 AUTHOR_COLORS = {
-    "baum": "#1f77b4",      # Blue
-    "thompson": "#ff7f0e",   # Orange
-    "austen": "#2ca02c",     # Green
-    "dickens": "#d62728",    # Red
-    "fitzgerald": "#9467bd", # Purple
-    "melville": "#8c564b",   # Brown
-    "twain": "#e377c2",      # Pink
-    "wells": "#7f7f7f",      # Gray
+    "Baum": "#1f77b4",      # Blue
+    "Thompson": "#ff7f0e",   # Orange
+    "Austen": "#2ca02c",     # Green
+    "Dickens": "#d62728",    # Red
+    "Fitzgerald": "#9467bd", # Purple
+    "Melville": "#8c564b",   # Brown
+    "Twain": "#e377c2",      # Pink
+    "Wells": "#7f7f7f",      # Gray
 }
 
 # Standardized author order
 AUTHOR_ORDER = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
 
 
-def create_loss_matrix(df, metric="mean"):
-    """
-    Create a loss matrix from model results DataFrame.
+def create_loss_matrix(df):
+    """Create a loss matrix from model results DataFrame."""
 
-    Args:
-        df: DataFrame with model results
-        metric: Aggregation metric ('mean' or 'median')
+    # Collect final epoch losses for each model
+    all_losses = []
 
-    Returns:
-        8x8 numpy array of cross-entropy losses
-    """
-    # Filter to final epoch for each model
-    final_losses = []
-
-    for model_name in df['model_name'].unique():
+    for model_name in tqdm(df['model_name'].unique(), desc="Processing models"):
         model_df = df[df['model_name'] == model_name]
-        # Get the maximum epoch for this model
-        max_epoch = model_df['epochs_completed'].max()
-        # Get losses at final epoch
-        final_epoch_df = model_df[model_df['epochs_completed'] == max_epoch]
-        final_losses.append(final_epoch_df)
 
-    final_df = pd.concat(final_losses, ignore_index=True)
+        # Get the last loss value for each evaluation dataset
+        final_losses = model_df.groupby(['loss_dataset']).tail(1)
+        final_losses = final_losses[final_losses['loss_dataset'].str.lower().isin(AUTHOR_ORDER)]
 
-    # Create loss matrix
-    loss_matrix = np.zeros((len(AUTHOR_ORDER), len(AUTHOR_ORDER)))
+        all_losses.append(final_losses[['train_author', 'loss_dataset', 'loss_value']])
 
-    for i, train_author in enumerate(AUTHOR_ORDER):
-        for j, eval_author in enumerate(AUTHOR_ORDER):
-            # Get losses where model trained on train_author evaluated on eval_author
-            subset = final_df[
-                (final_df['train_author'] == train_author) &
-                (final_df['loss_dataset'] == eval_author)
-            ]
+    # Combine all data
+    loss_df = pd.concat(all_losses, ignore_index=True)
 
-            if len(subset) > 0:
-                if metric == "mean":
-                    loss_matrix[i, j] = subset['loss_value'].mean()
-                elif metric == "median":
-                    loss_matrix[i, j] = subset['loss_value'].median()
-                else:
-                    raise ValueError(f"Unknown metric: {metric}")
+    # Capitalize author names
+    loss_df['training_author'] = loss_df['train_author'].str.capitalize()
+    loss_df['evaluation_author'] = loss_df['loss_dataset'].str.capitalize()
 
-    return loss_matrix
+    # Calculate average loss for each combination
+    avg_loss = (
+        loss_df.groupby(['training_author', 'evaluation_author'])['loss_value']
+        .mean()
+        .reset_index()
+    )
+
+    # Pivot to create the heatmap matrix
+    heatmap_data = avg_loss.pivot(
+        index='training_author',
+        columns='evaluation_author',
+        values='loss_value'
+    )
+
+    # Define the order from the paper
+    new_order = ["Austen", "Baum", "Thompson", "Twain", "Melville", "Dickens", "Fitzgerald", "Wells"]
+
+    # Reorder rows and columns
+    heatmap_data = heatmap_data.reindex(index=new_order, columns=new_order)
+
+    return heatmap_data.values, new_order
 
 
-def symmetrize_matrix(matrix):
+def generate_3d_mds_figure(
+    data_path="data/model_results.pkl",
+    output_path=None,
+    figsize=(9, 7),
+    font='Helvetica',
+    zoom_factor=0.1
+):
     """
-    Symmetrize a matrix by averaging with its transpose.
+    Generate Figure 4: 3D MDS plot from loss matrix.
 
     Args:
-        matrix: Input matrix
+        data_path: Path to model_results.pkl
+        output_path: Path to save PDF (optional)
+        figsize: Figure size (adjusted for single panel)
+        font: Font family to use
+        zoom_factor: Zoom factor for axis limits
 
     Returns:
-        Symmetrized matrix
+        matplotlib figure object
     """
-    return (matrix + matrix.T) / 2
+    # Set font
+    plt.rcParams['font.family'] = font
+    plt.rcParams['font.sans-serif'] = [font]
 
+    # Load data and create loss matrix
+    df = pd.read_pickle(data_path)
+    loss_matrix, author_names = create_loss_matrix(df)
 
-def create_3d_mds_plot(loss_matrix, output_path=None, interactive=False):
-    """
-    Generate 3D MDS plot from loss matrix.
-
-    Args:
-        loss_matrix: 8x8 matrix of cross-entropy losses
-        output_path: Path to save static PDF (optional)
-        interactive: Whether to create interactive Plotly plot
-
-    Returns:
-        If interactive=True, returns Plotly figure object
-    """
     # Symmetrize the matrix for MDS
-    symmetric_matrix = symmetrize_matrix(loss_matrix)
+    symmetric_matrix = (loss_matrix + loss_matrix.T) / 2
 
     # Apply MDS with 3 components
-    mds = MDS(n_components=3, dissimilarity='precomputed', random_state=42)
+    mds = MDS(n_components=3, dissimilarity='precomputed', random_state=1)
     coords = mds.fit_transform(symmetric_matrix)
+    x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
 
-    if interactive:
-        # Create interactive Plotly 3D plot
-        fig = go.Figure()
+    # Create figure
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, projection='3d')
 
-        for i, author in enumerate(AUTHOR_ORDER):
-            fig.add_trace(go.Scatter3d(
-                x=[coords[i, 0]],
-                y=[coords[i, 1]],
-                z=[coords[i, 2]],
-                mode='markers+text',
-                marker=dict(
-                    size=12,
-                    color=AUTHOR_COLORS[author],
-                    line=dict(color='black', width=1)
-                ),
-                text=author.capitalize(),
-                textposition='top center',
-                name=author.capitalize(),
-                hovertemplate=f"{author.capitalize()}<br>X: %{{x:.3f}}<br>Y: %{{y:.3f}}<br>Z: %{{z:.3f}}"
-            ))
+    # Plot points with author-specific colors and black outline
+    for i, author in enumerate(author_names):
+        ax.scatter(x[i], y[i], z[i],
+                  s=300,  # Larger dots
+                  color=AUTHOR_COLORS[author],
+                  marker='o',
+                  edgecolors='black',  # Black outline
+                  linewidth=1.5,
+                  depthshade=True,
+                  alpha=0.9)
 
-        fig.update_layout(
-            title="3D MDS Projection of Author Stylometric Distances",
-            scene=dict(
-                xaxis_title="MDS Dimension 1",
-                yaxis_title="MDS Dimension 2",
-                zaxis_title="MDS Dimension 3",
-                bgcolor="white",
-                xaxis=dict(gridcolor='lightgray', zerolinecolor='gray'),
-                yaxis=dict(gridcolor='lightgray', zerolinecolor='gray'),
-                zaxis=dict(gridcolor='lightgray', zerolinecolor='gray'),
-            ),
-            showlegend=True,
-            width=800,
-            height=600,
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
+        # Add text labels above dots with bold font
+        ax.text(x[i], y[i], z[i] + 0.08,  # Move text up
+               author,
+               fontsize=12,
+               fontweight='bold',
+               ha='center',
+               va='bottom')
 
-        if output_path:
-            # Save interactive HTML
-            import plotly.io as pio
-            html_path = str(output_path).replace('.pdf', '.html')
-            fig.write_html(html_path)
-            logger.info(f"Saved interactive plot to {html_path}")
+    # Set title in sentence case
+    ax.set_title("MDS from loss matrix", fontsize=14)
 
-        return fig
+    # Subtle grid lines (closer to background)
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.grid(True, alpha=0.15, color='gray')  # Subtle gray grid
 
-    else:
-        # Create static matplotlib 3D plot
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111, projection='3d')
+    # Remove tick labels
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
 
-        # Plot each author
-        for i, author in enumerate(AUTHOR_ORDER):
-            ax.scatter(coords[i, 0], coords[i, 1], coords[i, 2],
-                      color=AUTHOR_COLORS[author],
-                      s=200,
-                      label=author.capitalize(),
-                      edgecolors='black',
-                      linewidth=1,
-                      alpha=0.8)
+    # Set axis limits with zoom factor
+    ax.set_xlim(x.min() - zoom_factor, x.max() + zoom_factor)
+    ax.set_ylim(y.min() - zoom_factor, y.max() + zoom_factor)
+    ax.set_zlim(z.min() - zoom_factor, z.max() + zoom_factor)
 
-            # Add text labels
-            ax.text(coords[i, 0], coords[i, 1], coords[i, 2],
-                   author.capitalize(),
-                   fontsize=10,
-                   ha='center',
-                   va='bottom')
+    # Set viewing angle
+    ax.view_init(elev=20, azim=45)
 
-        ax.set_xlabel('MDS Dimension 1', fontsize=12, labelpad=10)
-        ax.set_ylabel('MDS Dimension 2', fontsize=12, labelpad=10)
-        ax.set_zlabel('MDS Dimension 3', fontsize=12, labelpad=10)
-        ax.set_title('3D MDS Projection of Author Stylometric Distances', fontsize=14, pad=20)
+    plt.tight_layout()
 
-        # Add grid
-        ax.grid(True, alpha=0.3)
+    # Save if path provided
+    if output_path:
+        fig.savefig(output_path, format="pdf", bbox_inches="tight", dpi=300)
 
-        # Set viewing angle for better visibility
-        ax.view_init(elev=20, azim=45)
-
-        # Add legend
-        ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), ncol=1)
-
-        plt.tight_layout()
-
-        if output_path:
-            plt.savefig(output_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved static plot to {output_path}")
-
-        return fig
-
-
-def plot_mds_from_dataframe(df_path="data/model_results.pkl", output_path=None, interactive=False):
-    """
-    Convenience function to create MDS plot directly from model results.
-
-    Args:
-        df_path: Path to model_results.pkl
-        output_path: Path to save plot
-        interactive: Whether to create interactive plot
-
-    Returns:
-        Figure object
-    """
-    # Load data
-    df = pd.read_pickle(df_path)
-
-    # Create loss matrix
-    loss_matrix = create_loss_matrix(df)
-
-    # Generate plot
-    return create_3d_mds_plot(loss_matrix, output_path, interactive)
-
-
-if __name__ == "__main__":
-    # Test the implementation
-    import sys
-    from pathlib import Path
-
-    # Check if model results exist
-    results_path = Path("data/model_results.pkl")
-    if not results_path.exists():
-        print("Error: data/model_results.pkl not found. Run consolidate_model_results.py first.")
-        sys.exit(1)
-
-    # Generate both static and interactive plots
-    print("Generating 3D MDS plots...")
-
-    # Static plot for paper
-    static_fig = plot_mds_from_dataframe(
-        output_path="paper/figs/source/3d_MDS_plot_new.pdf",
-        interactive=False
-    )
-    plt.show()
-
-    # Interactive plot for exploration
-    interactive_fig = plot_mds_from_dataframe(
-        output_path="paper/figs/source/3d_MDS_plot_interactive.html",
-        interactive=True
-    )
-
-    print("Plots generated successfully!")
+    return fig
