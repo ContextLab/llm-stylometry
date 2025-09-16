@@ -35,13 +35,14 @@ def generate_all_losses_figure(
     # Load data
     df = pd.read_pickle(data_path)
 
-    # Define authors in standard order
-    AUTHORS = ["baum", "thompson", "dickens", "melville", "wells", "austen", "fitzgerald", "twain"]
+    # Define authors in requested order
+    AUTHORS = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
 
     # Prepare data exactly as in original all_losses.py
     plot_df = df[df["loss_dataset"].isin(AUTHORS + ["train"])].copy()
     plot_df = plot_df[plot_df["epochs_completed"] % 10 == 1]
-    plot_df["loss_dataset"] = plot_df["loss_dataset"].str.capitalize()
+    # Keep proper capitalization for authors
+    plot_df["loss_dataset"] = plot_df["loss_dataset"].apply(lambda x: x.capitalize() if x != "train" else "Train")
     plot_df["train_author"] = plot_df["train_author"].str.capitalize()
 
     # Keep only rows up to min-epoch for each train_author
@@ -80,8 +81,8 @@ def generate_all_losses_figure(
             legend=False,
         )
         sns.despine(ax=ax, top=True, right=True)
-        # Use sentence case for titles
-        ax.set_title(f"{loss_dataset.lower() if loss_dataset != 'Train' else 'Training'}", fontsize=14)
+        # Capitalize author names in titles
+        ax.set_title(f"{loss_dataset}", fontsize=14)
         ax.set_xlabel("Epochs completed", fontsize=12)
         ax.set_ylabel("Loss", fontsize=12)
         ax.set_xlim(left=1, right=plot_df["epochs_completed"].max())
@@ -135,12 +136,12 @@ def generate_all_losses_figure(
             bbox_to_anchor=(0.5, 1.15),
         )
 
-    # Add title in sentence case
-    fig.suptitle(
-        "Losses on each comparison text",
-        fontsize=16,
-        y=1.20 if show_legend else 1.02,
-    )
+    # Remove title as requested
+    # fig.suptitle(
+    #     "Losses on each comparison text",
+    #     fontsize=16,
+    #     y=1.20 if show_legend else 1.02,
+    # )
 
     plt.tight_layout()
 

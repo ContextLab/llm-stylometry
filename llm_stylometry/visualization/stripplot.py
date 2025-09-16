@@ -57,7 +57,10 @@ def generate_stripplot_figure(
     strip_df["EvalType"] = np.where(
         strip_df["Training Author"] == strip_df["Evaluated Author"], "Self", "Other"
     )
-    eval_palette = {"Self": "C0", "Other": "C1"}
+    eval_palette = {"Self": "black", "Other": "gray"}  # Black for self, gray for other
+
+    # Define author order to match all_losses figure
+    author_order = ["Baum", "Thompson", "Austen", "Dickens", "Fitzgerald", "Melville", "Twain", "Wells"]
 
     # Create figure
     plt.figure(figsize=figsize)
@@ -70,22 +73,27 @@ def generate_stripplot_figure(
         size=6,
         edgecolor=None,
         dodge=True,
-        legend=show_legend,
+        legend=True,  # Always show legend now
+        order=author_order,
+        hue_order=["Self", "Other"],  # Ensure Self comes before Other
     )
 
-    # Set labels in sentence case
-    plt.title(
-        "Loss values: training author vs. other authors",
-        fontsize=16,
-        pad=10,
-    )
+    # Remove title as requested
+    # plt.title(
+    #     "Loss values: training author vs. other authors",
+    #     fontsize=16,
+    #     pad=10,
+    # )
     plt.xlabel("Training author", fontsize=14)
     plt.ylabel("Loss", fontsize=14)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
 
-    if show_legend:
-        plt.legend(fontsize=12, title="Author type", title_fontsize=14)
+    # Remove top and right spines
+    sns.despine(ax=ax, top=True, right=True)
+
+    # Add legend to top left without title and box outline
+    plt.legend(fontsize=12, title=None, loc='upper left', frameon=False)
 
     plt.tight_layout()
 
