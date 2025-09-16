@@ -1,5 +1,7 @@
 # LLM Stylometry
 
+[![Tests](https://github.com/ContextLab/llm-stylometry/actions/workflows/tests.yml/badge.svg)](https://github.com/ContextLab/llm-stylometry/actions/workflows/tests.yml)
+
 A stylometric application of large language models for authorship attribution.
 
 ## Overview
@@ -194,6 +196,75 @@ Our analysis shows that:
 1. Models achieve lower cross-entropy loss on texts from the author they were trained on
 2. The approach correctly attributes the contested 15th Oz book to Thompson
 3. Stylometric distances between authors can be visualized using MDS
+
+## Testing
+
+### Running Tests Locally
+
+The repository includes comprehensive tests that use real models and data (no mocks):
+
+```bash
+# Install test dependencies
+pip install pytest pytest-timeout
+
+# Run all tests
+pytest tests/
+
+# Run specific test modules
+pytest tests/test_visualization.py  # Test figure generation
+pytest tests/test_cli.py            # Test CLI functionality
+pytest tests/test_model_training.py # Test model operations
+
+# Run with verbose output
+pytest -v tests/
+```
+
+### Test Coverage
+
+Our test suite includes:
+
+- **Visualization Tests**: Verify all figure generation functions work correctly with synthetic data
+- **CLI Tests**: Test all command-line options and error handling
+- **Model Training Tests**: Test model creation, training, and saving with tiny models
+- **Data Tests**: Verify data loading and processing functions
+
+### Continuous Integration
+
+Tests run automatically on GitHub Actions for:
+- **Platforms**: Linux, macOS, Windows
+- **Python Version**: 3.10
+- **Execution Time**: All tests complete in under 5 minutes
+
+The CI pipeline:
+1. Sets up Python environment
+2. Installs dependencies (including CPU-only PyTorch)
+3. Creates synthetic test data
+4. Runs all test modules
+5. Validates figure generation
+6. Uploads artifacts on failure for debugging
+
+### Writing New Tests
+
+When adding new functionality, ensure tests:
+- Use real data and models (no mocks)
+- Complete quickly (use small datasets/models)
+- Test actual functionality end-to-end
+- Generate real outputs (PDFs, models, etc.)
+
+Example test structure:
+```python
+def test_new_feature():
+    # Use synthetic test data
+    data = pd.read_pickle('tests/data/test_model_results.pkl')
+
+    # Generate real output
+    output_path = 'test_output.pdf'
+    result = generate_figure(data, output_path)
+
+    # Verify real file was created
+    assert Path(output_path).exists()
+    assert Path(output_path).stat().st_size > 1000
+```
 
 ## Package API
 
