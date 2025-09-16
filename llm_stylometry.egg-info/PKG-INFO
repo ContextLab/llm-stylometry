@@ -1,3 +1,40 @@
+Metadata-Version: 2.4
+Name: llm-stylometry
+Version: 0.1.0
+Summary: A stylometric application of large language models for authorship attribution
+Author: Harrison F. Stropkay, Jiayi Chen, Daniel N. Rockmore, Jeremy R. Manning
+Maintainer-email: "Jeremy R. Manning" <jeremy.r.manning@dartmouth.edu>
+Project-URL: Homepage, https://github.com/ContextLab/llm-stylometry
+Project-URL: Bug Tracker, https://github.com/ContextLab/llm-stylometry/issues
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.2.0
+Requires-Dist: transformers>=4.30.0
+Requires-Dist: numpy<2
+Requires-Dist: scipy>=1.10.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: matplotlib>=3.7.0
+Requires-Dist: seaborn>=0.12.0
+Requires-Dist: tqdm>=4.65.0
+Requires-Dist: cleantext>=1.1.4
+Requires-Dist: requests>=2.31.0
+Requires-Dist: plotly>=5.0.0
+Requires-Dist: scikit-learn>=1.3.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: jupyter>=1.0.0; extra == "dev"
+Requires-Dist: ipykernel>=6.0.0; extra == "dev"
+
 # LLM Stylometry
 
 A stylometric application of large language models for authorship attribution.
@@ -75,23 +112,14 @@ pip install -e .
 
 ### Generate Paper Figures
 
-Two options for generating figures:
+The easiest way to reproduce all paper figures:
 
-**Option 1: Using notebooks (recommended for exploration)**
 ```bash
 conda activate llm-stylometry
 python generate_figures.py
 ```
 
-**Option 2: Direct generation (faster, no notebooks required)**
-```bash
-conda activate llm-stylometry
-python generate_figures_direct.py
-```
-
-Both scripts will create all figures in `paper/figs/source/`. The direct script is faster and doesn't require Jupyter, while the notebook version allows for interactive exploration.
-
-Note: The t-test calculations (Figure 2) take approximately 2-3 minutes due to the statistical computations across all epochs and authors.
+This will create all figures in `paper/figs/source/`.
 
 ### Using Pre-computed Results
 
