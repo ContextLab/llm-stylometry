@@ -2,11 +2,10 @@
 
 [![Tests](https://github.com/ContextLab/llm-stylometry/actions/workflows/tests.yml/badge.svg)](https://github.com/ContextLab/llm-stylometry/actions/workflows/tests.yml)
 
-A stylometric application of large language models for authorship attribution.
 
 ## Overview
 
-This repository contains the code and data for our paper on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
+This repository contains the code and data for our [paper](https://insert.link.when.ready) on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
 
 ## Repository Structure
 
@@ -273,7 +272,7 @@ The `llm_stylometry` package provides functions for all analyses:
 ```python
 from llm_stylometry.visualization import (
     generate_all_losses_figure,      # Figure 1A: Training curves
-    generate_stripplot_figure,        # Figure 1B: Loss distributions
+    generate_stripplot_figure,       # Figure 1B: Loss distributions
     generate_t_test_figure,          # Figure 2A: Individual t-tests
     generate_t_test_avg_figure,      # Figure 2B: Average t-test
     generate_loss_heatmap_figure,    # Figure 3: Confusion matrix
@@ -287,11 +286,11 @@ from llm_stylometry.visualization import (
 If you use this code or data in your research, please cite:
 
 ```bibtex
-@article{stropkay2024stylometry,
+@article{StroEtal25,
   title={A Stylometric Application of Large Language Models},
   author={Stropkay, Harrison F. and Chen, Jiayi and Rockmore, Daniel N. and Manning, Jeremy R.},
   journal={arXiv preprint arXiv:XXXX.XXXXX},
-  year={2024}
+  year={2025}
 }
 ```
 
@@ -301,5 +300,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-For questions or issues, please open a GitHub issue or contact:
-- Jeremy R. Manning (jeremy.r.manning@dartmouth.edu)
+For questions or issues, please open a GitHub issue or contact Jeremy R. Manning (jeremy.r.manning@dartmouth.edu).
