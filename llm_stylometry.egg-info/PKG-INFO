@@ -1,0 +1,238 @@
+Metadata-Version: 2.4
+Name: llm-stylometry
+Version: 0.1.0
+Summary: A stylometric application of large language models for authorship attribution
+Author: Harrison F. Stropkay, Jiayi Chen, Daniel N. Rockmore, Jeremy R. Manning
+Maintainer-email: "Jeremy R. Manning" <jeremy.r.manning@dartmouth.edu>
+Project-URL: Homepage, https://github.com/ContextLab/llm-stylometry
+Project-URL: Bug Tracker, https://github.com/ContextLab/llm-stylometry/issues
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.2.0
+Requires-Dist: transformers>=4.30.0
+Requires-Dist: numpy<2
+Requires-Dist: scipy>=1.10.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: matplotlib>=3.7.0
+Requires-Dist: seaborn>=0.12.0
+Requires-Dist: tqdm>=4.65.0
+Requires-Dist: cleantext>=1.1.4
+Requires-Dist: requests>=2.31.0
+Requires-Dist: plotly>=5.0.0
+Requires-Dist: scikit-learn>=1.3.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: jupyter>=1.0.0; extra == "dev"
+Requires-Dist: ipykernel>=6.0.0; extra == "dev"
+
+# LLM Stylometry
+
+A stylometric application of large language models for authorship attribution.
+
+## Overview
+
+This repository contains the code and data for our paper on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
+
+## Repository Structure
+
+```
+llm-stylometry/
+├── llm_stylometry/        # Python package with analysis tools
+│   ├── core/             # Core experiment and configuration
+│   ├── data/             # Data loading and tokenization
+│   ├── models/           # Model utilities
+│   ├── analysis/         # Statistical analysis
+│   └── visualization/    # Plotting and visualization
+├── code/                 # Original analysis scripts
+├── data/                 # Datasets and results
+│   ├── raw/             # Original texts from Project Gutenberg
+│   ├── cleaned/         # Preprocessed texts by author
+│   └── model_results.pkl # Consolidated model training results
+├── models/              # Model configurations and logs
+├── notebooks/           # Jupyter notebooks for figure generation
+└── paper/               # LaTeX paper and figures
+    ├── main.tex        # Paper source
+    └── figs/           # Paper figures
+```
+
+## Installation
+
+### Quick Setup with Conda
+
+```bash
+# Clone the repository
+git clone https://github.com/ContextLab/llm-stylometry.git
+cd llm-stylometry
+
+# Create and activate conda environment
+conda create -n llm-stylometry python=3.10
+conda activate llm-stylometry
+
+# Run the automated setup and figure generation
+python generate_figures.py
+```
+
+The `generate_figures.py` script will:
+1. Install all required dependencies
+2. Set up the llm_stylometry package
+3. Run all notebooks to generate paper figures
+4. Verify that all outputs were created successfully
+
+### Manual Installation
+
+If you prefer to set up manually:
+
+```bash
+# Create environment
+conda create -n llm-stylometry python=3.10
+conda activate llm-stylometry
+
+# Install PyTorch (adjust for your CUDA version)
+conda install -c pytorch -c nvidia pytorch=2.2.2 pytorch-cuda=12.1
+
+# Install other dependencies
+conda install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
+pip install cleantext plotly scikit-learn jupyter ipykernel
+
+# Install the package
+pip install -e .
+```
+
+## Quick Start
+
+### Generate Paper Figures
+
+The easiest way to reproduce all paper figures:
+
+```bash
+conda activate llm-stylometry
+python generate_figures.py
+```
+
+This will create all figures in `paper/figs/source/`.
+
+### Using Pre-computed Results
+
+The repository includes pre-computed results from training 80 models (8 authors × 10 random seeds). These results are consolidated in `data/model_results.pkl`.
+
+```python
+import pandas as pd
+from llm_stylometry.visualization import generate_all_losses_figure
+
+# Load consolidated results
+df = pd.read_pickle('data/model_results.pkl')
+
+# Generate a figure
+fig = generate_all_losses_figure(
+    data_path='data/model_results.pkl',
+    output_path='my_figure.pdf'
+)
+```
+
+### Generating Individual Figures
+
+You can also run individual notebooks:
+
+```bash
+cd notebooks
+jupyter notebook figure_1_losses_and_distributions.ipynb
+```
+
+## Training Models from Scratch
+
+**Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
+
+```bash
+# Prepare data (if not already cleaned)
+python code/clean.py
+
+# Train all models (uses multiple GPUs if available)
+python code/main.py
+```
+
+### Model Configuration
+
+Each model uses:
+- GPT-2 architecture with custom dimensions
+- 128 embedding dimensions
+- 8 transformer layers
+- 8 attention heads
+- 1024 maximum sequence length
+- Training on ~643,041 tokens per author
+- Early stopping at loss ≤ 3.0 (after minimum 500 epochs)
+
+## Data
+
+### Authors Analyzed
+
+We analyze texts from 8 authors:
+- L. Frank Baum
+- Ruth Plumly Thompson
+- Jane Austen
+- Charles Dickens
+- F. Scott Fitzgerald
+- Herman Melville
+- Mark Twain
+- H.G. Wells
+
+### Special Evaluation Sets
+
+For Baum and Thompson models, we include additional evaluation sets:
+- **non_oz_baum**: Non-Oz works by Baum
+- **non_oz_thompson**: Non-Oz works by Thompson
+- **contested**: The 15th Oz book with disputed authorship
+
+## Key Results
+
+Our analysis shows that:
+1. Models achieve lower cross-entropy loss on texts from the author they were trained on
+2. The approach correctly attributes the contested 15th Oz book to Thompson
+3. Stylometric distances between authors can be visualized using MDS
+
+## Package API
+
+The `llm_stylometry` package provides functions for all analyses:
+
+```python
+from llm_stylometry.visualization import (
+    generate_all_losses_figure,      # Figure 1A: Training curves
+    generate_stripplot_figure,        # Figure 1B: Loss distributions
+    generate_t_test_figure,          # Figure 2A: Individual t-tests
+    generate_t_test_avg_figure,      # Figure 2B: Average t-test
+    generate_loss_heatmap_figure,    # Figure 3: Confusion matrix
+    generate_3d_mds_figure,          # Figure 4: MDS visualization
+    generate_oz_losses_figure        # Figure 5: Oz analysis
+)
+```
+
+## Citation
+
+If you use this code or data in your research, please cite:
+
+```bibtex
+@article{stropkay2024stylometry,
+  title={A Stylometric Application of Large Language Models},
+  author={Stropkay, Harrison F. and Chen, Jiayi and Rockmore, Daniel N. and Manning, Jeremy R.},
+  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  year={2024}
+}
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For questions or issues, please open a GitHub issue or contact:
+- Jeremy R. Manning (jeremy.r.manning@dartmouth.edu)
