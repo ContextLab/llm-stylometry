@@ -80,18 +80,4 @@ jobs:
           tests/data/*.csv
 
     - name: Check generated files
-      run: |
-        python -c "
-import os
-from pathlib import Path
-output_dir = Path('tests/output_all')
-if output_dir.exists():
-    files = list(output_dir.glob('*.pdf'))
-    print(f'Found {len(files)} PDF files')
-    for f in files:
-        print(f'  - {f.name}: {f.stat().st_size} bytes')
-    assert len(files) >= 5, f'Expected at least 5 PDFs, found {len(files)}'
-else:
-    print('Output directory not found')
-    exit(1)
-        "
+      run: python tests/check_outputs.py
