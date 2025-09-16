@@ -2,6 +2,8 @@
 
 import pandas as pd
 import seaborn as sns
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -62,9 +64,9 @@ def generate_stripplot_figure(
     # Define author order to match all_losses figure
     author_order = ["Baum", "Thompson", "Austen", "Dickens", "Fitzgerald", "Melville", "Twain", "Wells"]
 
-    # Create figure
-    plt.figure(figsize=figsize)
-    ax = sns.stripplot(
+    # Create figure using subplots to avoid backend issues
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.stripplot(
         data=strip_df,
         x="Training Author",
         y="Loss",
@@ -79,26 +81,26 @@ def generate_stripplot_figure(
     )
 
     # Remove title as requested
-    # plt.title(
+    # ax.set_title(
     #     "Loss values: training author vs. other authors",
     #     fontsize=16,
     #     pad=10,
     # )
-    plt.xlabel("Training author", fontsize=14)
-    plt.ylabel("Loss", fontsize=14)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    ax.set_xlabel("Training author", fontsize=14)
+    ax.set_ylabel("Loss", fontsize=14)
+    ax.tick_params(axis='x', labelsize=12)
+    ax.tick_params(axis='y', labelsize=12)
 
     # Remove top and right spines
     sns.despine(ax=ax, top=True, right=True)
 
     # Add legend to top left without title and box outline
-    plt.legend(fontsize=12, title=None, loc='upper left', frameon=False)
+    ax.legend(fontsize=12, title=None, loc='upper left', frameon=False)
 
-    plt.tight_layout()
+    fig.tight_layout()
 
     # Save if path provided
     if output_path:
-        plt.savefig(output_path, bbox_inches="tight", format="pdf")
+        fig.savefig(output_path, bbox_inches="tight", format="pdf")
 
-    return plt.gcf()
+    return fig
