@@ -382,7 +382,7 @@ if [ "$SETUP_ONLY" = true ]; then
 fi
 
 # Build the Python command
-PYTHON_CMD="python generate_figures.py"
+PYTHON_CMD="python code/generate_figures.py"
 
 if [ "$LIST_FIGURES" = true ]; then
     PYTHON_CMD="$PYTHON_CMD --list"
