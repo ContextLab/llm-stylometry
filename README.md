@@ -21,6 +21,12 @@ llm-stylometry/
 │   ├── utils/          # Helper utilities
 │   ├── visualization/  # Plotting and visualization
 │   └── cli_utils.py    # CLI helper functions
+├── code/                # Training and CLI scripts
+│   ├── generate_figures.py       # Main CLI entry point
+│   ├── consolidate_model_results.py # Result consolidation
+│   ├── main.py         # Model training orchestration
+│   ├── clean.py        # Data preprocessing
+│   └── ...             # Supporting training modules
 ├── data/                # Datasets and results
 │   ├── raw/            # Original texts from Project Gutenberg
 │   ├── cleaned/        # Preprocessed texts by author
@@ -35,8 +41,6 @@ llm-stylometry/
 │   ├── data/           # Test data and fixtures
 │   ├── test_*.py       # Test modules
 │   └── check_outputs.py # Output validation script
-├── consolidate_model_results.py # Consolidate training results
-├── generate_figures.py  # Main CLI entry point
 ├── run_llm_stylometry.sh # Shell wrapper for easy setup
 ├── LICENSE             # MIT License
 ├── README.md           # This file

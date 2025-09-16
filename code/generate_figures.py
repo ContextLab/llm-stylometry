@@ -52,7 +52,7 @@ def train_models():
 
     # Consolidate results
     safe_print("\nConsolidating model results...")
-    result = subprocess.run([sys.executable, 'consolidate_model_results.py'], capture_output=True)
+    result = subprocess.run([sys.executable, 'code/consolidate_model_results.py'], capture_output=True)
     if result.returncode != 0:
         safe_print(f"Error consolidating results: {result.stderr.decode()}")
         return False
