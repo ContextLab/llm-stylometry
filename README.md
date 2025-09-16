@@ -21,15 +21,10 @@ llm-stylometry/
 │   ├── utils/          # Helper utilities
 │   ├── visualization/  # Plotting and visualization
 │   └── cli_utils.py    # CLI helper functions
-├── code/                # Original analysis scripts
-│   ├── main.py         # Model training script
-│   ├── clean.py        # Data preprocessing
-│   └── ...             # Various analysis scripts
 ├── data/                # Datasets and results
 │   ├── raw/            # Original texts from Project Gutenberg
 │   ├── cleaned/        # Preprocessed texts by author
-│   ├── model_results.pkl # Consolidated model training results
-│   └── model_results.csv # Model results in CSV format
+│   └── model_results.pkl # Consolidated model training results
 ├── models/              # Trained models (80 total)
 │   └── {author}_tokenizer=gpt2_seed={0-9}/
 ├── paper/               # LaTeX paper and figures
@@ -40,6 +35,7 @@ llm-stylometry/
 │   ├── data/           # Test data and fixtures
 │   ├── test_*.py       # Test modules
 │   └── check_outputs.py # Output validation script
+├── consolidate_model_results.py # Consolidate training results
 ├── generate_figures.py  # Main CLI entry point
 ├── run_llm_stylometry.sh # Shell wrapper for easy setup
 ├── LICENSE             # MIT License
@@ -168,15 +164,16 @@ fig = generate_all_losses_figure(
 **Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
 
 ```bash
-# Using the CLI (recommended)
+# Using the CLI (recommended - handles all steps automatically)
 ./run_llm_stylometry.sh --train
-
-# Or manually
-conda activate llm-stylometry
-python code/clean.py              # Clean data
-python code/main.py               # Train models
-python consolidate_model_results.py  # Consolidate results
 ```
+
+This command will:
+1. Clean and prepare the data if needed
+2. Train all 80 models (8 authors × 10 seeds)
+3. Consolidate results into `data/model_results.pkl`
+
+The training pipeline automatically handles data preparation, model training across available GPUs, and result consolidation. Individual model checkpoints and loss logs are saved in the `models/` directory.
 
 ### Model Configuration
 
