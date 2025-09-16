@@ -22,7 +22,6 @@ llm-stylometry/
 │   ├── cleaned/         # Preprocessed texts by author
 │   └── model_results.pkl # Consolidated model training results
 ├── models/              # Model configurations and logs
-├── notebooks/           # Jupyter notebooks for figure generation
 └── paper/               # LaTeX paper and figures
     ├── main.tex        # Paper source
     └── figs/           # Paper figures
@@ -30,30 +29,28 @@ llm-stylometry/
 
 ## Installation
 
-### Quick Setup with Conda
+### Automatic Setup and Execution
+
+The easiest way to get started is using the comprehensive CLI script:
 
 ```bash
 # Clone the repository
 git clone https://github.com/ContextLab/llm-stylometry.git
 cd llm-stylometry
 
-# Create and activate conda environment
-conda create -n llm-stylometry python=3.10
-conda activate llm-stylometry
-
-# Run the automated setup and figure generation
-python generate_figures.py
+# Run the CLI (automatically sets up conda environment if needed)
+./run_llm_stylometry.sh
 ```
 
-The `generate_figures.py` script will:
-1. Install all required dependencies
-2. Set up the llm_stylometry package
-3. Run all notebooks to generate paper figures
-4. Verify that all outputs were created successfully
+The script will:
+1. Check for conda and install Miniconda if needed (platform-specific)
+2. Create and configure the conda environment
+3. Install all dependencies including PyTorch with CUDA support
+4. Generate all paper figures from pre-computed results
 
-### Manual Installation
+### Manual Setup
 
-If you prefer to set up manually:
+If you prefer manual setup:
 
 ```bash
 # Create environment
@@ -61,11 +58,11 @@ conda create -n llm-stylometry python=3.10
 conda activate llm-stylometry
 
 # Install PyTorch (adjust for your CUDA version)
-conda install -c pytorch -c nvidia pytorch=2.2.2 pytorch-cuda=12.1
+conda install -c pytorch -c nvidia pytorch pytorch-cuda=12.1
 
 # Install other dependencies
-conda install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
-pip install cleantext plotly scikit-learn jupyter ipykernel
+pip install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
+pip install cleantext plotly scikit-learn
 
 # Install the package
 pip install -e .
@@ -73,25 +70,48 @@ pip install -e .
 
 ## Quick Start
 
-### Generate Paper Figures
+### Using the CLI
 
-Two options for generating figures:
+```bash
+# Generate all figures (default)
+./run_llm_stylometry.sh
 
-**Option 1: Using notebooks (recommended for exploration)**
+# Generate specific figure
+./run_llm_stylometry.sh -f 1a    # Figure 1A only
+./run_llm_stylometry.sh -f 4     # Figure 4 (MDS plot) only
+
+# List available figures
+./run_llm_stylometry.sh -l
+
+# Train models from scratch (requires GPU)
+./run_llm_stylometry.sh -t
+
+# Custom data and output paths
+./run_llm_stylometry.sh -d path/to/model_results.pkl -o path/to/output
+
+# Get help
+./run_llm_stylometry.sh -h
+```
+
+### Using Python Directly
+
 ```bash
 conda activate llm-stylometry
+
+# Generate all figures
 python generate_figures.py
+
+# Generate specific figure
+python generate_figures.py --figure 1a
+
+# Train models from scratch
+python generate_figures.py --train
+
+# List available figures
+python generate_figures.py --list
 ```
 
-**Option 2: Direct generation (faster, no notebooks required)**
-```bash
-conda activate llm-stylometry
-python generate_figures_direct.py
-```
-
-Both scripts will create all figures in `paper/figs/source/`. The direct script is faster and doesn't require Jupyter, while the notebook version allows for interactive exploration.
-
-Note: The t-test calculations (Figure 2) take approximately 2-3 minutes due to the statistical computations across all epochs and authors.
+**Note**: The t-test calculations (Figure 2) take approximately 2-3 minutes due to statistical computations across all epochs and authors.
 
 ### Using Pre-computed Results
 
@@ -111,25 +131,29 @@ fig = generate_all_losses_figure(
 )
 ```
 
-### Generating Individual Figures
+### Available Figures
 
-You can also run individual notebooks:
-
-```bash
-cd notebooks
-jupyter notebook figure_1_losses_and_distributions.ipynb
-```
+- **1a**: Figure 1A - Training curves (all_losses.pdf)
+- **1b**: Figure 1B - Strip plot (stripplot.pdf)
+- **2a**: Figure 2A - Individual t-tests (t_test.pdf)
+- **2b**: Figure 2B - Average t-test (t_test_avg.pdf)
+- **3**: Figure 3 - Confusion matrix heatmap (average_loss_heatmap.pdf)
+- **4**: Figure 4 - 3D MDS plot (3d_MDS_plot.pdf)
+- **5**: Figure 5 - Oz authorship analysis (oz_losses.pdf)
 
 ## Training Models from Scratch
 
 **Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
 
 ```bash
-# Prepare data (if not already cleaned)
-python code/clean.py
+# Using the CLI (recommended)
+./run_llm_stylometry.sh --train
 
-# Train all models (uses multiple GPUs if available)
-python code/main.py
+# Or manually
+conda activate llm-stylometry
+python code/clean.py              # Clean data
+python code/main.py               # Train models
+python consolidate_model_results.py  # Consolidate results
 ```
 
 ### Model Configuration

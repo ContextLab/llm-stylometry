@@ -1,220 +1,305 @@
 #!/usr/bin/env python
 """
-Generate all figures for the LLM Stylometry paper.
-
-This script:
-1. Sets up the conda environment if needed
-2. Installs required dependencies
-3. Runs all notebooks to generate figures
+Comprehensive CLI for LLM Stylometry: model training and figure generation.
 """
 
-import subprocess
 import sys
 import os
+import argparse
+import subprocess
 from pathlib import Path
 
+# Add package to path
+sys.path.insert(0, str(Path(__file__).parent))
 
-def check_conda():
-    """Check if conda is installed."""
-    try:
-        result = subprocess.run(['conda', '--version'], capture_output=True, text=True)
-        return result.returncode == 0
-    except FileNotFoundError:
+# Set matplotlib to non-interactive backend
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def train_models():
+    """Train all models from scratch."""
+    print("\n" + "=" * 60)
+    print("Training Models from Scratch")
+    print("=" * 60)
+    print("\n⚠️  Warning: This will train 80 models (8 authors × 10 seeds)")
+    print("   This requires a CUDA GPU and will take several hours.")
+
+    response = input("\nProceed with training? [y/N]: ")
+    if response.lower() != 'y':
+        print("Training cancelled.")
         return False
 
-
-def setup_environment():
-    """Set up the conda environment with required packages."""
-    print("=" * 60)
-    print("Setting up environment for LLM Stylometry")
-    print("=" * 60)
-
-    # Check if conda is available
-    if not check_conda():
-        print("ERROR: Conda not found. Please install Anaconda or Miniconda first.")
-        print("Visit: https://docs.conda.io/projects/conda/en/latest/user-guide/install/")
-        sys.exit(1)
-
-    # Check if we're already in the llm-stylometry environment
-    current_env = os.environ.get('CONDA_DEFAULT_ENV', '')
-    if current_env != 'llm-stylometry':
-        print("\nTo use this script, please first activate the environment:")
-        print("  conda activate llm-stylometry")
-        print("\nIf the environment doesn't exist, create it with:")
-        print("  conda create -n llm-stylometry python=3.10")
-        print("  conda activate llm-stylometry")
-        sys.exit(1)
-
-    print("\n✓ Using llm-stylometry conda environment")
-
-    # Install required packages
-    print("\nInstalling required packages...")
-
-    # Core packages
-    packages_to_install = [
-        ('conda', ['-c', 'pytorch', '-c', 'nvidia', 'pytorch>=2.2.0']),
-        ('pip', ['numpy<2', 'scipy', 'transformers', 'matplotlib', 'seaborn',
-                 'pandas', 'tqdm', 'cleantext', 'plotly', 'scikit-learn']),
-        ('pip', ['jupyter', 'ipykernel', 'nbconvert']),
-    ]
-
-    for installer, pkgs in packages_to_install:
-        if installer == 'conda':
-            cmd = ['conda', 'install', '-y'] + pkgs
-        else:
-            cmd = ['pip', 'install'] + pkgs
-
-        print(f"  Installing: {' '.join(pkgs[:3])}...")
-        result = subprocess.run(cmd, capture_output=True, text=True)
+    # Prepare data if needed
+    if not Path('data/cleaned').exists():
+        print("\nCleaning data first...")
+        result = subprocess.run([sys.executable, 'code/clean.py'], capture_output=True)
         if result.returncode != 0:
-            print(f"  Warning: Some packages may already be installed")
+            print(f"Error cleaning data: {result.stderr.decode()}")
+            return False
 
-    # Install the llm_stylometry package in development mode
-    print("\nInstalling llm_stylometry package...")
-    result = subprocess.run(['pip', 'install', '-e', '.'], capture_output=True, text=True)
-    if result.returncode == 0:
-        print("  ✓ Package installed successfully")
-    else:
-        print("  ! Package may already be installed")
-
-    print("\n✓ Environment setup complete!")
-
-
-def check_data():
-    """Check if the required data file exists."""
-    data_file = Path('data/model_results.pkl')
-    if not data_file.exists():
-        print("\nERROR: Required data file not found: data/model_results.pkl")
-        print("Please ensure you have the consolidated model results.")
-        print("You may need to run: python consolidate_model_results.py")
+    # Train models
+    print("\nTraining models...")
+    result = subprocess.run([sys.executable, 'code/main.py'], capture_output=True)
+    if result.returncode != 0:
+        print(f"Error training models: {result.stderr.decode()}")
         return False
-    print("✓ Found model results data")
+
+    # Consolidate results
+    print("\nConsolidating model results...")
+    result = subprocess.run([sys.executable, 'consolidate_model_results.py'], capture_output=True)
+    if result.returncode != 0:
+        print(f"Error consolidating results: {result.stderr.decode()}")
+        return False
+
+    print("\n✓ Model training complete!")
     return True
 
 
-def run_notebooks():
-    """Run all figure generation notebooks."""
+def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir='paper/figs/source'):
+    """Generate a specific figure."""
+    from llm_stylometry.visualization import (
+        generate_all_losses_figure,
+        generate_stripplot_figure,
+        generate_t_test_figure,
+        generate_t_test_avg_figure,
+        generate_loss_heatmap_figure,
+        generate_3d_mds_figure,
+        generate_oz_losses_figure
+    )
+
+    figure_map = {
+        '1a': ('all_losses', generate_all_losses_figure, 'all_losses.pdf'),
+        '1b': ('stripplot', generate_stripplot_figure, 'stripplot.pdf'),
+        '2a': ('t_test', generate_t_test_figure, 't_test.pdf'),
+        '2b': ('t_test_avg', generate_t_test_avg_figure, 't_test_avg.pdf'),
+        '3': ('heatmap', generate_loss_heatmap_figure, 'average_loss_heatmap.pdf'),
+        '4': ('mds', generate_3d_mds_figure, '3d_MDS_plot.pdf'),
+        '5': ('oz', generate_oz_losses_figure, 'oz_losses.pdf'),
+    }
+
+    if figure_name not in figure_map:
+        print(f"Unknown figure: {figure_name}")
+        print(f"Available figures: {', '.join(figure_map.keys())}")
+        return False
+
+    name, func, filename = figure_map[figure_name]
+    output_path = Path(output_dir) / filename
+
+    print(f"Generating Figure {figure_name.upper()}: {name}...")
+    try:
+        kwargs = {'data_path': data_path, 'output_path': str(output_path)}
+        if name in ['all_losses', 'stripplot', 't_test', 't_test_avg', 'oz']:
+            kwargs['show_legend'] = False
+        fig = func(**kwargs)
+        plt.close(fig)
+        print(f"  ✓ Generated: {output_path}")
+        return True
+    except Exception as e:
+        print(f"  ✗ Error: {str(e)}")
+        return False
+
+
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description='LLM Stylometry CLI: Train models and generate figures',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                    # Generate all figures from pre-computed results
+  %(prog)s --figure 1a        # Generate only Figure 1A
+  %(prog)s --figure 4         # Generate only Figure 4 (MDS plot)
+  %(prog)s --train            # Train models from scratch, then generate figures
+  %(prog)s --list             # List available figures
+        """
+    )
+
+    parser.add_argument(
+        '--figure', '-f',
+        help='Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)',
+        default=None
+    )
+
+    parser.add_argument(
+        '--train', '-t',
+        action='store_true',
+        help='Train models from scratch before generating figures'
+    )
+
+    parser.add_argument(
+        '--data', '-d',
+        help='Path to model_results.pkl (default: data/model_results.pkl)',
+        default='data/model_results.pkl'
+    )
+
+    parser.add_argument(
+        '--output', '-o',
+        help='Output directory for figures (default: paper/figs/source)',
+        default='paper/figs/source'
+    )
+
+    parser.add_argument(
+        '--list', '-l',
+        action='store_true',
+        help='List available figures'
+    )
+
+    args = parser.parse_args()
+
+    if args.list:
+        print("\nAvailable figures:")
+        print("  1a - Figure 1A: Training curves (all_losses.pdf)")
+        print("  1b - Figure 1B: Strip plot (stripplot.pdf)")
+        print("  2a - Figure 2A: Individual t-tests (t_test.pdf)")
+        print("  2b - Figure 2B: Average t-test (t_test_avg.pdf)")
+        print("  3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)")
+        print("  4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)")
+        print("  5  - Figure 5: Oz authorship analysis (oz_losses.pdf)")
+        return 0
+
+    print("\n" + "╔" + "═" * 58 + "╗")
+    print("║" + " " * 15 + "LLM Stylometry CLI" + " " * 25 + "║")
+    print("╚" + "═" * 58 + "╝")
+
+    # Train models if requested
+    if args.train:
+        if not train_models():
+            return 1
+        # Update data path to use newly generated results
+        args.data = 'data/model_results.pkl'
+
+    # Check for data file
+    data_file = Path(args.data)
+    if not data_file.exists():
+        print(f"\nERROR: Required data file not found: {args.data}")
+        print("Please ensure you have the consolidated model results.")
+        print("You can train models from scratch using: --train")
+        return 1
+
+    print(f"\n✓ Found model results data: {args.data}")
+
+    # Ensure output directory exists
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate specific figure if requested
+    if args.figure:
+        success = generate_figure(args.figure, args.data, args.output)
+        return 0 if success else 1
+
     print("\n" + "=" * 60)
     print("Generating Figures")
     print("=" * 60)
 
-    notebooks_dir = Path('notebooks')
-    if not notebooks_dir.exists():
-        print("ERROR: notebooks/ directory not found")
-        return False
+    # Import visualization functions
+    from llm_stylometry.visualization import (
+        generate_all_losses_figure,
+        generate_stripplot_figure,
+        generate_t_test_figure,
+        generate_t_test_avg_figure,
+        generate_loss_heatmap_figure,
+        generate_3d_mds_figure,
+        generate_oz_losses_figure
+    )
 
-    notebooks = [
-        ('figure_1_losses_and_distributions.ipynb', 'Figure 1: Loss curves and distributions'),
-        ('figure_2_statistical_tests.ipynb', 'Figure 2: Statistical t-tests'),
-        ('figure_3_confusion_matrix.ipynb', 'Figure 3: Confusion matrix heatmap'),
-        ('figure_4_mds_visualization.ipynb', 'Figure 4: 3D MDS projection'),
-        ('figure_5_oz_attribution.ipynb', 'Figure 5: Oz authorship analysis'),
+    figures = [
+        ('Figure 1A: Training curves',
+         lambda: generate_all_losses_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/all_losses.pdf',
+             show_legend=False
+         )),
+        ('Figure 1B: Strip plot',
+         lambda: generate_stripplot_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/stripplot.pdf',
+             show_legend=False
+         )),
+        ('Figure 2A: Individual t-tests',
+         lambda: generate_t_test_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/t_test.pdf',
+             show_legend=False
+         )),
+        ('Figure 2B: Average t-test',
+         lambda: generate_t_test_avg_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/t_test_avg.pdf',
+             show_legend=False
+         )),
+        ('Figure 3: Confusion matrix',
+         lambda: generate_loss_heatmap_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/average_loss_heatmap.pdf'
+         )),
+        ('Figure 4: 3D MDS plot',
+         lambda: generate_3d_mds_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/3d_MDS_plot.pdf'
+         )),
+        ('Figure 5: Oz losses',
+         lambda: generate_oz_losses_figure(
+             data_path=args.data,
+             output_path=f'{args.output}/oz_losses.pdf',
+             show_legend=False
+         )),
     ]
 
-    os.chdir(notebooks_dir)
+    success_count = 0
+    failed_figures = []
 
-    all_success = True
-    for notebook_file, description in notebooks:
-        print(f"\n{description}...")
-        print(f"  Running {notebook_file}")
+    for description, generate_func in figures:
+        print(f"\nGenerating {description}...")
+        try:
+            fig = generate_func()
+            plt.close(fig)
+            print(f"  ✓ Generated successfully")
+            success_count += 1
+        except Exception as e:
+            print(f"  ✗ Error: {str(e)[:100]}")
+            failed_figures.append(description)
 
-        # Use nbconvert to execute the notebook
-        cmd = [
-            'jupyter', 'nbconvert',
-            '--to', 'notebook',
-            '--execute',
-            '--inplace',
-            '--ExecutePreprocessor.timeout=300',
-            '--ExecutePreprocessor.kernel_name=python3',
-            notebook_file
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True)
-
-        if result.returncode == 0:
-            print(f"  ✓ Successfully generated")
-        else:
-            print(f"  ✗ Error generating figure")
-            print(f"    Error: {result.stderr[:200]}")
-            all_success = False
-
-    os.chdir('..')
-    return all_success
-
-
-def verify_outputs():
-    """Verify that all expected figure files were created."""
+    # Verify outputs
     print("\n" + "=" * 60)
     print("Verifying Output Files")
     print("=" * 60)
 
     expected_files = [
-        ('paper/figs/source/all_losses.pdf', 'Figure 1A: Training curves'),
-        ('paper/figs/source/stripplot.pdf', 'Figure 1B: Strip plot'),
-        ('paper/figs/source/t_test.pdf', 'Figure 2A: Individual t-tests'),
-        ('paper/figs/source/t_test_avg.pdf', 'Figure 2B: Average t-test'),
-        ('paper/figs/source/average_loss_heatmap.pdf', 'Figure 3: Loss heatmap'),
-        ('paper/figs/source/3d_MDS_plot.pdf', 'Figure 4: MDS plot'),
-        ('paper/figs/source/oz_losses.pdf', 'Figure 5: Oz losses'),
+        (f'{args.output}/all_losses.pdf', 'Figure 1A'),
+        (f'{args.output}/stripplot.pdf', 'Figure 1B'),
+        (f'{args.output}/t_test.pdf', 'Figure 2A'),
+        (f'{args.output}/t_test_avg.pdf', 'Figure 2B'),
+        (f'{args.output}/average_loss_heatmap.pdf', 'Figure 3'),
+        (f'{args.output}/3d_MDS_plot.pdf', 'Figure 4'),
+        (f'{args.output}/oz_losses.pdf', 'Figure 5'),
     ]
 
-    all_found = True
-    for file_path, description in expected_files:
+    for file_path, name in expected_files:
         path = Path(file_path)
         if path.exists():
             size_kb = path.stat().st_size / 1024
-            print(f"  ✓ {description}: {size_kb:.1f} KB")
+            print(f"  ✓ {name}: {size_kb:.1f} KB")
         else:
-            print(f"  ✗ {description}: NOT FOUND")
-            all_found = False
+            print(f"  ✗ {name}: NOT FOUND")
 
-    return all_found
-
-
-def main():
-    """Main execution function."""
-    print("\n" + "╔" + "═" * 58 + "╗")
-    print("║" + " " * 15 + "LLM Stylometry Figure Generator" + " " * 12 + "║")
-    print("╚" + "═" * 58 + "╝")
-
-    # Check environment and setup if needed
-    try:
-        setup_environment()
-    except Exception as e:
-        print(f"\nError setting up environment: {e}")
-        print("Please set up the environment manually:")
-        print("  conda create -n llm-stylometry python=3.10")
-        print("  conda activate llm-stylometry")
-        print("  pip install -r requirements.txt")
-        sys.exit(1)
-
-    # Check for required data
-    if not check_data():
-        sys.exit(1)
-
-    # Run notebooks to generate figures
-    success = run_notebooks()
-
-    # Verify outputs
-    if success:
-        all_found = verify_outputs()
-
-        if all_found:
-            print("\n" + "=" * 60)
-            print("✓ All figures generated successfully!")
-            print("=" * 60)
-            print("\nFigures are saved in: paper/figs/source/")
-            print("\nYou can now:")
-            print("  1. View the figures in the notebooks/ directory")
-            print("  2. Use the PDFs in paper/figs/source/ for the paper")
-        else:
-            print("\n⚠ Some figures may not have been generated correctly.")
-            print("Please check the notebooks for errors.")
+    # Summary
+    print("\n" + "=" * 60)
+    if success_count == len(figures):
+        print("✓ All figures generated successfully!")
+        print("=" * 60)
+        print(f"\nFigures are saved in: {args.output}/")
     else:
-        print("\n✗ Error generating some figures.")
-        print("Please check the error messages above.")
-        sys.exit(1)
+        print(f"⚠ Generated {success_count}/{len(figures)} figures")
+        if failed_figures:
+            print("\nFailed figures:")
+            for fig in failed_figures:
+                print(f"  - {fig}")
+        print("\nPlease check the error messages above.")
+
+    return 0 if success_count == len(figures) else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
