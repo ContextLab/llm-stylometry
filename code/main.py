@@ -36,8 +36,20 @@ else:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-if not torch.cuda.is_available():
-    raise Exception("No GPU available")
+# Detect available devices
+def get_device_info():
+    """Detect and return device configuration."""
+    if torch.cuda.is_available():
+        device_count = torch.cuda.device_count()
+        return "cuda", device_count
+    elif torch.backends.mps.is_available():
+        # Apple Metal Performance Shaders (MPS) backend
+        return "mps", 1
+    else:
+        return "cpu", 1
+
+device_type, device_count = get_device_info()
+logger.info(f"Device type: {device_type}, Count: {device_count}")
 
 experiments = []
 for seed in range(10):
@@ -51,16 +63,26 @@ for seed in range(10):
         )
 
 
-def run_experiment(exp: Experiment, gpu_queue):
+def run_experiment(exp: Experiment, device_queue, device_type="cuda"):
     try:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
 
-        # Get an available GPU id
-        gpu_id = gpu_queue.get()
+        # Get an available device id
+        device_id = device_queue.get() if device_queue else 0
         logger.info(f"Starting experiment: {exp.name}")
-        torch.cuda.set_device(gpu_id)
-        device = torch.device("cuda", index=gpu_id)
+
+        # Set up device based on type
+        if device_type == "cuda":
+            torch.cuda.set_device(device_id)
+            device = torch.device("cuda", index=device_id)
+            device_label = f"GPU {device_id}"
+        elif device_type == "mps":
+            device = torch.device("mps")
+            device_label = "MPS"
+        else:
+            device = torch.device("cpu")
+            device_label = "CPU"
 
         # Initialize tokenizer directly using get_tokenizer
         tokenizer = get_tokenizer(exp.tokenizer_name)
@@ -82,7 +104,7 @@ def run_experiment(exp: Experiment, gpu_queue):
             excluded_train_path=exp.excluded_train_path,
         )
         logger.info(
-            f"[GPU {gpu_id}] Number of training batches: {len(train_dataloader)}"
+            f"[{device_label}] Number of training batches: {len(train_dataloader)}"
         )
 
         # Set up eval dataloaders
@@ -130,7 +152,7 @@ def run_experiment(exp: Experiment, gpu_queue):
             start_epoch = 0
 
         logger.info(
-            f"[GPU {gpu_id}] Total number of non-embedding parameters: {count_non_embedding_params(model)}"
+            f"[{device_label}] Total number of non-embedding parameters: {count_non_embedding_params(model)}"
         )
 
         # Initial evaluation (epochs_complete = 0)
@@ -151,15 +173,16 @@ def run_experiment(exp: Experiment, gpu_queue):
                 train_author=exp.train_author,
             )
 
-        # Set up mixed precision training for memory efficiency
-        scaler = torch.amp.GradScaler('cuda')
+        # Set up mixed precision training if supported
+        use_amp = device_type == "cuda"
+        scaler = torch.amp.GradScaler('cuda') if use_amp else None
 
         # Enable gradient checkpointing to save memory (if supported)
         try:
             model.gradient_checkpointing_enable()
-            logger.info(f"[GPU {gpu_id}] Gradient checkpointing enabled for memory efficiency")
+            logger.info(f"[{device_label}] Gradient checkpointing enabled for memory efficiency")
         except AttributeError:
-            logger.info(f"[GPU {gpu_id}] Model does not support gradient checkpointing")
+            logger.info(f"[{device_label}] Model does not support gradient checkpointing")
 
         # Training loop
         for epoch in tqdm(range(start_epoch, max_epochs)):
@@ -171,16 +194,24 @@ def run_experiment(exp: Experiment, gpu_queue):
 
                 input_ids = batch["input_ids"].to(device)
 
-                # Forward pass with mixed precision
-                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                # Forward pass with or without mixed precision
+                if use_amp:
+                    with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                        outputs = model(input_ids=input_ids, labels=input_ids)
+                        loss = outputs.loss
+                else:
                     outputs = model(input_ids=input_ids, labels=input_ids)
                     loss = outputs.loss
 
-                # Backward pass with scaled gradients
+                # Backward pass with or without mixed precision
                 optimizer.zero_grad()
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+                if use_amp:
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    loss.backward()
+                    optimizer.step()
 
                 # Accumulate training loss
                 total_train_loss += loss.item()
@@ -230,11 +261,12 @@ def run_experiment(exp: Experiment, gpu_queue):
                     train_author=exp.train_author,
                 )
 
-                # Force memory cleanup between evaluations
-                torch.cuda.empty_cache()
+                # Force memory cleanup between evaluations (CUDA only)
+                if device_type == "cuda":
+                    torch.cuda.empty_cache()
 
             # Build log message for console output
-            log_message = f"[GPU {gpu_id}] Epoch {epochs_completed}/{max_epochs}: training loss = {train_loss:.4f}"
+            log_message = f"[{device_label}] Epoch {epochs_completed}/{max_epochs}: training loss = {train_loss:.4f}"
             for name, loss in eval_losses.items():
                 log_message += f", {name}: {loss:.4f}"
             logger.info(log_message)
@@ -249,13 +281,14 @@ def run_experiment(exp: Experiment, gpu_queue):
             # Early stopping after completing epoch (retain logs and checkpoints)
             if train_loss <= stop_train_loss and min_epochs <= epochs_completed:
                 logger.info(
-                    f"[GPU {gpu_id}] Training loss {train_loss:.4f} below threshold {stop_train_loss}. Stopping training."
+                    f"[{device_label}] Training loss {train_loss:.4f} below threshold {stop_train_loss}. Stopping training."
                 )
                 break
-        logger.info(f"[GPU {gpu_id}] Training complete for {modelname}")
+        logger.info(f"[{device_label}] Training complete for {modelname}")
 
         # Return the GPU id to the queue
-        gpu_queue.put(gpu_id)
+        if device_queue:
+            device_queue.put(device_id)
     except Exception:
         logger.exception(f"Error in experiment {exp.name}")
         raise
@@ -265,16 +298,29 @@ if __name__ == "__main__":
     # Check if we should run sequentially (for subprocess compatibility)
     USE_MULTIPROCESSING = os.environ.get('NO_MULTIPROCESSING', '0') != '1'
 
-    device_count = torch.cuda.device_count()
-    gpu_count = min(device_count, 4)
-    print(f"Using {gpu_count} GPUs out of {device_count} available")
+    # Use already detected device configuration
+    if device_type == "cuda":
+        # Check for MAX_GPUS environment variable to optionally limit GPU usage
+        max_gpus = int(os.environ.get('MAX_GPUS', '0')) or device_count
+        gpu_count = min(device_count, max_gpus)
+        if gpu_count < device_count:
+            print(f"Using {gpu_count} GPUs (limited by MAX_GPUS) out of {device_count} available")
+        else:
+            print(f"Using all {gpu_count} available GPUs")
+    elif device_type == "mps":
+        gpu_count = 1
+        print("Using Apple Metal Performance Shaders (MPS)")
+    else:
+        gpu_count = 1
+        print("Using CPU for training (this will be slow)")
 
-    if USE_MULTIPROCESSING:
+    if USE_MULTIPROCESSING and device_type == "cuda" and gpu_count > 1:
+        # Only use multiprocessing for multiple CUDA GPUs
         mp.set_start_method("spawn", force=True)
         manager = mp.Manager()
-        gpu_queue = manager.Queue()
+        device_queue = manager.Queue()
         for gpu in range(gpu_count):
-            gpu_queue.put(gpu)
+            device_queue.put(gpu)
 
         pool = mp.Pool(processes=gpu_count)
         logger = logging.getLogger(__name__)
@@ -286,22 +332,27 @@ if __name__ == "__main__":
 
         for exp in experiments:
             pool.apply_async(
-                run_experiment, (exp, gpu_queue), error_callback=error_callback
+                run_experiment, (exp, device_queue, device_type), error_callback=error_callback
             )
         pool.close()
         pool.join()
     else:
-        # Sequential mode for subprocess compatibility
+        # Sequential mode for subprocess compatibility or single device
         print("Running in sequential mode (multiprocessing disabled)")
-        import queue
-        gpu_queue = queue.Queue()
-        for gpu in range(gpu_count):
-            gpu_queue.put(gpu)
+        if device_type == "cuda" and gpu_count > 1:
+            # Multiple GPUs but running sequentially
+            import queue
+            device_queue = queue.Queue()
+            for gpu in range(gpu_count):
+                device_queue.put(gpu)
+        else:
+            # Single device or non-CUDA
+            device_queue = None
 
         for i, exp in enumerate(experiments):
             print(f"Training model {i+1}/{len(experiments)}: {exp.name}")
-            run_experiment(exp, gpu_queue)
-            # Put GPU back in queue for next experiment
-            if not gpu_queue.empty():
-                gpu_id = gpu_queue.get()
-                gpu_queue.put(gpu_id)
+            run_experiment(exp, device_queue, device_type)
+            # For multi-GPU sequential mode, rotate through GPUs
+            if device_queue and not device_queue.empty():
+                device_id = device_queue.get()
+                device_queue.put(device_id)

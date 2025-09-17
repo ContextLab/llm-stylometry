@@ -35,6 +35,7 @@ OPTIONS:
     -h, --help              Show this help message
     -f, --figure FIGURE     Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)
     -t, --train             Train models from scratch before generating figures
+    -g, --max-gpus NUM      Maximum number of GPUs to use for training (default: all)
     -d, --data PATH         Path to model_results.pkl (default: data/model_results.pkl)
     -o, --output DIR        Output directory for figures (default: paper/figs/source)
     -l, --list              List available figures
@@ -48,7 +49,8 @@ EXAMPLES:
     $0                      # Setup environment and generate all figures
     $0 -f 1a                # Generate only Figure 1A
     $0 -f 4                 # Generate only Figure 4 (MDS plot)
-    $0 -t                   # Train models from scratch, then generate figures
+    $0 -t                   # Train models from scratch using all GPUs
+    $0 -t -g 2              # Train models using only 2 GPUs
     $0 -l                   # List available figures
     $0 --setup-only         # Only setup the environment
     $0 --clean              # Remove environment and reinstall from scratch
@@ -278,6 +280,7 @@ setup_environment() {
 # Parse command line arguments
 FIGURE=""
 TRAIN=false
+MAX_GPUS=""
 DATA_PATH="data/model_results.pkl"
 OUTPUT_DIR="paper/figs/source"
 LIST_FIGURES=false
@@ -300,6 +303,10 @@ while [[ $# -gt 0 ]]; do
         -t|--train)
             TRAIN=true
             shift
+            ;;
+        -g|--max-gpus)
+            MAX_GPUS="$2"
+            shift 2
             ;;
         -d|--data)
             DATA_PATH="$2"
@@ -381,6 +388,22 @@ if [ "$SETUP_ONLY" = true ]; then
     exit 0
 fi
 
+# Detect available compute devices
+print_info "Detecting available compute devices..."
+DEVICE_INFO=$(python -c "
+import torch
+if torch.cuda.is_available():
+    n = torch.cuda.device_count()
+    names = [torch.cuda.get_device_name(i) for i in range(n)]
+    print(f'CUDA GPUs: {n} device(s) - {names[0] if n > 0 else \"Unknown\"}')
+elif torch.backends.mps.is_available():
+    print('Apple Metal Performance Shaders (MPS)')
+else:
+    import multiprocessing
+    print(f'CPU only ({multiprocessing.cpu_count()} cores)')
+" 2>/dev/null || echo "Could not detect device")
+print_info "Device: $DEVICE_INFO"
+
 # Build the Python command
 PYTHON_CMD="python code/generate_figures.py"
 
@@ -392,6 +415,10 @@ fi
 
 if [ "$TRAIN" = true ]; then
     PYTHON_CMD="$PYTHON_CMD --train"
+fi
+
+if [ -n "$MAX_GPUS" ]; then
+    PYTHON_CMD="$PYTHON_CMD --max-gpus $MAX_GPUS"
 fi
 
 if [ "$DATA_PATH" != "data/model_results.pkl" ]; then
