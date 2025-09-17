@@ -191,11 +191,11 @@ ssh "$USERNAME@$SERVER_ADDRESS" "rm $TAR_FILE"
 
 # Also download model_results.pkl if it exists
 print_info "Checking for consolidated results file..."
-RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" "[ -f '$HOME/llm-stylometry/data/model_results.pkl' ] && echo 'yes' || echo 'no'")
+RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" '[ -f "$HOME/llm-stylometry/data/model_results.pkl" ] && echo "yes" || echo "no"')
 
 if [ "$RESULTS_EXISTS" = "yes" ]; then
     print_info "Downloading model_results.pkl..."
-    rsync -avz "$USERNAME@$SERVER_ADDRESS:$HOME/llm-stylometry/data/model_results.pkl" \
+    rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/model_results.pkl" \
         "$HOME/llm-stylometry/data/model_results.pkl"
     print_success "Downloaded model_results.pkl"
 else
