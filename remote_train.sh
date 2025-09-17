@@ -88,7 +88,7 @@ echo "=================================================="
 echo
 
 # Check if we're in kill mode
-if [ "\$KILL_MODE" = "true" ]; then
+if [ "$KILL_MODE" = "true" ]; then
     echo "Kill mode activated - terminating existing training sessions..."
 
     # Kill any existing screen sessions
@@ -116,7 +116,7 @@ if [ "\$KILL_MODE" = "true" ]; then
 fi
 
 # Handle different authentication options
-if [ "\$AUTH_OPTION" = "3" ]; then
+if [ "$AUTH_OPTION" = "3" ]; then
     echo "Skipping all repository operations as requested..."
     if [ ! -d ~/llm-stylometry ]; then
         echo "Error: Repository not found at ~/llm-stylometry"
@@ -131,9 +131,9 @@ else
     git config --global credential.helper 'cache --timeout=3600'
 
     # Set up GitHub token authentication if provided (only for option 2)
-    if [ "\$AUTH_OPTION" = "2" ] && [ -n "\$GH_TOKEN" ] && [ -n "\$GH_USER" ]; then
+    if [ "$AUTH_OPTION" = "2" ] && [ -n "$GH_TOKEN" ] && [ -n "$GH_USER" ]; then
         echo "Setting up GitHub token authentication..."
-        git config --global url."https://\${GH_USER}:\${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://${GH_USER}:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
     fi
 
     # Check if repo exists
@@ -148,7 +148,7 @@ else
     fi
 
     # Determine authentication method
-    if [ "\$AUTH_OPTION" = "1" ]; then
+    if [ "$AUTH_OPTION" = "1" ]; then
         # Try SSH first for option 1
         if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
             echo "Using SSH authentication..."
@@ -158,12 +158,12 @@ else
             echo "Please ensure your SSH key is added to GitHub and try again."
             exit 1
         fi
-    elif [ "\$AUTH_OPTION" = "2" ]; then
+    elif [ "$AUTH_OPTION" = "2" ]; then
         # Use HTTPS with token for option 2
         echo "Using HTTPS with Personal Access Token..."
         git remote set-url origin https://github.com/ContextLab/llm-stylometry.git
 
-        if [ -z "\$GH_TOKEN" ] || [ -z "\$GH_USER" ]; then
+        if [ -z "$GH_TOKEN" ] || [ -z "$GH_USER" ]; then
             echo "GitHub credentials not provided. You'll be prompted during git operations."
             echo "Note: Use your Personal Access Token as the password."
         fi
@@ -177,7 +177,7 @@ else
 else
     echo "Repository not found. Cloning..."
 
-    if [ "\$AUTH_OPTION" = "1" ]; then
+    if [ "$AUTH_OPTION" = "1" ]; then
         # Check if SSH key is available
         if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
             echo "Using SSH to clone repository..."
@@ -188,9 +188,9 @@ else
             echo "Please ensure your SSH key is added to GitHub and try again."
             exit 1
         fi
-    elif [ "\$AUTH_OPTION" = "2" ]; then
+    elif [ "$AUTH_OPTION" = "2" ]; then
         echo "Using HTTPS to clone repository..."
-        if [ -z "\$GH_TOKEN" ] || [ -z "\$GH_USER" ]; then
+        if [ -z "$GH_TOKEN" ] || [ -z "$GH_USER" ]; then
             echo "GitHub credentials not configured. You'll be prompted."
             echo "Username: Your GitHub username"
             echo "Password: Your Personal Access Token (NOT your GitHub password)"
