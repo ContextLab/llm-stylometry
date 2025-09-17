@@ -72,10 +72,22 @@ def train_models(max_gpus=None):
     # Train models
     safe_print("\nTraining models...")
     try:
-        # Set environment to disable tqdm and multiprocessing (which can hang in subprocess)
+        # Set environment variables for training
         env = os.environ.copy()
-        env['DISABLE_TQDM'] = '1'
-        env['NO_MULTIPROCESSING'] = '1'
+        env['DISABLE_TQDM'] = '1'  # Disable progress bars in subprocess
+        # Only disable multiprocessing if we have a single GPU or non-GPU device
+        # With multiple GPUs, we want parallel training
+        if torch.cuda.is_available():
+            gpu_count = torch.cuda.device_count()
+            if gpu_count <= 1:
+                env['NO_MULTIPROCESSING'] = '1'
+                safe_print("Single GPU detected - using sequential mode")
+            else:
+                safe_print(f"Multiple GPUs detected ({gpu_count}) - using parallel training")
+        else:
+            # Non-CUDA device (CPU or MPS)
+            env['NO_MULTIPROCESSING'] = '1'
+            safe_print("Non-CUDA device - using sequential mode")
         # Set PyTorch memory management for better GPU memory usage
         env['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
         # Pass through max GPUs limit if specified
