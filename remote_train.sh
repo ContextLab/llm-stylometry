@@ -248,59 +248,23 @@ cd ~/llm-stylometry
 LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
 echo "Training started at $(date)" | tee -a $LOG_FILE
 
-# Try to activate conda environment if it exists
-if command -v conda &> /dev/null; then
-    source $(conda info --base)/etc/profile.d/conda.sh
-    if conda env list | grep -q llm-stylometry; then
-        echo "Activating conda environment: llm-stylometry" | tee -a $LOG_FILE
-        conda activate llm-stylometry
-    fi
-fi
+# Run the training script using the shell script (it handles Python env internally)
+./run_llm_stylometry.sh --train 2>&1 | tee -a $LOG_FILE
 
-# Check if Python is available
-if ! command -v python &> /dev/null; then
-    echo "Error: Python not found" | tee -a $LOG_FILE
-    exit 1
-fi
-
-# Run the training script
-python code/generate_figures.py --train --no-confirm 2>&1 | tee -a $LOG_FILE
+echo "Training completed at $(date)" | tee -a $LOG_FILE
 TRAINSCRIPT
 
 chmod +x /tmp/llm_train.sh
 
-# Debug: Check if script was created correctly
-echo ""
-echo "Debug: Checking if /tmp/llm_train.sh exists and is executable:"
-ls -la /tmp/llm_train.sh
-echo ""
-echo "Debug: First 10 lines of /tmp/llm_train.sh:"
-head -10 /tmp/llm_train.sh
-echo ""
-
-# Try to start screen
-echo "Debug: Starting screen session..."
+# Start screen session
 screen -dmS llm_training /tmp/llm_train.sh
-SCREEN_EXIT_CODE=$?
-echo "Debug: screen command exit code: $SCREEN_EXIT_CODE"
 
 # Wait a moment for screen to start
 sleep 2
 
 # Check if screen session started
-echo ""
 echo "Checking screen sessions:"
 screen -list
-
-# Debug: Check if the script is running
-echo ""
-echo "Debug: Checking if training script process is running:"
-ps aux | grep llm_train.sh | grep -v grep || echo "No llm_train.sh process found"
-
-# Debug: Try running the script directly to see errors
-echo ""
-echo "Debug: Testing if script can run directly (first 5 seconds):"
-timeout 5 bash /tmp/llm_train.sh 2>&1 | head -20 || true
 
 if screen -list | grep -q "llm_training"; then
     echo ""
