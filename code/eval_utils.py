@@ -13,14 +13,26 @@ def evaluate_model(model, eval_dataloader, device):
     total_loss = 0.0
 
     with torch.no_grad():
-        for batch in eval_dataloader:
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            outputs = model(
-                input_ids=input_ids, attention_mask=attention_mask, labels=input_ids
-            )
-            loss = outputs.loss.item()
-            total_loss += loss
+        for batch_idx, batch in enumerate(eval_dataloader):
+            # Use mixed precision for evaluation too
+            with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                input_ids = batch["input_ids"].to(device)
+                # Only use attention_mask if it exists
+                if "attention_mask" in batch:
+                    attention_mask = batch["attention_mask"].to(device)
+                    outputs = model(
+                        input_ids=input_ids, attention_mask=attention_mask, labels=input_ids
+                    )
+                else:
+                    outputs = model(input_ids=input_ids, labels=input_ids)
+
+                loss = outputs.loss.item()
+                total_loss += loss
+
+            # Clean up memory after each batch
+            del outputs
+            if batch_idx % 5 == 0:
+                torch.cuda.empty_cache()
 
     return total_loss / len(eval_dataloader)
 

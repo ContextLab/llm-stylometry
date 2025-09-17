@@ -35,6 +35,20 @@ def train_models():
         safe_print("Training cancelled.")
         return False
 
+    # Remove existing models directory to train from scratch
+    import shutil
+    models_dir = Path('models')
+    if models_dir.exists():
+        safe_print("\nRemoving existing models directory...")
+        shutil.rmtree(models_dir)
+        safe_print("Existing models removed.")
+
+    # Also remove existing model results file
+    model_results_path = Path('data/model_results.pkl')
+    if model_results_path.exists():
+        safe_print("Removing existing model_results.pkl...")
+        model_results_path.unlink()
+
     # Prepare data if needed
     if not Path('data/cleaned').exists():
         safe_print("\nCleaning data first...")
@@ -45,16 +59,31 @@ def train_models():
 
     # Train models
     safe_print("\nTraining models...")
-    result = subprocess.run([sys.executable, 'code/main.py'], capture_output=True)
-    if result.returncode != 0:
-        safe_print(f"Error training models: {result.stderr.decode()}")
+    try:
+        # Set environment to disable tqdm and multiprocessing (which can hang in subprocess)
+        env = os.environ.copy()
+        env['DISABLE_TQDM'] = '1'
+        env['NO_MULTIPROCESSING'] = '1'
+        # Set PyTorch memory management for better GPU memory usage
+        env['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+        # Run without capturing output so we can see progress
+        result = subprocess.run([sys.executable, 'code/main.py'], env=env, check=False)
+        if result.returncode != 0:
+            safe_print(f"Error: Training script exited with code {result.returncode}")
+            return False
+    except Exception as e:
+        safe_print(f"Error running training script: {e}")
         return False
 
     # Consolidate results
     safe_print("\nConsolidating model results...")
-    result = subprocess.run([sys.executable, 'code/consolidate_model_results.py'], capture_output=True)
-    if result.returncode != 0:
-        safe_print(f"Error consolidating results: {result.stderr.decode()}")
+    try:
+        result = subprocess.run([sys.executable, 'code/consolidate_model_results.py'], check=False)
+        if result.returncode != 0:
+            safe_print(f"Error: Consolidation script exited with code {result.returncode}")
+            return False
+    except Exception as e:
+        safe_print(f"Error running consolidation script: {e}")
         return False
 
     checkmark = "[OK]" if is_windows() else "✓"

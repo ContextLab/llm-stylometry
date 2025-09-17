@@ -1,8 +1,12 @@
 import torch
 import logging
 import sys
+import warnings
 from transformers import GPT2Config, GPT2LMHeadModel
 from data_utils import get_train_data_loader, get_eval_data_loader
+
+# Suppress the loss_type warning from transformers
+warnings.filterwarnings("ignore", message=".*loss_type.*unrecognized.*")
 from model_utils import (
     save_checkpoint,
     load_checkpoint,
@@ -17,8 +21,17 @@ import numpy as np
 import torch.backends.cudnn as cudnn
 from experiment import Experiment
 import torch.multiprocessing as mp
-from tqdm import tqdm
 from constants import MODELS_DIR, AUTHORS, CLEANED_DATA_DIR
+import os
+
+# Disable tqdm if running in subprocess or if explicitly disabled
+USE_TQDM = os.environ.get('DISABLE_TQDM', '0') != '1' and sys.stdout.isatty()
+if USE_TQDM:
+    from tqdm import tqdm
+else:
+    # Simple replacement that just returns the iterable
+    def tqdm(iterable, *args, **kwargs):
+        return iterable
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -138,6 +151,16 @@ def run_experiment(exp: Experiment, gpu_queue):
                 train_author=exp.train_author,
             )
 
+        # Set up mixed precision training for memory efficiency
+        scaler = torch.amp.GradScaler('cuda')
+
+        # Enable gradient checkpointing to save memory (if supported)
+        try:
+            model.gradient_checkpointing_enable()
+            logger.info(f"[GPU {gpu_id}] Gradient checkpointing enabled for memory efficiency")
+        except AttributeError:
+            logger.info(f"[GPU {gpu_id}] Model does not support gradient checkpointing")
+
         # Training loop
         for epoch in tqdm(range(start_epoch, max_epochs)):
             total_train_loss = 0.0
@@ -148,17 +171,26 @@ def run_experiment(exp: Experiment, gpu_queue):
 
                 input_ids = batch["input_ids"].to(device)
 
-                # Forward pass - use input_ids as labels (HF handles shifting)
-                outputs = model(input_ids=input_ids, labels=input_ids)
-                loss = outputs.loss
+                # Forward pass with mixed precision
+                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                    outputs = model(input_ids=input_ids, labels=input_ids)
+                    loss = outputs.loss
 
-                # Backward pass and optimization step
-                loss.backward()
-                optimizer.step()
+                # Backward pass with scaled gradients
                 optimizer.zero_grad()
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
 
                 # Accumulate training loss
                 total_train_loss += loss.item()
+
+                # Delete intermediate tensors to free memory
+                del outputs, loss
+
+                # Clear CUDA cache periodically
+                if (batch_idx + 1) % 5 == 0:
+                    torch.cuda.empty_cache()
 
             epochs_completed = epoch + 1
 
@@ -230,27 +262,46 @@ def run_experiment(exp: Experiment, gpu_queue):
 
 
 if __name__ == "__main__":
-    mp.set_start_method("spawn", force=True)
+    # Check if we should run sequentially (for subprocess compatibility)
+    USE_MULTIPROCESSING = os.environ.get('NO_MULTIPROCESSING', '0') != '1'
+
     device_count = torch.cuda.device_count()
     gpu_count = min(device_count, 4)
     print(f"Using {gpu_count} GPUs out of {device_count} available")
 
-    manager = mp.Manager()
-    gpu_queue = manager.Queue()
-    for gpu in range(gpu_count):
-        gpu_queue.put(gpu)
+    if USE_MULTIPROCESSING:
+        mp.set_start_method("spawn", force=True)
+        manager = mp.Manager()
+        gpu_queue = manager.Queue()
+        for gpu in range(gpu_count):
+            gpu_queue.put(gpu)
 
-    pool = mp.Pool(processes=gpu_count)
-    logger = logging.getLogger(__name__)
+        pool = mp.Pool(processes=gpu_count)
+        logger = logging.getLogger(__name__)
 
-    def error_callback(e):
-        logger.exception("Unhandled error in worker, shutting down all processes")
-        pool.terminate()
-        sys.exit(1)
+        def error_callback(e):
+            logger.exception("Unhandled error in worker, shutting down all processes")
+            pool.terminate()
+            sys.exit(1)
 
-    for exp in experiments:
-        pool.apply_async(
-            run_experiment, (exp, gpu_queue), error_callback=error_callback
-        )
-    pool.close()
-    pool.join()
+        for exp in experiments:
+            pool.apply_async(
+                run_experiment, (exp, gpu_queue), error_callback=error_callback
+            )
+        pool.close()
+        pool.join()
+    else:
+        # Sequential mode for subprocess compatibility
+        print("Running in sequential mode (multiprocessing disabled)")
+        import queue
+        gpu_queue = queue.Queue()
+        for gpu in range(gpu_count):
+            gpu_queue.put(gpu)
+
+        for i, exp in enumerate(experiments):
+            print(f"Training model {i+1}/{len(experiments)}: {exp.name}")
+            run_experiment(exp, gpu_queue)
+            # Put GPU back in queue for next experiment
+            if not gpu_queue.empty():
+                gpu_id = gpu_queue.get()
+                gpu_queue.put(gpu_id)

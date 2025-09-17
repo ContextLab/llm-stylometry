@@ -1,6 +1,8 @@
+LICENSE
 README.md
 pyproject.toml
 llm_stylometry/__init__.py
+llm_stylometry/cli_utils.py
 llm_stylometry.egg-info/PKG-INFO
 llm_stylometry.egg-info/SOURCES.txt
 llm_stylometry.egg-info/dependency_links.txt
@@ -22,3 +24,6 @@ llm_stylometry/visualization/mds.py
 llm_stylometry/visualization/oz_losses.py
 llm_stylometry/visualization/stripplot.py
 llm_stylometry/visualization/t_tests.py
+tests/test_cli.py
+tests/test_model_training.py
+tests/test_visualization.py
