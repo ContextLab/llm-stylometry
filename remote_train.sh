@@ -176,11 +176,11 @@ sleep 5
 # Kill any existing screen session with the same name
 screen -X -S llm_training quit 2>/dev/null || true
 
-# Start training in screen
+# Start training in screen (use --no-confirm flag for non-interactive mode)
 screen -dmS llm_training bash -c "
     cd $HOME/llm-stylometry
     echo \"Training started at \$(date)\" | tee -a $LOG_FILE
-    ./run_llm_stylometry.sh --train 2>&1 | tee -a $LOG_FILE
+    python code/generate_figures.py --train --no-confirm 2>&1 | tee -a $LOG_FILE
     echo \"Training completed at \$(date)\" | tee -a $LOG_FILE
 "
 
