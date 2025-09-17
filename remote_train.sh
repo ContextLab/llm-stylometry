@@ -34,21 +34,7 @@ else
     KILL_MODE=false
 fi
 
-# Get server details
-read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
-if [ -z "$SERVER_ADDRESS" ]; then
-    print_error "Server address cannot be empty"
-    exit 1
-fi
-
-read -p "Enter username for $SERVER_ADDRESS: " USERNAME
-if [ -z "$USERNAME" ]; then
-    print_error "Username cannot be empty"
-    exit 1
-fi
-
-# Ask about GitHub authentication method
-echo
+# Ask about GitHub authentication method first
 print_info "GitHub authentication options:"
 echo "1. SSH key (recommended if already set up on server)"
 echo "2. Personal Access Token (will prompt when needed)"
@@ -65,6 +51,20 @@ if [ "$AUTH_OPTION" = "2" ]; then
     read -s -p "Enter your GitHub Personal Access Token: " GH_TOKEN
     echo
     export GH_USER GH_TOKEN
+fi
+
+# Now get server details
+echo
+read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
+if [ -z "$SERVER_ADDRESS" ]; then
+    print_error "Server address cannot be empty"
+    exit 1
+fi
+
+read -p "Enter username for $SERVER_ADDRESS: " USERNAME
+if [ -z "$USERNAME" ]; then
+    print_error "Username cannot be empty"
+    exit 1
 fi
 
 print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
