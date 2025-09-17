@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from llm_stylometry.cli_utils import safe_print, format_header, is_windows
 
 
-def train_models():
+def train_models(max_gpus=None):
     """Train all models from scratch."""
     safe_print("\n" + "=" * 60)
     safe_print("Training Models from Scratch")
@@ -78,6 +78,10 @@ def train_models():
         env['NO_MULTIPROCESSING'] = '1'
         # Set PyTorch memory management for better GPU memory usage
         env['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+        # Pass through max GPUs limit if specified
+        if max_gpus:
+            env['MAX_GPUS'] = str(max_gpus)
+            safe_print(f"Limiting to {max_gpus} GPU(s)")
         # Run without capturing output so we can see progress
         result = subprocess.run([sys.executable, 'code/main.py'], env=env, check=False)
         if result.returncode != 0:
@@ -194,6 +198,13 @@ Examples:
         help='List available figures'
     )
 
+    parser.add_argument(
+        '--max-gpus', '-g',
+        type=int,
+        help='Maximum number of GPUs to use for training (default: all available)',
+        default=None
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -211,7 +222,7 @@ Examples:
 
     # Train models if requested
     if args.train:
-        if not train_models():
+        if not train_models(max_gpus=args.max_gpus):
             return 1
         # Update data path to use newly generated results
         args.data = 'data/model_results.pkl'
