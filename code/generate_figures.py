@@ -27,8 +27,20 @@ def train_models():
     safe_print("Training Models from Scratch")
     safe_print("=" * 60)
     warning = "[WARNING]" if is_windows() else "⚠️"
+    # Check device availability
+    import torch
+    device_info = ""
+    if torch.cuda.is_available():
+        gpu_count = torch.cuda.device_count()
+        device_info = f"CUDA GPUs available: {gpu_count}"
+    elif torch.backends.mps.is_available():
+        device_info = "Apple Metal Performance Shaders (MPS) available"
+    else:
+        device_info = "CPU only (training will be slow)"
+
     safe_print(f"\n{warning}  Warning: This will train 80 models (8 authors × 10 seeds)")
-    safe_print("   This requires a CUDA GPU and will take several hours.")
+    safe_print(f"   Device: {device_info}")
+    safe_print("   Training time depends on hardware (hours on GPU, days on CPU)")
 
     response = input("\nProceed with training? [y/N]: ")
     if response.lower() != 'y':
