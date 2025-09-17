@@ -268,14 +268,39 @@ python code/generate_figures.py --train --no-confirm 2>&1 | tee -a $LOG_FILE
 TRAINSCRIPT
 
 chmod +x /tmp/llm_train.sh
+
+# Debug: Check if script was created correctly
+echo ""
+echo "Debug: Checking if /tmp/llm_train.sh exists and is executable:"
+ls -la /tmp/llm_train.sh
+echo ""
+echo "Debug: First 10 lines of /tmp/llm_train.sh:"
+head -10 /tmp/llm_train.sh
+echo ""
+
+# Try to start screen
+echo "Debug: Starting screen session..."
 screen -dmS llm_training /tmp/llm_train.sh
+SCREEN_EXIT_CODE=$?
+echo "Debug: screen command exit code: $SCREEN_EXIT_CODE"
 
 # Wait a moment for screen to start
 sleep 2
 
 # Check if screen session started
+echo ""
 echo "Checking screen sessions:"
 screen -list
+
+# Debug: Check if the script is running
+echo ""
+echo "Debug: Checking if training script process is running:"
+ps aux | grep llm_train.sh | grep -v grep || echo "No llm_train.sh process found"
+
+# Debug: Try running the script directly to see errors
+echo ""
+echo "Debug: Testing if script can run directly (first 5 seconds):"
+timeout 5 bash /tmp/llm_train.sh 2>&1 | head -20 || true
 
 if screen -list | grep -q "llm_training"; then
     echo ""
