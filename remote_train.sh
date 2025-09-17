@@ -35,8 +35,12 @@ if [ -z "$USERNAME" ]; then
     exit 1
 fi
 
-# Create the remote training script
-REMOTE_SCRIPT='
+print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
+print_info "You may be prompted for your password and/or GitHub credentials."
+echo
+
+# Execute the remote script via SSH
+ssh -t "$USERNAME@$SERVER_ADDRESS" 'bash -s' << 'ENDSSH'
 #!/bin/bash
 set -e
 
@@ -106,9 +110,9 @@ screen -X -S llm_training quit 2>/dev/null || true
 # Start training in screen
 screen -dmS llm_training bash -c "
     cd $HOME/llm-stylometry
-    echo 'Training started at $(date)' | tee -a $LOG_FILE
+    echo \"Training started at \$(date)\" | tee -a $LOG_FILE
     ./run_llm_stylometry.sh --train 2>&1 | tee -a $LOG_FILE
-    echo 'Training completed at $(date)' | tee -a $LOG_FILE
+    echo \"Training completed at \$(date)\" | tee -a $LOG_FILE
 "
 
 # Wait a moment for screen to start
@@ -138,14 +142,7 @@ else
     echo "Error: Failed to start screen session"
     exit 1
 fi
-'
-
-# Execute the remote script via SSH
-print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
-print_info "You may be prompted for your password and/or GitHub credentials."
-echo
-
-ssh -t "$USERNAME@$SERVER_ADDRESS" "$REMOTE_SCRIPT"
+ENDSSH
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
