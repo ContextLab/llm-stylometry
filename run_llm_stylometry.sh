@@ -381,6 +381,22 @@ if [ "$SETUP_ONLY" = true ]; then
     exit 0
 fi
 
+# Detect available compute devices
+print_info "Detecting available compute devices..."
+DEVICE_INFO=$(python -c "
+import torch
+if torch.cuda.is_available():
+    n = torch.cuda.device_count()
+    names = [torch.cuda.get_device_name(i) for i in range(n)]
+    print(f'CUDA GPUs: {n} device(s) - {names[0] if n > 0 else \"Unknown\"}')
+elif torch.backends.mps.is_available():
+    print('Apple Metal Performance Shaders (MPS)')
+else:
+    import multiprocessing
+    print(f'CPU only ({multiprocessing.cpu_count()} cores)')
+" 2>/dev/null || echo "Could not detect device")
+print_info "Device: $DEVICE_INFO"
+
 # Build the Python command
 PYTHON_CMD="python code/generate_figures.py"
 
