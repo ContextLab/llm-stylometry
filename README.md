@@ -42,6 +42,8 @@ llm-stylometry/
 │   ├── test_*.py       # Test modules
 │   └── check_outputs.py # Output validation script
 ├── run_llm_stylometry.sh # Shell wrapper for easy setup
+├── remote_train.sh     # Remote GPU server training script
+├── sync_models.sh      # Download models from remote server
 ├── LICENSE             # MIT License
 ├── README.md           # This file
 ├── requirements-dev.txt # Development dependencies
@@ -167,9 +169,14 @@ fig = generate_all_losses_figure(
 
 **Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
 
+### Local Training
+
 ```bash
 # Using the CLI (recommended - handles all steps automatically)
 ./run_llm_stylometry.sh --train
+
+# Limit GPU usage if needed
+./run_llm_stylometry.sh --train --max-gpus 4
 ```
 
 This command will:
@@ -178,6 +185,57 @@ This command will:
 3. Consolidate results into `data/model_results.pkl`
 
 The training pipeline automatically handles data preparation, model training across available GPUs, and result consolidation. Individual model checkpoints and loss logs are saved in the `models/` directory.
+
+### Remote Training on GPU Server
+
+For training on a remote GPU server, use the provided `remote_train.sh` script:
+
+```bash
+# Start remote training
+./remote_train.sh
+
+# You'll be prompted for:
+# - Server address (hostname or IP)
+# - Username
+# - Password (for SSH)
+```
+
+This script will:
+1. Connect to your GPU server via SSH
+2. Clone or update the repository in `~/llm-stylometry`
+3. Start training in a `screen` session that persists after disconnection
+4. Allow you to safely disconnect while training continues
+
+To monitor training progress:
+```bash
+ssh username@server
+screen -r llm_training  # Reattach to training session
+# Press Ctrl+A, then D to detach again
+```
+
+### Downloading Trained Models
+
+After training completes on a remote server, use `sync_models.sh` to download the models:
+
+```bash
+# Download trained models from server
+./sync_models.sh
+
+# You'll be prompted for:
+# - Server address
+# - Username
+# - Password
+```
+
+This script will:
+1. Verify all 80 models are complete with weights
+2. Create a compressed archive on the server
+3. Download via rsync with progress indication
+4. Extract to your local `~/llm-stylometry/models/` directory
+5. Back up any existing local models
+6. Also sync `model_results.pkl` if available
+
+**Note**: The script will only download if all 80 models are complete. If training is still in progress, it will show which models are missing.
 
 ### Model Configuration
 
