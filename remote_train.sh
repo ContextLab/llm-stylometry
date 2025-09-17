@@ -21,6 +21,18 @@ echo "=================================================="
 echo "       LLM Stylometry Remote Training Setup"
 echo "=================================================="
 echo
+echo "Usage: $0 [options]"
+echo "Options:"
+echo "  --kill, -k   Kill existing training sessions before starting new one"
+echo
+
+# Check for --kill flag
+if [ "$1" = "--kill" ] || [ "$1" = "-k" ]; then
+    echo "Kill mode: Will terminate existing training sessions"
+    KILL_MODE=true
+else
+    KILL_MODE=false
+fi
 
 # Get server details
 read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
@@ -63,6 +75,7 @@ ssh -t "$USERNAME@$SERVER_ADDRESS" \
     AUTH_OPTION="$AUTH_OPTION" \
     GH_USER="$GH_USER" \
     GH_TOKEN="$GH_TOKEN" \
+    KILL_MODE="$KILL_MODE" \
     'bash -s' << 'ENDSSH'
 #!/bin/bash
 set -e
@@ -71,6 +84,34 @@ echo "=================================================="
 echo "Setting up LLM Stylometry on remote server"
 echo "=================================================="
 echo
+
+# Check if we're in kill mode
+if [ "$KILL_MODE" = "true" ]; then
+    echo "Kill mode activated - terminating existing training sessions..."
+
+    # Kill any existing screen sessions
+    screen -ls | grep -o '[0-9]*\.llm_training' | cut -d. -f1 | while read pid; do
+        if [ ! -z "$pid" ]; then
+            echo "Killing screen session with PID: $pid"
+            screen -X -S "$pid.llm_training" quit
+        fi
+    done
+
+    # Also kill any remaining python training processes
+    pkill -f "python.*generate_figures.py.*--train" 2>/dev/null || true
+
+    echo "All training sessions terminated."
+    echo ""
+
+    # Ask if user wants to start new training
+    read -t 10 -p "Start new training session? (y/n, default: n in 10s): " START_NEW || START_NEW="n"
+    if [ "$START_NEW" != "y" ] && [ "$START_NEW" != "Y" ]; then
+        echo "Exiting without starting new training."
+        exit 0
+    fi
+    echo "Continuing to start new training session..."
+    echo ""
+fi
 
 # Handle different authentication options
 if [ "$AUTH_OPTION" = "3" ]; then
@@ -177,17 +218,44 @@ sleep 5
 screen -X -S llm_training quit 2>/dev/null || true
 
 # Start training in screen (use --no-confirm flag for non-interactive mode)
+# First check if conda is available and activate environment if it exists
 screen -dmS llm_training bash -c "
     cd $HOME/llm-stylometry
     echo \"Training started at \$(date)\" | tee -a $LOG_FILE
+
+    # Try to activate conda environment if it exists
+    if command -v conda &> /dev/null; then
+        source \$(conda info --base)/etc/profile.d/conda.sh
+        if conda env list | grep -q llm-stylometry; then
+            echo \"Activating conda environment: llm-stylometry\" | tee -a $LOG_FILE
+            conda activate llm-stylometry
+        fi
+    fi
+
+    # Check if Python is available
+    if ! command -v python &> /dev/null; then
+        echo \"Error: Python not found\" | tee -a $LOG_FILE
+        exit 1
+    fi
+
+    # Run the training script
     python code/generate_figures.py --train --no-confirm 2>&1 | tee -a $LOG_FILE
-    echo \"Training completed at \$(date)\" | tee -a $LOG_FILE
+    RESULT=\$?
+
+    if [ \$RESULT -eq 0 ]; then
+        echo \"Training completed successfully at \$(date)\" | tee -a $LOG_FILE
+    else
+        echo \"Training failed with exit code \$RESULT at \$(date)\" | tee -a $LOG_FILE
+    fi
 "
 
 # Wait a moment for screen to start
 sleep 2
 
 # Check if screen session started
+echo "Checking screen sessions:"
+screen -list
+
 if screen -list | grep -q "llm_training"; then
     echo ""
     echo "✓ Training started successfully in screen session!"

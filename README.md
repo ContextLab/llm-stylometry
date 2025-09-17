@@ -194,10 +194,13 @@ For training on a remote GPU server, use the provided `remote_train.sh` script:
 # Start remote training
 ./remote_train.sh
 
+# Kill existing training sessions and optionally start new one
+./remote_train.sh --kill  # or -k
+
 # You'll be prompted for:
 # - Server address (hostname or IP)
 # - Username
-# - Password (for SSH)
+# - GitHub authentication method (SSH key, Personal Access Token, or skip)
 ```
 
 This script will:
