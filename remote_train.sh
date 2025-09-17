@@ -68,17 +68,24 @@ if [ -z "$USERNAME" ]; then
 fi
 
 print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
+
+# Test SSH connection first
+if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "$USERNAME@$SERVER_ADDRESS" "echo 'Connection test successful'" 2>/dev/null; then
+    print_warning "Initial connection test failed. Trying with interactive authentication..."
+fi
+
 echo
 
-# Execute the remote script via SSH, passing environment variables
-ssh -t "$USERNAME@$SERVER_ADDRESS" \
-    AUTH_OPTION="$AUTH_OPTION" \
-    GH_USER="$GH_USER" \
-    GH_TOKEN="$GH_TOKEN" \
-    KILL_MODE="$KILL_MODE" \
-    'bash -s' << 'ENDSSH'
+# Execute the remote script via SSH
+ssh -t "$USERNAME@$SERVER_ADDRESS" bash -s << ENDSSH
 #!/bin/bash
 set -e
+
+# Pass variables from local to remote
+AUTH_OPTION="$AUTH_OPTION"
+GH_USER="$GH_USER"
+GH_TOKEN="$GH_TOKEN"
+KILL_MODE="$KILL_MODE"
 
 echo "=================================================="
 echo "Setting up LLM Stylometry on remote server"
