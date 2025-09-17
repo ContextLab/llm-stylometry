@@ -88,7 +88,7 @@ echo "=================================================="
 echo
 
 # Check if we're in kill mode
-if [ "$KILL_MODE" = "true" ]; then
+if [ "\$KILL_MODE" = "true" ]; then
     echo "Kill mode activated - terminating existing training sessions..."
 
     # Kill any existing screen sessions
@@ -116,29 +116,29 @@ if [ "$KILL_MODE" = "true" ]; then
 fi
 
 # Handle different authentication options
-if [ "$AUTH_OPTION" = "3" ]; then
+if [ "\$AUTH_OPTION" = "3" ]; then
     echo "Skipping repository update as requested..."
-    if [ ! -d "$HOME/llm-stylometry" ]; then
-        echo "Error: Repository not found at $HOME/llm-stylometry"
+    if [ ! -d ~/llm-stylometry ]; then
+        echo "Error: Repository not found at ~/llm-stylometry"
         echo "Please choose option 1 or 2 to clone the repository first."
         exit 1
     fi
-    cd "$HOME/llm-stylometry"
+    cd ~/llm-stylometry
 else
     # Configure Git to use credential caching to avoid repeated auth prompts
     git config --global credential.helper cache
     git config --global credential.helper 'cache --timeout=3600'
 
     # Set up GitHub token authentication if provided
-    if [ -n "$GH_TOKEN" ] && [ -n "$GH_USER" ]; then
+    if [ -n "\$GH_TOKEN" ] && [ -n "\$GH_USER" ]; then
         echo "Setting up GitHub token authentication..."
-        git config --global url."https://${GH_USER}:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://\${GH_USER}:\${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
     fi
 
     # Check if repo exists
-    if [ -d "$HOME/llm-stylometry" ]; then
+    if [ -d ~/llm-stylometry ]; then
     echo "Repository exists. Updating to latest version..."
-    cd "$HOME/llm-stylometry"
+    cd ~/llm-stylometry
 
     # Stash any local changes
     if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -168,7 +168,7 @@ else
     # Check if SSH key is available
     if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
         echo "Using SSH to clone repository..."
-        cd "$HOME"
+        cd ~
         git clone git@github.com:ContextLab/llm-stylometry.git
     else
         echo "Using HTTPS to clone repository..."
@@ -176,11 +176,11 @@ else
         echo "Note: GitHub requires a personal access token (not password)."
         echo "Create one at: https://github.com/settings/tokens"
         echo ""
-        cd "$HOME"
+        cd ~
         git clone https://github.com/ContextLab/llm-stylometry.git
     fi
 
-    cd "$HOME/llm-stylometry"
+    cd ~/llm-stylometry
     echo "Repository cloned successfully"
     fi
 fi  # End of AUTH_OPTION check
