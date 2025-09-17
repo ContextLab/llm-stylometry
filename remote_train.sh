@@ -220,14 +220,14 @@ fi
 
 # Create log directory
 mkdir -p ~/llm-stylometry/logs
-LOG_FILE=~/llm-stylometry/logs/training_\$(date +%Y%m%d_%H%M%S).log
+LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
 
 echo ""
 echo "=================================================="
 echo "Starting training in screen session"
 echo "=================================================="
 echo "Training will run in a screen session named: llm_training"
-echo "Log file: \$LOG_FILE"
+echo "Log file: $LOG_FILE"
 echo ""
 echo "Useful commands:"
 echo "  - Detach from screen: Ctrl+A, then D"
@@ -245,7 +245,7 @@ screen -X -S llm_training quit 2>/dev/null || true
 cat > /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 cd ~/llm-stylometry
-LOG_FILE=~/llm-stylometry/logs/training_\$(date +%Y%m%d_%H%M%S).log
+LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
 echo "Training started at \$(date)" | tee -a \$LOG_FILE
 
 # Try to activate conda environment if it exists
