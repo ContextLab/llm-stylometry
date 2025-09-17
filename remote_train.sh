@@ -105,13 +105,8 @@ if [ "$KILL_MODE" = "true" ]; then
     echo "All training sessions terminated."
     echo ""
 
-    # Ask if user wants to start new training
-    read -t 10 -p "Start new training session? (y/n, default: n in 10s): " START_NEW || START_NEW="n"
-    if [ "$START_NEW" != "y" ] && [ "$START_NEW" != "Y" ]; then
-        echo "Exiting without starting new training."
-        exit 0
-    fi
-    echo "Continuing to start new training session..."
+    # In non-interactive mode, always start new training after killing
+    echo "Starting new training session..."
     echo ""
 fi
 
@@ -244,11 +239,28 @@ screen -X -S llm_training quit 2>/dev/null || true
 # Create a script file first
 cat > /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
-cd ~/llm-stylometry
-LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
-echo "Training started at $(date)" | tee -a $LOG_FILE
+set -e  # Exit on error
 
-# Run the training script using the shell script (it handles Python env internally)
+# Change to the repository directory
+cd ~/llm-stylometry
+
+# Create log directory and file
+mkdir -p logs
+LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
+echo "Training started at $(date)" | tee $LOG_FILE
+
+# Check if the run script exists
+if [ ! -f ./run_llm_stylometry.sh ]; then
+    echo "ERROR: run_llm_stylometry.sh not found in $(pwd)!" | tee -a $LOG_FILE
+    ls -la | tee -a $LOG_FILE
+    exit 1
+fi
+
+# Make sure it's executable
+chmod +x ./run_llm_stylometry.sh
+
+# Run the training script
+echo "Starting training with run_llm_stylometry.sh..." | tee -a $LOG_FILE
 ./run_llm_stylometry.sh --train 2>&1 | tee -a $LOG_FILE
 
 echo "Training completed at $(date)" | tee -a $LOG_FILE
