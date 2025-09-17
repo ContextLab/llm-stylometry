@@ -300,8 +300,13 @@ if __name__ == "__main__":
 
     # Use already detected device configuration
     if device_type == "cuda":
-        gpu_count = min(device_count, 4)
-        print(f"Using {gpu_count} GPUs out of {device_count} available")
+        # Check for MAX_GPUS environment variable to optionally limit GPU usage
+        max_gpus = int(os.environ.get('MAX_GPUS', '0')) or device_count
+        gpu_count = min(device_count, max_gpus)
+        if gpu_count < device_count:
+            print(f"Using {gpu_count} GPUs (limited by MAX_GPUS) out of {device_count} available")
+        else:
+            print(f"Using all {gpu_count} available GPUs")
     elif device_type == "mps":
         gpu_count = 1
         print("Using Apple Metal Performance Shaders (MPS)")
