@@ -35,12 +35,35 @@ if [ -z "$USERNAME" ]; then
     exit 1
 fi
 
+# Ask about GitHub authentication method
+echo
+print_info "GitHub authentication options:"
+echo "1. SSH key (recommended if already set up on server)"
+echo "2. Personal Access Token (will prompt when needed)"
+echo "3. Skip repository update (use existing code on server)"
+read -p "Choose option [1-3]: " AUTH_OPTION
+
+if [ "$AUTH_OPTION" = "2" ]; then
+    echo
+    print_warning "GitHub now requires Personal Access Tokens instead of passwords."
+    print_info "Create one at: https://github.com/settings/tokens"
+    print_info "Grant 'repo' scope for private repository access."
+    echo
+    read -p "Enter your GitHub username: " GH_USER
+    read -s -p "Enter your GitHub Personal Access Token: " GH_TOKEN
+    echo
+    export GH_USER GH_TOKEN
+fi
+
 print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
-print_info "You may be prompted for your password and/or GitHub credentials."
 echo
 
-# Execute the remote script via SSH
-ssh -t "$USERNAME@$SERVER_ADDRESS" 'bash -s' << 'ENDSSH'
+# Execute the remote script via SSH, passing environment variables
+ssh -t "$USERNAME@$SERVER_ADDRESS" \
+    AUTH_OPTION="$AUTH_OPTION" \
+    GH_USER="$GH_USER" \
+    GH_TOKEN="$GH_TOKEN" \
+    'bash -s' << 'ENDSSH'
 #!/bin/bash
 set -e
 
@@ -49,8 +72,28 @@ echo "Setting up LLM Stylometry on remote server"
 echo "=================================================="
 echo
 
-# Check if repo exists
-if [ -d "$HOME/llm-stylometry" ]; then
+# Handle different authentication options
+if [ "$AUTH_OPTION" = "3" ]; then
+    echo "Skipping repository update as requested..."
+    if [ ! -d "$HOME/llm-stylometry" ]; then
+        echo "Error: Repository not found at $HOME/llm-stylometry"
+        echo "Please choose option 1 or 2 to clone the repository first."
+        exit 1
+    fi
+    cd "$HOME/llm-stylometry"
+else
+    # Configure Git to use credential caching to avoid repeated auth prompts
+    git config --global credential.helper cache
+    git config --global credential.helper 'cache --timeout=3600'
+
+    # Set up GitHub token authentication if provided
+    if [ -n "$GH_TOKEN" ] && [ -n "$GH_USER" ]; then
+        echo "Setting up GitHub token authentication..."
+        git config --global url."https://${GH_USER}:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+    fi
+
+    # Check if repo exists
+    if [ -d "$HOME/llm-stylometry" ]; then
     echo "Repository exists. Updating to latest version..."
     cd "$HOME/llm-stylometry"
 
@@ -60,18 +103,44 @@ if [ -d "$HOME/llm-stylometry" ]; then
         git stash
     fi
 
+    # Check if we can use SSH (if SSH key is set up)
+    if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        echo "Using SSH authentication..."
+        git remote set-url origin git@github.com:ContextLab/llm-stylometry.git
+    else
+        echo "Using HTTPS (you may be prompted for GitHub username/password or token)..."
+        echo "Note: GitHub now requires personal access tokens instead of passwords."
+        echo "Create one at: https://github.com/settings/tokens"
+        git remote set-url origin https://github.com/ContextLab/llm-stylometry.git
+    fi
+
     # Update repository
     git fetch origin
     git checkout main
     git pull origin main
     echo "Repository updated successfully"
 else
-    echo "Cloning repository..."
-    cd "$HOME"
-    git clone https://github.com/ContextLab/llm-stylometry.git
+    echo "Checking authentication method..."
+
+    # Check if SSH key is available
+    if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        echo "Using SSH to clone repository..."
+        cd "$HOME"
+        git clone git@github.com:ContextLab/llm-stylometry.git
+    else
+        echo "Using HTTPS to clone repository..."
+        echo "You will be prompted for GitHub credentials."
+        echo "Note: GitHub requires a personal access token (not password)."
+        echo "Create one at: https://github.com/settings/tokens"
+        echo ""
+        cd "$HOME"
+        git clone https://github.com/ContextLab/llm-stylometry.git
+    fi
+
     cd "$HOME/llm-stylometry"
     echo "Repository cloned successfully"
-fi
+    fi
+fi  # End of AUTH_OPTION check
 
 # Check for screen
 if ! command -v screen &> /dev/null; then
