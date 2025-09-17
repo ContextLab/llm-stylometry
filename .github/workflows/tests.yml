@@ -63,11 +63,11 @@ jobs:
 
     - name: Test figure generation (single)
       run: |
-        python generate_figures.py --figure 1a --data tests/data/test_model_results.pkl --output tests/output_single
+        python code/generate_figures.py --figure 1a --data tests/data/test_model_results.pkl --output tests/output_single
 
     - name: Test figure generation (all)
       run: |
-        python generate_figures.py --data tests/data/test_model_results.pkl --output tests/output_all
+        python code/generate_figures.py --data tests/data/test_model_results.pkl --output tests/output_all
       timeout-minutes: 5
 
     - name: Upload test artifacts
