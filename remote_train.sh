@@ -246,25 +246,25 @@ cat > /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 cd ~/llm-stylometry
 LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
-echo "Training started at \$(date)" | tee -a \$LOG_FILE
+echo "Training started at $(date)" | tee -a $LOG_FILE
 
 # Try to activate conda environment if it exists
 if command -v conda &> /dev/null; then
-    source \$(conda info --base)/etc/profile.d/conda.sh
+    source $(conda info --base)/etc/profile.d/conda.sh
     if conda env list | grep -q llm-stylometry; then
-        echo "Activating conda environment: llm-stylometry" | tee -a \$LOG_FILE
+        echo "Activating conda environment: llm-stylometry" | tee -a $LOG_FILE
         conda activate llm-stylometry
     fi
 fi
 
 # Check if Python is available
 if ! command -v python &> /dev/null; then
-    echo "Error: Python not found" | tee -a \$LOG_FILE
+    echo "Error: Python not found" | tee -a $LOG_FILE
     exit 1
 fi
 
 # Run the training script
-python code/generate_figures.py --train --no-confirm 2>&1 | tee -a \$LOG_FILE
+python code/generate_figures.py --train --no-confirm 2>&1 | tee -a $LOG_FILE
 TRAINSCRIPT
 
 chmod +x /tmp/llm_train.sh
