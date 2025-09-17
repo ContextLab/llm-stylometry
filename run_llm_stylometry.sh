@@ -41,6 +41,8 @@ OPTIONS:
     --setup-only            Only setup environment without generating figures
     --no-setup              Skip environment setup (assume already configured)
     --force-install         Force reinstall of all dependencies
+    --clean                 Remove environment and start fresh (removes conda env and caches)
+    --clean-cache           Clear conda and pip caches only
 
 EXAMPLES:
     $0                      # Setup environment and generate all figures
@@ -49,6 +51,8 @@ EXAMPLES:
     $0 -t                   # Train models from scratch, then generate figures
     $0 -l                   # List available figures
     $0 --setup-only         # Only setup the environment
+    $0 --clean              # Remove environment and reinstall from scratch
+    $0 --clean-cache        # Clear conda/pip caches
 
 FIGURES:
     1a - Figure 1A: Training curves (all_losses.pdf)
@@ -80,6 +84,63 @@ check_conda() {
     else
         return 1
     fi
+}
+
+# Function to clean environment and caches
+clean_environment() {
+    print_info "Cleaning environment and caches..."
+
+    # Remove conda environment if it exists
+    if conda env list | grep -q "^$CONDA_ENV "; then
+        print_info "Removing conda environment '$CONDA_ENV'..."
+        conda env remove -n "$CONDA_ENV" -y
+    fi
+
+    # Clean conda caches
+    print_info "Cleaning conda caches..."
+    conda clean --all -y
+
+    # Clean pip cache
+    print_info "Cleaning pip cache..."
+    pip cache purge 2>/dev/null || true
+
+    print_success "Environment and caches cleaned"
+}
+
+# Function to clean caches only
+clean_caches() {
+    print_info "Cleaning caches only..."
+
+    # Clean conda caches
+    print_info "Cleaning conda caches..."
+    conda clean --all -y
+
+    # Clean pip cache
+    print_info "Cleaning pip cache..."
+    if conda env list | grep -q "^$CONDA_ENV "; then
+        eval "$(conda shell.bash hook)"
+        conda activate "$CONDA_ENV"
+        pip cache purge 2>/dev/null || true
+    else
+        pip cache purge 2>/dev/null || true
+    fi
+
+    print_success "Caches cleaned"
+}
+
+# Function to detect CUDA availability
+detect_cuda() {
+    if command -v nvidia-smi &> /dev/null; then
+        if nvidia-smi &> /dev/null; then
+            # Get CUDA version from nvidia-smi
+            local cuda_version=$(nvidia-smi | grep "CUDA Version" | awk '{print $9}' | cut -d. -f1,2)
+            if [ -n "$cuda_version" ]; then
+                echo "$cuda_version"
+                return 0
+            fi
+        fi
+    fi
+    return 1
 }
 
 # Function to install conda
@@ -169,9 +230,39 @@ setup_environment() {
 
     print_info "Installing dependencies..."
 
-    # Install PyTorch with CUDA support
-    conda install -c pytorch -c nvidia pytorch pytorch-cuda=12.1 -y 2>/dev/null || \
-        conda install -c pytorch pytorch -y
+    # Detect CUDA and install appropriate PyTorch version
+    if cuda_version=$(detect_cuda); then
+        print_info "CUDA detected: version $cuda_version"
+
+        # Map CUDA version to appropriate PyTorch CUDA version
+        # CUDA 12.x -> pytorch-cuda=12.1
+        # CUDA 11.x -> pytorch-cuda=11.8
+        if [[ $cuda_version == 12* ]]; then
+            pytorch_cuda="12.1"
+        elif [[ $cuda_version == 11* ]]; then
+            pytorch_cuda="11.8"
+        else
+            print_warning "Unsupported CUDA version $cuda_version, trying default"
+            pytorch_cuda="12.1"
+        fi
+
+        print_info "Installing PyTorch with CUDA $pytorch_cuda support..."
+        conda install pytorch torchvision torchaudio pytorch-cuda=$pytorch_cuda -c pytorch -c nvidia -y
+
+        # Verify CUDA installation
+        if python -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
+            print_success "PyTorch installed with CUDA support"
+        else
+            print_warning "PyTorch CUDA verification failed, reinstalling..."
+            # Try to fix by reinstalling
+            conda uninstall pytorch torchvision torchaudio -y
+            pip uninstall torch torchvision torchaudio -y 2>/dev/null || true
+            conda install pytorch torchvision torchaudio pytorch-cuda=$pytorch_cuda -c pytorch -c nvidia -y
+        fi
+    else
+        print_warning "CUDA not detected, installing CPU-only PyTorch"
+        conda install pytorch torchvision torchaudio cpuonly -c pytorch -y
+    fi
 
     # Install other dependencies
     pip install --upgrade pip
@@ -193,6 +284,8 @@ LIST_FIGURES=false
 SETUP_ONLY=false
 SKIP_SETUP=false
 FORCE_INSTALL=false
+CLEAN=false
+CLEAN_CACHE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -232,6 +325,14 @@ while [[ $# -gt 0 ]]; do
             FORCE_INSTALL=true
             shift
             ;;
+        --clean)
+            CLEAN=true
+            shift
+            ;;
+        --clean-cache)
+            CLEAN_CACHE=true
+            shift
+            ;;
         *)
             print_error "Unknown option: $1"
             show_help
@@ -245,6 +346,18 @@ echo "╔═══════════════════════�
 echo "║                    LLM Stylometry CLI                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo
+
+# Handle clean operations first
+if [ "$CLEAN" = true ]; then
+    clean_environment
+    print_info "Environment cleaned. Run the script again to set up fresh environment."
+    exit 0
+fi
+
+if [ "$CLEAN_CACHE" = true ]; then
+    clean_caches
+    exit 0
+fi
 
 # Check and install conda if needed
 if ! check_conda; then
@@ -269,7 +382,7 @@ if [ "$SETUP_ONLY" = true ]; then
 fi
 
 # Build the Python command
-PYTHON_CMD="python generate_figures.py"
+PYTHON_CMD="python code/generate_figures.py"
 
 if [ "$LIST_FIGURES" = true ]; then
     PYTHON_CMD="$PYTHON_CMD --list"

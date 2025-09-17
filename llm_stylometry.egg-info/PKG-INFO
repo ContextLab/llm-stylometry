@@ -15,6 +15,7 @@ Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: torch>=2.2.0
 Requires-Dist: transformers>=4.30.0
 Requires-Dist: numpy<2
@@ -34,63 +35,83 @@ Requires-Dist: black>=23.0.0; extra == "dev"
 Requires-Dist: ruff>=0.1.0; extra == "dev"
 Requires-Dist: jupyter>=1.0.0; extra == "dev"
 Requires-Dist: ipykernel>=6.0.0; extra == "dev"
+Dynamic: license-file
 
 # LLM Stylometry
 
-A stylometric application of large language models for authorship attribution.
+[![Tests](https://github.com/ContextLab/llm-stylometry/actions/workflows/tests.yml/badge.svg)](https://github.com/ContextLab/llm-stylometry/actions/workflows/tests.yml)
+
 
 ## Overview
 
-This repository contains the code and data for our paper on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
+This repository contains the code and data for our [paper](https://insert.link.when.ready) on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
 
 ## Repository Structure
 
 ```
 llm-stylometry/
-├── llm_stylometry/        # Python package with analysis tools
-│   ├── core/             # Core experiment and configuration
-│   ├── data/             # Data loading and tokenization
-│   ├── models/           # Model utilities
-│   ├── analysis/         # Statistical analysis
-│   └── visualization/    # Plotting and visualization
-├── code/                 # Original analysis scripts
-├── data/                 # Datasets and results
-│   ├── raw/             # Original texts from Project Gutenberg
-│   ├── cleaned/         # Preprocessed texts by author
-│   └── model_results.pkl # Consolidated model training results
-├── models/              # Model configurations and logs
-├── notebooks/           # Jupyter notebooks for figure generation
-└── paper/               # LaTeX paper and figures
-    ├── main.tex        # Paper source
-    └── figs/           # Paper figures
+├── .github/              # GitHub Actions CI/CD
+│   └── workflows/       # Test automation workflows
+├── llm_stylometry/       # Python package with analysis tools
+│   ├── analysis/        # Statistical analysis utilities
+│   ├── core/           # Core experiment and configuration
+│   ├── data/           # Data loading and tokenization
+│   ├── models/         # Model utilities
+│   ├── utils/          # Helper utilities
+│   ├── visualization/  # Plotting and visualization
+│   └── cli_utils.py    # CLI helper functions
+├── code/                # Original analysis scripts
+│   ├── main.py         # Model training script
+│   ├── clean.py        # Data preprocessing
+│   └── ...             # Various analysis scripts
+├── data/                # Datasets and results
+│   ├── raw/            # Original texts from Project Gutenberg
+│   ├── cleaned/        # Preprocessed texts by author
+│   ├── model_results.pkl # Consolidated model training results
+│   └── model_results.csv # Model results in CSV format
+├── models/              # Trained models (80 total)
+│   └── {author}_tokenizer=gpt2_seed={0-9}/
+├── paper/               # LaTeX paper and figures
+│   ├── main.tex        # Paper source
+│   ├── main.pdf        # Compiled paper
+│   └── figs/           # Paper figures
+├── tests/               # Test suite
+│   ├── data/           # Test data and fixtures
+│   ├── test_*.py       # Test modules
+│   └── check_outputs.py # Output validation script
+├── generate_figures.py  # Main CLI entry point
+├── run_llm_stylometry.sh # Shell wrapper for easy setup
+├── LICENSE             # MIT License
+├── README.md           # This file
+├── requirements-dev.txt # Development dependencies
+├── pyproject.toml      # Package configuration
+└── pytest.ini          # Test configuration
 ```
 
 ## Installation
 
-### Quick Setup with Conda
+### Automatic Setup and Execution
+
+The easiest way to get started is using the comprehensive CLI script:
 
 ```bash
 # Clone the repository
 git clone https://github.com/ContextLab/llm-stylometry.git
 cd llm-stylometry
 
-# Create and activate conda environment
-conda create -n llm-stylometry python=3.10
-conda activate llm-stylometry
-
-# Run the automated setup and figure generation
-python generate_figures.py
+# Run the CLI (automatically sets up conda environment if needed)
+./run_llm_stylometry.sh
 ```
 
-The `generate_figures.py` script will:
-1. Install all required dependencies
-2. Set up the llm_stylometry package
-3. Run all notebooks to generate paper figures
-4. Verify that all outputs were created successfully
+The script will:
+1. Check for conda and install Miniconda if needed (platform-specific)
+2. Create and configure the conda environment
+3. Install all dependencies including PyTorch with CUDA support
+4. Generate all paper figures from pre-computed results
 
-### Manual Installation
+### Manual Setup
 
-If you prefer to set up manually:
+If you prefer manual setup:
 
 ```bash
 # Create environment
@@ -98,11 +119,11 @@ conda create -n llm-stylometry python=3.10
 conda activate llm-stylometry
 
 # Install PyTorch (adjust for your CUDA version)
-conda install -c pytorch -c nvidia pytorch=2.2.2 pytorch-cuda=12.1
+conda install -c pytorch -c nvidia pytorch pytorch-cuda=12.1
 
 # Install other dependencies
-conda install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
-pip install cleantext plotly scikit-learn jupyter ipykernel
+pip install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
+pip install cleantext plotly scikit-learn
 
 # Install the package
 pip install -e .
@@ -110,16 +131,48 @@ pip install -e .
 
 ## Quick Start
 
-### Generate Paper Figures
+### Using the CLI
 
-The easiest way to reproduce all paper figures:
+```bash
+# Generate all figures (default)
+./run_llm_stylometry.sh
+
+# Generate specific figure
+./run_llm_stylometry.sh -f 1a    # Figure 1A only
+./run_llm_stylometry.sh -f 4     # Figure 4 (MDS plot) only
+
+# List available figures
+./run_llm_stylometry.sh -l
+
+# Train models from scratch (requires GPU)
+./run_llm_stylometry.sh -t
+
+# Custom data and output paths
+./run_llm_stylometry.sh -d path/to/model_results.pkl -o path/to/output
+
+# Get help
+./run_llm_stylometry.sh -h
+```
+
+### Using Python Directly
 
 ```bash
 conda activate llm-stylometry
+
+# Generate all figures
 python generate_figures.py
+
+# Generate specific figure
+python generate_figures.py --figure 1a
+
+# Train models from scratch
+python generate_figures.py --train
+
+# List available figures
+python generate_figures.py --list
 ```
 
-This will create all figures in `paper/figs/source/`.
+**Note**: The t-test calculations (Figure 2) take approximately 2-3 minutes due to statistical computations across all epochs and authors.
 
 ### Using Pre-computed Results
 
@@ -139,25 +192,29 @@ fig = generate_all_losses_figure(
 )
 ```
 
-### Generating Individual Figures
+### Available Figures
 
-You can also run individual notebooks:
-
-```bash
-cd notebooks
-jupyter notebook figure_1_losses_and_distributions.ipynb
-```
+- **1a**: Figure 1A - Training curves (all_losses.pdf)
+- **1b**: Figure 1B - Strip plot (stripplot.pdf)
+- **2a**: Figure 2A - Individual t-tests (t_test.pdf)
+- **2b**: Figure 2B - Average t-test (t_test_avg.pdf)
+- **3**: Figure 3 - Confusion matrix heatmap (average_loss_heatmap.pdf)
+- **4**: Figure 4 - 3D MDS plot (3d_MDS_plot.pdf)
+- **5**: Figure 5 - Oz authorship analysis (oz_losses.pdf)
 
 ## Training Models from Scratch
 
 **Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
 
 ```bash
-# Prepare data (if not already cleaned)
-python code/clean.py
+# Using the CLI (recommended)
+./run_llm_stylometry.sh --train
 
-# Train all models (uses multiple GPUs if available)
-python code/main.py
+# Or manually
+conda activate llm-stylometry
+python code/clean.py              # Clean data
+python code/main.py               # Train models
+python consolidate_model_results.py  # Consolidate results
 ```
 
 ### Model Configuration
@@ -199,6 +256,75 @@ Our analysis shows that:
 2. The approach correctly attributes the contested 15th Oz book to Thompson
 3. Stylometric distances between authors can be visualized using MDS
 
+## Testing
+
+### Running Tests Locally
+
+The repository includes comprehensive tests that use real models and data (no mocks):
+
+```bash
+# Install test dependencies
+pip install pytest pytest-timeout
+
+# Run all tests
+pytest tests/
+
+# Run specific test modules
+pytest tests/test_visualization.py  # Test figure generation
+pytest tests/test_cli.py            # Test CLI functionality
+pytest tests/test_model_training.py # Test model operations
+
+# Run with verbose output
+pytest -v tests/
+```
+
+### Test Coverage
+
+Our test suite includes:
+
+- **Visualization Tests**: Verify all figure generation functions work correctly with synthetic data
+- **CLI Tests**: Test all command-line options and error handling
+- **Model Training Tests**: Test model creation, training, and saving with tiny models
+- **Data Tests**: Verify data loading and processing functions
+
+### Continuous Integration
+
+Tests run automatically on GitHub Actions for:
+- **Platforms**: Linux, macOS, Windows
+- **Python Version**: 3.10
+- **Execution Time**: All tests complete in under 5 minutes
+
+The CI pipeline:
+1. Sets up Python environment
+2. Installs dependencies (including CPU-only PyTorch)
+3. Creates synthetic test data
+4. Runs all test modules
+5. Validates figure generation
+6. Uploads artifacts on failure for debugging
+
+### Writing New Tests
+
+When adding new functionality, ensure tests:
+- Use real data and models (no mocks)
+- Complete quickly (use small datasets/models)
+- Test actual functionality end-to-end
+- Generate real outputs (PDFs, models, etc.)
+
+Example test structure:
+```python
+def test_new_feature():
+    # Use synthetic test data
+    data = pd.read_pickle('tests/data/test_model_results.pkl')
+
+    # Generate real output
+    output_path = 'test_output.pdf'
+    result = generate_figure(data, output_path)
+
+    # Verify real file was created
+    assert Path(output_path).exists()
+    assert Path(output_path).stat().st_size > 1000
+```
+
 ## Package API
 
 The `llm_stylometry` package provides functions for all analyses:
@@ -206,7 +332,7 @@ The `llm_stylometry` package provides functions for all analyses:
 ```python
 from llm_stylometry.visualization import (
     generate_all_losses_figure,      # Figure 1A: Training curves
-    generate_stripplot_figure,        # Figure 1B: Loss distributions
+    generate_stripplot_figure,       # Figure 1B: Loss distributions
     generate_t_test_figure,          # Figure 2A: Individual t-tests
     generate_t_test_avg_figure,      # Figure 2B: Average t-test
     generate_loss_heatmap_figure,    # Figure 3: Confusion matrix
@@ -220,11 +346,11 @@ from llm_stylometry.visualization import (
 If you use this code or data in your research, please cite:
 
 ```bibtex
-@article{stropkay2024stylometry,
+@article{StroEtal25,
   title={A Stylometric Application of Large Language Models},
   author={Stropkay, Harrison F. and Chen, Jiayi and Rockmore, Daniel N. and Manning, Jeremy R.},
   journal={arXiv preprint arXiv:XXXX.XXXXX},
-  year={2024}
+  year={2025}
 }
 ```
 
@@ -234,5 +360,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-For questions or issues, please open a GitHub issue or contact:
-- Jeremy R. Manning (jeremy.r.manning@dartmouth.edu)
+For questions or issues, please open a GitHub issue or contact Jeremy R. Manning (jeremy.r.manning@dartmouth.edu).
