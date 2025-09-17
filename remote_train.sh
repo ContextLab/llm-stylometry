@@ -198,20 +198,20 @@ if ! command -v screen &> /dev/null; then
 fi
 
 # Create log directory
-mkdir -p "$HOME/llm-stylometry/logs"
-LOG_FILE="$HOME/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log"
+mkdir -p ~/llm-stylometry/logs
+LOG_FILE=~/llm-stylometry/logs/training_\$(date +%Y%m%d_%H%M%S).log
 
 echo ""
 echo "=================================================="
 echo "Starting training in screen session"
 echo "=================================================="
 echo "Training will run in a screen session named: llm_training"
-echo "Log file: $LOG_FILE"
+echo "Log file: \$LOG_FILE"
 echo ""
 echo "Useful commands:"
 echo "  - Detach from screen: Ctrl+A, then D"
 echo "  - Reattach later: screen -r llm_training"
-echo "  - View log: tail -f $LOG_FILE"
+echo "  - View log: tail -f ~/llm-stylometry/logs/training_*.log"
 echo ""
 echo "Starting training in 5 seconds..."
 sleep 5
@@ -220,36 +220,34 @@ sleep 5
 screen -X -S llm_training quit 2>/dev/null || true
 
 # Start training in screen (use --no-confirm flag for non-interactive mode)
-# First check if conda is available and activate environment if it exists
-screen -dmS llm_training bash -c "
-    cd $HOME/llm-stylometry
-    echo \"Training started at \$(date)\" | tee -a $LOG_FILE
+# Create a script file first
+cat > /tmp/llm_train.sh << 'TRAINSCRIPT'
+#!/bin/bash
+cd ~/llm-stylometry
+LOG_FILE=~/llm-stylometry/logs/training_\$(date +%Y%m%d_%H%M%S).log
+echo "Training started at \$(date)" | tee -a \$LOG_FILE
 
-    # Try to activate conda environment if it exists
-    if command -v conda &> /dev/null; then
-        source \$(conda info --base)/etc/profile.d/conda.sh
-        if conda env list | grep -q llm-stylometry; then
-            echo \"Activating conda environment: llm-stylometry\" | tee -a $LOG_FILE
-            conda activate llm-stylometry
-        fi
+# Try to activate conda environment if it exists
+if command -v conda &> /dev/null; then
+    source \$(conda info --base)/etc/profile.d/conda.sh
+    if conda env list | grep -q llm-stylometry; then
+        echo "Activating conda environment: llm-stylometry" | tee -a \$LOG_FILE
+        conda activate llm-stylometry
     fi
+fi
 
-    # Check if Python is available
-    if ! command -v python &> /dev/null; then
-        echo \"Error: Python not found\" | tee -a $LOG_FILE
-        exit 1
-    fi
+# Check if Python is available
+if ! command -v python &> /dev/null; then
+    echo "Error: Python not found" | tee -a \$LOG_FILE
+    exit 1
+fi
 
-    # Run the training script
-    python code/generate_figures.py --train --no-confirm 2>&1 | tee -a $LOG_FILE
-    RESULT=\$?
+# Run the training script
+python code/generate_figures.py --train --no-confirm 2>&1 | tee -a \$LOG_FILE
+TRAINSCRIPT
 
-    if [ \$RESULT -eq 0 ]; then
-        echo \"Training completed successfully at \$(date)\" | tee -a $LOG_FILE
-    else
-        echo \"Training failed with exit code \$RESULT at \$(date)\" | tee -a $LOG_FILE
-    fi
-"
+chmod +x /tmp/llm_train.sh
+screen -dmS llm_training /tmp/llm_train.sh
 
 # Wait a moment for screen to start
 sleep 2
