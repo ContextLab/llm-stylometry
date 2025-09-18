@@ -259,9 +259,9 @@ fi
 # Make sure it's executable
 chmod +x ./run_llm_stylometry.sh
 
-# Run the training script
+# Run the training script with non-interactive flag
 echo "Starting training with run_llm_stylometry.sh..." | tee -a $LOG_FILE
-./run_llm_stylometry.sh --train 2>&1 | tee -a $LOG_FILE
+./run_llm_stylometry.sh --train -y 2>&1 | tee -a $LOG_FILE
 
 echo "Training completed at $(date)" | tee -a $LOG_FILE
 TRAINSCRIPT

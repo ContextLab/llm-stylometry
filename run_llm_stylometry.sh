@@ -35,6 +35,7 @@ OPTIONS:
     -h, --help              Show this help message
     -f, --figure FIGURE     Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)
     -t, --train             Train models from scratch before generating figures
+    -y, --yes, --no-confirm Skip confirmation prompts (non-interactive mode)
     -g, --max-gpus NUM      Maximum number of GPUs to use for training (default: all)
     -d, --data PATH         Path to model_results.pkl (default: data/model_results.pkl)
     -o, --output DIR        Output directory for figures (default: paper/figs/source)
@@ -289,6 +290,7 @@ SKIP_SETUP=false
 FORCE_INSTALL=false
 CLEAN=false
 CLEAN_CACHE=false
+NO_CONFIRM=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -302,6 +304,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t|--train)
             TRAIN=true
+            shift
+            ;;
+        -y|--yes|--no-confirm)
+            NO_CONFIRM=true
             shift
             ;;
         -g|--max-gpus)
@@ -419,6 +425,10 @@ fi
 
 if [ -n "$MAX_GPUS" ]; then
     PYTHON_CMD="$PYTHON_CMD --max-gpus $MAX_GPUS"
+fi
+
+if [ "$NO_CONFIRM" = true ]; then
+    PYTHON_CMD="$PYTHON_CMD --no-confirm"
 fi
 
 if [ "$DATA_PATH" != "data/model_results.pkl" ]; then
