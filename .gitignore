@@ -24,3 +24,6 @@ tests/output_*/
 tests/data/*.csv
 tests/data/*.pkl
 !tests/data/test_model_results.pkl
+
+# Temporary test files
+.test_credentials

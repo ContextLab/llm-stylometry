@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from llm_stylometry.cli_utils import safe_print, format_header, is_windows
 
 
-def train_models(max_gpus=None):
+def train_models(max_gpus=None, no_confirm=False):
     """Train all models from scratch."""
     safe_print("\n" + "=" * 60)
     safe_print("Training Models from Scratch")
@@ -42,10 +42,14 @@ def train_models(max_gpus=None):
     safe_print(f"   Device: {device_info}")
     safe_print("   Training time depends on hardware (hours on GPU, days on CPU)")
 
-    response = input("\nProceed with training? [y/N]: ")
-    if response.lower() != 'y':
-        safe_print("Training cancelled.")
-        return False
+    if not no_confirm:
+        response = input("\nProceed with training? [y/N]: ")
+        if response.lower() != 'y':
+            safe_print("Training cancelled.")
+            return False
+    else:
+        safe_print("\nSkipping confirmation (--no-confirm flag set)")
+        safe_print("Starting training...")
 
     # Remove existing models directory to train from scratch
     import shutil
@@ -217,6 +221,12 @@ Examples:
         default=None
     )
 
+    parser.add_argument(
+        '--no-confirm', '-y',
+        action='store_true',
+        help='Skip confirmation prompts (useful for non-interactive mode)'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -234,7 +244,7 @@ Examples:
 
     # Train models if requested
     if args.train:
-        if not train_models(max_gpus=args.max_gpus):
+        if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm):
             return 1
         # Update data path to use newly generated results
         args.data = 'data/model_results.pkl'

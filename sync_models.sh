@@ -37,25 +37,28 @@ fi
 
 print_info "Checking model status on remote server..."
 
+# Create temporary file for remote check results
+TEMP_FILE=$(mktemp)
+
 # Check if all models are trained
-REMOTE_CHECK=$(ssh "$USERNAME@$SERVER_ADDRESS" 'bash -s' << 'ENDSSH'
+ssh "$USERNAME@$SERVER_ADDRESS" 'bash -s' << 'ENDSSH' > "$TEMP_FILE"
 #!/bin/bash
 
 MODELS_DIR="$HOME/llm-stylometry/models"
 EXPECTED_MODELS=80
-AUTHORS=("austen" "baum" "dickens" "fitzgerald" "melville" "thompson" "twain" "wells")
 
 if [ ! -d "$MODELS_DIR" ]; then
-    echo "ERROR: Models directory not found"
-    exit 1
+    echo "STATUS=ERROR"
+    exit 0
 fi
 
 # Count model directories
 MODEL_COUNT=0
 MISSING_MODELS=""
 
-for author in "${AUTHORS[@]}"; do
-    for seed in {0..9}; do
+# Use simple loop instead of array
+for author in austen baum dickens fitzgerald melville thompson twain wells; do
+    for seed in 0 1 2 3 4 5 6 7 8 9; do
         MODEL_DIR="$MODELS_DIR/${author}_tokenizer=gpt2_seed=${seed}"
         if [ -d "$MODEL_DIR" ]; then
             # Check for model weights (looking for .pth or .bin files)
@@ -82,7 +85,7 @@ if [ $MODEL_COUNT -eq $EXPECTED_MODELS ]; then
     # Create tarball
     cd "$HOME/llm-stylometry"
     TAR_FILE="$HOME/llm_stylometry_models_$(date +%Y%m%d_%H%M%S).tar.gz"
-    echo "Creating tarball: $TAR_FILE"
+    echo "Creating tarball: $TAR_FILE" >&2
     tar -czf "$TAR_FILE" models/
 
     # Get file size
@@ -93,10 +96,24 @@ else
     echo "STATUS=INCOMPLETE"
 fi
 ENDSSH
-)
 
 # Parse the remote check results
-eval "$REMOTE_CHECK"
+while IFS= read -r line; do
+    if [[ $line == STATUS=* ]]; then
+        STATUS="${line#STATUS=}"
+    elif [[ $line == MODEL_COUNT=* ]]; then
+        MODEL_COUNT="${line#MODEL_COUNT=}"
+    elif [[ $line == MISSING_MODELS=* ]]; then
+        MISSING_MODELS="${line#MISSING_MODELS=}"
+    elif [[ $line == TAR_FILE=* ]]; then
+        TAR_FILE="${line#TAR_FILE=}"
+    elif [[ $line == TAR_SIZE=* ]]; then
+        TAR_SIZE="${line#TAR_SIZE=}"
+    fi
+done < "$TEMP_FILE"
+
+# Clean up temp file
+rm -f "$TEMP_FILE"
 
 if [ "$STATUS" = "ERROR" ]; then
     print_error "Models directory not found on remote server"
@@ -174,11 +191,11 @@ ssh "$USERNAME@$SERVER_ADDRESS" "rm $TAR_FILE"
 
 # Also download model_results.pkl if it exists
 print_info "Checking for consolidated results file..."
-RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" "[ -f '$HOME/llm-stylometry/data/model_results.pkl' ] && echo 'yes' || echo 'no'")
+RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" '[ -f "$HOME/llm-stylometry/data/model_results.pkl" ] && echo "yes" || echo "no"')
 
 if [ "$RESULTS_EXISTS" = "yes" ]; then
     print_info "Downloading model_results.pkl..."
-    rsync -avz "$USERNAME@$SERVER_ADDRESS:$HOME/llm-stylometry/data/model_results.pkl" \
+    rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/model_results.pkl" \
         "$HOME/llm-stylometry/data/model_results.pkl"
     print_success "Downloaded model_results.pkl"
 else

@@ -21,6 +21,18 @@ echo "=================================================="
 echo "       LLM Stylometry Remote Training Setup"
 echo "=================================================="
 echo
+echo "Usage: $0 [options]"
+echo "Options:"
+echo "  --kill, -k   Kill existing training sessions before starting new one"
+echo
+
+# Check for --kill flag
+if [ "$1" = "--kill" ] || [ "$1" = "-k" ]; then
+    echo "Kill mode: Will terminate existing training sessions"
+    KILL_MODE=true
+else
+    KILL_MODE=false
+fi
 
 # Get server details
 read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
@@ -35,8 +47,17 @@ if [ -z "$USERNAME" ]; then
     exit 1
 fi
 
-# Create the remote training script
-REMOTE_SCRIPT='
+print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
+
+# Test SSH connection first
+if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "$USERNAME@$SERVER_ADDRESS" "echo 'Connection test successful'" 2>/dev/null; then
+    print_warning "Initial connection test failed. Trying with interactive authentication..."
+fi
+
+echo
+
+# Execute the remote script via SSH
+ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' bash -s" << 'ENDSSH'
 #!/bin/bash
 set -e
 
@@ -45,27 +66,40 @@ echo "Setting up LLM Stylometry on remote server"
 echo "=================================================="
 echo
 
-# Check if repo exists
-if [ -d "$HOME/llm-stylometry" ]; then
-    echo "Repository exists. Updating to latest version..."
-    cd "$HOME/llm-stylometry"
+# Check if we're in kill mode
+if [ "$KILL_MODE" = "true" ]; then
+    echo "Kill mode activated - terminating existing training sessions..."
 
-    # Stash any local changes
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        echo "Stashing local changes..."
-        git stash
-    fi
+    # Kill any existing screen sessions
+    screen -ls | grep -o '[0-9]*\.llm_training' | cut -d. -f1 | while read pid; do
+        if [ ! -z "$pid" ]; then
+            echo "Killing screen session with PID: $pid"
+            screen -X -S "$pid.llm_training" quit
+        fi
+    done
 
-    # Update repository
-    git fetch origin
-    git checkout main
-    git pull origin main
+    # Also kill any remaining python training processes
+    pkill -f "python.*generate_figures.py.*--train" 2>/dev/null || true
+
+    echo "All training sessions terminated."
+    echo ""
+
+    # In non-interactive mode, always start new training after killing
+    echo "Starting new training session..."
+    echo ""
+fi
+
+# Check if repository exists
+if [ -d ~/llm-stylometry ]; then
+    echo "Repository exists. Updating..."
+    cd ~/llm-stylometry
+    git pull
     echo "Repository updated successfully"
 else
-    echo "Cloning repository..."
-    cd "$HOME"
+    echo "Repository not found. Cloning..."
+    cd ~
     git clone https://github.com/ContextLab/llm-stylometry.git
-    cd "$HOME/llm-stylometry"
+    cd ~/llm-stylometry
     echo "Repository cloned successfully"
 fi
 
@@ -82,8 +116,8 @@ if ! command -v screen &> /dev/null; then
 fi
 
 # Create log directory
-mkdir -p "$HOME/llm-stylometry/logs"
-LOG_FILE="$HOME/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log"
+mkdir -p ~/llm-stylometry/logs
+LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
 
 echo ""
 echo "=================================================="
@@ -95,7 +129,7 @@ echo ""
 echo "Useful commands:"
 echo "  - Detach from screen: Ctrl+A, then D"
 echo "  - Reattach later: screen -r llm_training"
-echo "  - View log: tail -f $LOG_FILE"
+echo "  - View log: tail -f ~/llm-stylometry/logs/training_*.log"
 echo ""
 echo "Starting training in 5 seconds..."
 sleep 5
@@ -103,18 +137,49 @@ sleep 5
 # Kill any existing screen session with the same name
 screen -X -S llm_training quit 2>/dev/null || true
 
-# Start training in screen
-screen -dmS llm_training bash -c "
-    cd $HOME/llm-stylometry
-    echo 'Training started at $(date)' | tee -a $LOG_FILE
-    ./run_llm_stylometry.sh --train 2>&1 | tee -a $LOG_FILE
-    echo 'Training completed at $(date)' | tee -a $LOG_FILE
-"
+# Start training in screen (use --no-confirm flag for non-interactive mode)
+# Create a script file first
+cat > /tmp/llm_train.sh << 'TRAINSCRIPT'
+#!/bin/bash
+set -e  # Exit on error
+
+# Change to the repository directory
+cd ~/llm-stylometry
+
+# Create log directory and file
+mkdir -p logs
+LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
+echo "Training started at $(date)" | tee $LOG_FILE
+
+# Check if the run script exists
+if [ ! -f ./run_llm_stylometry.sh ]; then
+    echo "ERROR: run_llm_stylometry.sh not found in $(pwd)!" | tee -a $LOG_FILE
+    ls -la | tee -a $LOG_FILE
+    exit 1
+fi
+
+# Make sure it's executable
+chmod +x ./run_llm_stylometry.sh
+
+# Run the training script with non-interactive flag
+echo "Starting training with run_llm_stylometry.sh..." | tee -a $LOG_FILE
+./run_llm_stylometry.sh --train -y 2>&1 | tee -a $LOG_FILE
+
+echo "Training completed at $(date)" | tee -a $LOG_FILE
+TRAINSCRIPT
+
+chmod +x /tmp/llm_train.sh
+
+# Start screen session
+screen -dmS llm_training /tmp/llm_train.sh
 
 # Wait a moment for screen to start
 sleep 2
 
 # Check if screen session started
+echo "Checking screen sessions:"
+screen -list
+
 if screen -list | grep -q "llm_training"; then
     echo ""
     echo "✓ Training started successfully in screen session!"
@@ -138,14 +203,7 @@ else
     echo "Error: Failed to start screen session"
     exit 1
 fi
-'
-
-# Execute the remote script via SSH
-print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
-print_info "You may be prompted for your password and/or GitHub credentials."
-echo
-
-ssh -t "$USERNAME@$SERVER_ADDRESS" "$REMOTE_SCRIPT"
+ENDSSH
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then

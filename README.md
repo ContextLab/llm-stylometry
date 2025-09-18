@@ -188,34 +188,79 @@ The training pipeline automatically handles data preparation, model training acr
 
 ### Remote Training on GPU Server
 
-For training on a remote GPU server, use the provided `remote_train.sh` script:
+#### Prerequisites: Setting up Git credentials on the server
+
+Before using the remote training script, you need to set up Git credentials on your server once:
+
+1. SSH into your server:
+```bash
+ssh username@server
+```
+
+2. Configure Git with your credentials:
+```bash
+# Set your Git user information (use your GitHub username)
+git config --global user.name "your-github-username"
+git config --global user.email "your.email@example.com"
+
+# Enable credential storage
+git config --global credential.helper store
+```
+
+3. Clone the repository with your Personal Access Token:
+```bash
+# Replace <username> and <token> with your GitHub username and Personal Access Token
+# Get a token from: https://github.com/settings/tokens (grant 'repo' scope)
+git clone https://<username>:<token>@github.com/ContextLab/llm-stylometry.git
+
+# The credentials will be stored for future use
+cd llm-stylometry
+git pull  # This should work without prompting for credentials
+```
+
+#### Using the remote training script
+
+Once Git credentials are configured on your server, run `remote_train.sh` **from your local machine** (not on the GPU server):
 
 ```bash
-# Start remote training
+# From your local machine, start training on the remote GPU server
 ./remote_train.sh
+
+# Kill existing training sessions and optionally start new one
+./remote_train.sh --kill  # or -k
 
 # You'll be prompted for:
 # - Server address (hostname or IP)
 # - Username
-# - Password (for SSH)
 ```
 
-This script will:
-1. Connect to your GPU server via SSH
-2. Clone or update the repository in `~/llm-stylometry`
-3. Start training in a `screen` session that persists after disconnection
-4. Allow you to safely disconnect while training continues
+**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
 
-To monitor training progress:
+The script will:
+1. SSH into your GPU server
+2. Update the repository in `~/llm-stylometry` (or clone if it doesn't exist)
+3. Start `run_llm_stylometry.sh --train -y` in a `screen` session
+4. Exit, allowing your local machine to disconnect while training continues on the server
+
+#### Monitoring training progress
+
+To check on the training status, SSH into the server and reattach to the screen session:
+
 ```bash
+# From your local machine
 ssh username@server
-screen -r llm_training  # Reattach to training session
-# Press Ctrl+A, then D to detach again
+
+# On the server, reattach to see live training output
+screen -r llm_training
+
+# To detach and leave training running, press Ctrl+A, then D
+# To exit SSH while keeping training running
+exit
 ```
 
-### Downloading Trained Models
+#### Downloading results after training completes
 
-After training completes on a remote server, use `sync_models.sh` to download the models:
+Once training is complete, use `sync_models.sh` **from your local machine** to download the trained models and results:
 
 ```bash
 # Download trained models from server
