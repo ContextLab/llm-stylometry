@@ -34,27 +34,7 @@ else
     KILL_MODE=false
 fi
 
-# Ask about GitHub authentication method first
-print_info "GitHub authentication options:"
-echo "1. SSH key (recommended if already set up on server)"
-echo "2. Personal Access Token (will prompt when needed)"
-echo "3. Skip repository update (use existing code on server)"
-read -p "Choose option [1-3]: " AUTH_OPTION
-
-if [ "$AUTH_OPTION" = "2" ]; then
-    echo
-    print_warning "GitHub now requires Personal Access Tokens instead of passwords."
-    print_info "Create one at: https://github.com/settings/tokens"
-    print_info "Grant 'repo' scope for private repository access."
-    echo
-    read -p "Enter your GitHub username: " GH_USER
-    read -s -p "Enter your GitHub Personal Access Token: " GH_TOKEN
-    echo
-    export GH_USER GH_TOKEN
-fi
-
-# Now get server details
-echo
+# Get server details
 read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
 if [ -z "$SERVER_ADDRESS" ]; then
     print_error "Server address cannot be empty"
@@ -77,8 +57,7 @@ fi
 echo
 
 # Execute the remote script via SSH
-# Pass variables as arguments to the remote bash
-ssh -t "$USERNAME@$SERVER_ADDRESS" "AUTH_OPTION='$AUTH_OPTION' GH_USER='$GH_USER' GH_TOKEN='$GH_TOKEN' KILL_MODE='$KILL_MODE' bash -s" << 'ENDSSH'
+ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' bash -s" << 'ENDSSH'
 #!/bin/bash
 set -e
 
@@ -110,96 +89,19 @@ if [ "$KILL_MODE" = "true" ]; then
     echo ""
 fi
 
-# Handle different authentication options
-if [ "$AUTH_OPTION" = "3" ]; then
-    echo "Skipping all repository operations as requested..."
-    if [ ! -d ~/llm-stylometry ]; then
-        echo "Error: Repository not found at ~/llm-stylometry"
-        echo "Please choose option 1 or 2 to clone the repository first."
-        exit 1
-    fi
+# Check if repository exists
+if [ -d ~/llm-stylometry ]; then
+    echo "Repository exists. Updating..."
     cd ~/llm-stylometry
-    echo "Using existing repository without updates"
-else
-    # Configure Git to use credential caching to avoid repeated auth prompts
-    git config --global credential.helper cache
-    git config --global credential.helper 'cache --timeout=3600'
-
-    # Set up GitHub token authentication if provided (only for option 2)
-    if [ "$AUTH_OPTION" = "2" ] && [ -n "$GH_TOKEN" ] && [ -n "$GH_USER" ]; then
-        echo "Setting up GitHub token authentication..."
-        git config --global url."https://${GH_USER}:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-    fi
-
-    # Check if repo exists
-    if [ -d ~/llm-stylometry ]; then
-    echo "Repository exists. Updating to latest version..."
-    cd ~/llm-stylometry
-
-    # Stash any local changes
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        echo "Stashing local changes..."
-        git stash
-    fi
-
-    # Determine authentication method
-    if [ "$AUTH_OPTION" = "1" ]; then
-        # Try SSH first for option 1
-        if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
-            echo "Using SSH authentication..."
-            git remote set-url origin git@github.com:ContextLab/llm-stylometry.git
-        else
-            echo "SSH key not found or not authorized."
-            echo "Please ensure your SSH key is added to GitHub and try again."
-            exit 1
-        fi
-    elif [ "$AUTH_OPTION" = "2" ]; then
-        # Use HTTPS with token for option 2
-        echo "Using HTTPS with Personal Access Token..."
-        git remote set-url origin https://github.com/ContextLab/llm-stylometry.git
-
-        if [ -z "$GH_TOKEN" ] || [ -z "$GH_USER" ]; then
-            echo "GitHub credentials not provided. You'll be prompted during git operations."
-            echo "Note: Use your Personal Access Token as the password."
-        fi
-    fi
-
-    # Update repository
-    git fetch origin
-    git checkout main
-    git pull origin main
+    git pull
     echo "Repository updated successfully"
 else
     echo "Repository not found. Cloning..."
-
-    if [ "$AUTH_OPTION" = "1" ]; then
-        # Check if SSH key is available
-        if ssh -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
-            echo "Using SSH to clone repository..."
-            cd ~
-            git clone git@github.com:ContextLab/llm-stylometry.git
-        else
-            echo "SSH key not found or not authorized."
-            echo "Please ensure your SSH key is added to GitHub and try again."
-            exit 1
-        fi
-    elif [ "$AUTH_OPTION" = "2" ]; then
-        echo "Using HTTPS to clone repository..."
-        if [ -z "$GH_TOKEN" ] || [ -z "$GH_USER" ]; then
-            echo "GitHub credentials not configured. You'll be prompted."
-            echo "Username: Your GitHub username"
-            echo "Password: Your Personal Access Token (NOT your GitHub password)"
-            echo "Create a token at: https://github.com/settings/tokens"
-            echo ""
-        fi
-        cd ~
-        git clone https://github.com/ContextLab/llm-stylometry.git
-    fi
-
+    cd ~
+    git clone https://github.com/ContextLab/llm-stylometry.git
     cd ~/llm-stylometry
     echo "Repository cloned successfully"
-    fi
-fi  # End of AUTH_OPTION check
+fi
 
 # Check for screen
 if ! command -v screen &> /dev/null; then
