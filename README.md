@@ -238,15 +238,21 @@ Once Git credentials are configured on your server, run `remote_train.sh` **from
 # From your local machine, start training on the remote GPU server
 ./remote_train.sh
 
+# Resume training from existing checkpoints
+./remote_train.sh --resume  # or -r
+
 # Kill existing training sessions and optionally start new one
 ./remote_train.sh --kill  # or -k
+
+# Kill and resume (restart interrupted training)
+./remote_train.sh --kill --resume
 
 # You'll be prompted for:
 # - Server address (hostname or IP)
 # - Username
 ```
 
-**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
+**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (or `--train --resume -y` if resuming) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
 
 The script will:
 1. SSH into your GPU server
