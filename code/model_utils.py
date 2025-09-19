@@ -3,6 +3,8 @@ from pathlib import Path
 import logging
 from torch.optim import AdamW
 from constants import MODELS_DIR
+import random
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +20,19 @@ def save_checkpoint(
 
     model.save_pretrained(save_directory=checkpoint_dir)
 
+    # Save training state including random states for deterministic resume
     training_state = {
         "optimizer_state_dict": optimizer.state_dict(),
         "epochs_completed": epochs_completed,
+        "random_state": random.getstate(),
+        "np_random_state": np.random.get_state(),
+        "torch_random_state": torch.get_rng_state(),
     }
+
+    # Also save CUDA random state if available
+    if torch.cuda.is_available():
+        training_state["cuda_random_state"] = torch.cuda.get_rng_state_all()
+
     torch.save(obj=training_state, f=checkpoint_dir / "training_state.pt")
     logger.info(
         f"Checkpoint saved for {model_name} at epochs_completed={epochs_completed}"
@@ -42,11 +53,29 @@ def load_checkpoint(model_class, model_name, device):
     if not training_state_path.exists():
         raise FileNotFoundError(f"Training state file not found for {model_name}")
 
-    training_state = torch.load(f=training_state_path)
+    training_state = torch.load(f=training_state_path, map_location=device)
 
     optimizer = AdamW(params=model.parameters(), lr=0)
     optimizer.load_state_dict(state_dict=training_state["optimizer_state_dict"])
     epochs_completed = training_state["epochs_completed"]
+
+    # Restore random states for deterministic resume (if available)
+    if "random_state" in training_state:
+        random.setstate(training_state["random_state"])
+        logger.info("Restored Python random state")
+
+    if "np_random_state" in training_state:
+        np.random.set_state(training_state["np_random_state"])
+        logger.info("Restored NumPy random state")
+
+    if "torch_random_state" in training_state:
+        torch.set_rng_state(training_state["torch_random_state"])
+        logger.info("Restored PyTorch random state")
+
+    if "cuda_random_state" in training_state and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(training_state["cuda_random_state"])
+        logger.info("Restored CUDA random state")
+
     logger.info(
         f"Checkpoint loaded for {model_name} from epochs_completed={epochs_completed}"
     )
