@@ -4246,7 +4246,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,471,austen,6.428857088088989
 0,dickens,471,fitzgerald,6.933970822228326
 0,dickens,471,twain,6.098390340805054
-0,dickens,472,train,3.5593792855739594
+0,dickens,472,train,3.559379285573959
 0,dickens,472,baum,6.626437306404114
 0,dickens,472,thompson,7.255319714546204
 0,dickens,472,dickens,5.568473895390828
@@ -4930,7 +4930,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,547,austen,6.714862108230591
 0,dickens,547,fitzgerald,7.140305942959255
 0,dickens,547,twain,6.242915391921997
-0,dickens,548,train,3.4333393394947054
+0,dickens,548,train,3.433339339494706
 0,dickens,548,baum,6.76764726638794
 0,dickens,548,thompson,7.395960450172424
 0,dickens,548,dickens,5.627925177415212
@@ -5056,7 +5056,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,561,austen,6.7194530963897705
 0,dickens,561,fitzgerald,7.170820660061306
 0,dickens,561,twain,6.296996593475342
-0,dickens,562,train,3.4025029063224794
+0,dickens,562,train,3.402502906322479
 0,dickens,562,baum,6.845208525657654
 0,dickens,562,thompson,7.467703938484192
 0,dickens,562,dickens,5.665200710296631
@@ -6199,7 +6199,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,688,austen,7.054502010345459
 0,dickens,688,fitzgerald,7.47326676050822
 0,dickens,688,twain,6.517815987269084
-0,dickens,689,train,3.1938633739948274
+0,dickens,689,train,3.193863373994827
 0,dickens,689,baum,7.112515807151794
 0,dickens,689,thompson,7.712815642356873
 0,dickens,689,dickens,5.8144150376319885
@@ -6559,7 +6559,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,728,austen,7.10962438583374
 0,dickens,728,fitzgerald,7.543304231431749
 0,dickens,728,twain,6.607301632563273
-0,dickens,729,train,3.1425432205200194
+0,dickens,729,train,3.142543220520019
 0,dickens,729,baum,7.248814344406128
 0,dickens,729,thompson,7.910053491592407
 0,dickens,729,dickens,5.924135287602742
@@ -7279,7 +7279,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,808,austen,7.301978826522827
 0,dickens,808,fitzgerald,7.696435928344727
 0,dickens,808,twain,6.698455015818278
-0,dickens,809,train,3.0321285486221314
+0,dickens,809,train,3.032128548622131
 0,dickens,809,baum,7.387582063674927
 0,dickens,809,thompson,8.036604642868042
 0,dickens,809,dickens,5.986969629923503
@@ -7396,7 +7396,7 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,821,austen,7.315482378005981
 0,dickens,821,fitzgerald,7.78380192650689
 0,dickens,821,twain,6.779078563054402
-0,dickens,822,train,3.0102364480495454
+0,dickens,822,train,3.010236448049546
 0,dickens,822,baum,7.4217036962509155
 0,dickens,822,thompson,8.086301803588867
 0,dickens,822,dickens,6.039566397666931
@@ -7495,3 +7495,11 @@ seed,train_author,epochs_completed,loss_dataset,loss_value
 0,dickens,832,austen,7.235371589660644
 0,dickens,832,fitzgerald,7.714619795481364
 0,dickens,832,twain,6.734539747238159
+0,dickens,0,baum,10.818403625488282
+0,dickens,0,thompson,10.80428910255432
+0,dickens,0,dickens,10.829134941101074
+0,dickens,0,melville,10.83779513835907
+0,dickens,0,wells,10.83563014439174
+0,dickens,0,austen,10.84407377243042
+0,dickens,0,fitzgerald,10.84134156363351
+0,dickens,0,twain,10.819803476333618

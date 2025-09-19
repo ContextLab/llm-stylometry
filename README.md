@@ -131,6 +131,9 @@ python generate_figures.py --figure 1a
 # Train models from scratch
 python generate_figures.py --train
 
+# Resume training from existing checkpoints
+python generate_figures.py --train --resume
+
 # List available figures
 python generate_figures.py --list
 ```
@@ -175,6 +178,9 @@ fig = generate_all_losses_figure(
 # Using the CLI (recommended - handles all steps automatically)
 ./run_llm_stylometry.sh --train
 
+# Resume training from existing checkpoints
+./run_llm_stylometry.sh --train --resume
+
 # Limit GPU usage if needed
 ./run_llm_stylometry.sh --train --max-gpus 4
 ```
@@ -183,6 +189,12 @@ This command will:
 1. Clean and prepare the data if needed
 2. Train all 80 models (8 authors × 10 seeds)
 3. Consolidate results into `data/model_results.pkl`
+
+**Resume Training**: The `--resume` flag allows you to continue training from existing checkpoints:
+- Models that have already met training criteria are automatically skipped
+- Partially trained models with saved weights resume from their last checkpoint
+- Models without weights are trained from scratch (even if loss logs exist)
+- Random states are restored from checkpoints to ensure consistent training continuation
 
 The training pipeline automatically handles data preparation, model training across available GPUs, and result consolidation. Individual model checkpoints and loss logs are saved in the `models/` directory.
 
@@ -226,15 +238,21 @@ Once Git credentials are configured on your server, run `remote_train.sh` **from
 # From your local machine, start training on the remote GPU server
 ./remote_train.sh
 
+# Resume training from existing checkpoints
+./remote_train.sh --resume  # or -r
+
 # Kill existing training sessions and optionally start new one
 ./remote_train.sh --kill  # or -k
+
+# Kill and resume (restart interrupted training)
+./remote_train.sh --kill --resume
 
 # You'll be prompted for:
 # - Server address (hostname or IP)
 # - Username
 ```
 
-**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
+**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (or `--train --resume -y` if resuming) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
 
 The script will:
 1. SSH into your GPU server

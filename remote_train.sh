@@ -23,16 +23,26 @@ echo "=================================================="
 echo
 echo "Usage: $0 [options]"
 echo "Options:"
-echo "  --kill, -k   Kill existing training sessions before starting new one"
+echo "  --kill, -k     Kill existing training sessions before starting new one"
+echo "  --resume, -r   Resume training from existing checkpoints"
 echo
 
-# Check for --kill flag
-if [ "$1" = "--kill" ] || [ "$1" = "-k" ]; then
-    echo "Kill mode: Will terminate existing training sessions"
-    KILL_MODE=true
-else
-    KILL_MODE=false
-fi
+# Parse command line arguments
+KILL_MODE=false
+RESUME_MODE=false
+
+for arg in "$@"; do
+    case $arg in
+        --kill|-k)
+            echo "Kill mode: Will terminate existing training sessions"
+            KILL_MODE=true
+            ;;
+        --resume|-r)
+            echo "Resume mode: Will continue training from existing checkpoints"
+            RESUME_MODE=true
+            ;;
+    esac
+done
 
 # Get server details
 read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
@@ -57,7 +67,7 @@ fi
 echo
 
 # Execute the remote script via SSH
-ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' bash -s" << 'ENDSSH'
+ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' bash -s" << 'ENDSSH'
 #!/bin/bash
 set -e
 
@@ -138,8 +148,9 @@ sleep 5
 screen -X -S llm_training quit 2>/dev/null || true
 
 # Start training in screen (use --no-confirm flag for non-interactive mode)
-# Create a script file first
-cat > /tmp/llm_train.sh << 'TRAINSCRIPT'
+# Create a script file first with RESUME_MODE variable
+echo "RESUME_MODE='$RESUME_MODE'" > /tmp/llm_train.sh
+cat >> /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 set -e  # Exit on error
 
@@ -163,7 +174,15 @@ chmod +x ./run_llm_stylometry.sh
 
 # Run the training script with non-interactive flag
 echo "Starting training with run_llm_stylometry.sh..." | tee -a $LOG_FILE
-./run_llm_stylometry.sh --train -y 2>&1 | tee -a $LOG_FILE
+
+# Check if we're in resume mode
+if [ "$RESUME_MODE" = "true" ]; then
+    echo "Running in resume mode - continuing from existing checkpoints" | tee -a $LOG_FILE
+    ./run_llm_stylometry.sh --train --resume -y 2>&1 | tee -a $LOG_FILE
+else
+    echo "Running full training from scratch" | tee -a $LOG_FILE
+    ./run_llm_stylometry.sh --train -y 2>&1 | tee -a $LOG_FILE
+fi
 
 echo "Training completed at $(date)" | tee -a $LOG_FILE
 TRAINSCRIPT

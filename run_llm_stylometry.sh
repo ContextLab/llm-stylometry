@@ -35,6 +35,7 @@ OPTIONS:
     -h, --help              Show this help message
     -f, --figure FIGURE     Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)
     -t, --train             Train models from scratch before generating figures
+    -r, --resume            Resume training from existing checkpoints (use with -t)
     -y, --yes, --no-confirm Skip confirmation prompts (non-interactive mode)
     -g, --max-gpus NUM      Maximum number of GPUs to use for training (default: all)
     -d, --data PATH         Path to model_results.pkl (default: data/model_results.pkl)
@@ -281,6 +282,7 @@ setup_environment() {
 # Parse command line arguments
 FIGURE=""
 TRAIN=false
+RESUME=false
 MAX_GPUS=""
 DATA_PATH="data/model_results.pkl"
 OUTPUT_DIR="paper/figs/source"
@@ -304,6 +306,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t|--train)
             TRAIN=true
+            shift
+            ;;
+        -r|--resume)
+            RESUME=true
             shift
             ;;
         -y|--yes|--no-confirm)
@@ -353,6 +359,12 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Validate --resume flag usage
+if [ "$RESUME" = true ] && [ "$TRAIN" = false ]; then
+    print_warning "Warning: --resume flag is ignored without --train flag"
+    RESUME=false
+fi
 
 # Main execution
 echo "╔══════════════════════════════════════════════════════════╗"
@@ -421,6 +433,10 @@ fi
 
 if [ "$TRAIN" = true ]; then
     PYTHON_CMD="$PYTHON_CMD --train"
+fi
+
+if [ "$RESUME" = true ]; then
+    PYTHON_CMD="$PYTHON_CMD --resume"
 fi
 
 if [ -n "$MAX_GPUS" ]; then
