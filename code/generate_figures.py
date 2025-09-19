@@ -21,10 +21,13 @@ import matplotlib.pyplot as plt
 from llm_stylometry.cli_utils import safe_print, format_header, is_windows
 
 
-def train_models(max_gpus=None, no_confirm=False):
-    """Train all models from scratch."""
+def train_models(max_gpus=None, no_confirm=False, resume=False):
+    """Train all models from scratch or resume from checkpoints."""
     safe_print("\n" + "=" * 60)
-    safe_print("Training Models from Scratch")
+    if resume:
+        safe_print("Resuming Model Training from Checkpoints")
+    else:
+        safe_print("Training Models from Scratch")
     safe_print("=" * 60)
     warning = "[WARNING]" if is_windows() else "⚠️"
     # Check device availability
@@ -51,19 +54,29 @@ def train_models(max_gpus=None, no_confirm=False):
         safe_print("\nSkipping confirmation (--no-confirm flag set)")
         safe_print("Starting training...")
 
-    # Remove existing models directory to train from scratch
+    # Handle models directory based on resume flag
     import shutil
     models_dir = Path('models')
-    if models_dir.exists():
-        safe_print("\nRemoving existing models directory...")
-        shutil.rmtree(models_dir)
-        safe_print("Existing models removed.")
 
-    # Also remove existing model results file
-    model_results_path = Path('data/model_results.pkl')
-    if model_results_path.exists():
-        safe_print("Removing existing model_results.pkl...")
-        model_results_path.unlink()
+    if not resume:
+        # Remove existing models directory to train from scratch
+        if models_dir.exists():
+            safe_print("\nRemoving existing models directory...")
+            shutil.rmtree(models_dir)
+            safe_print("Existing models removed.")
+
+        # Also remove existing model results file
+        model_results_path = Path('data/model_results.pkl')
+        if model_results_path.exists():
+            safe_print("Removing existing model_results.pkl...")
+            model_results_path.unlink()
+    else:
+        # When resuming, keep existing models and check their status
+        if models_dir.exists():
+            safe_print("\nResuming from existing models directory...")
+        else:
+            safe_print("\nNo existing models found. Starting fresh training...")
+            resume = False  # Fall back to fresh training if no models exist
 
     # Prepare data if needed
     if not Path('data/cleaned').exists():
@@ -98,6 +111,9 @@ def train_models(max_gpus=None, no_confirm=False):
         if max_gpus:
             env['MAX_GPUS'] = str(max_gpus)
             safe_print(f"Limiting to {max_gpus} GPU(s)")
+        # Pass through resume flag if specified
+        if resume:
+            env['RESUME_TRAINING'] = '1'
         # Run without capturing output so we can see progress
         result = subprocess.run([sys.executable, 'code/main.py'], env=env, check=False)
         if result.returncode != 0:
@@ -227,6 +243,12 @@ Examples:
         help='Skip confirmation prompts (useful for non-interactive mode)'
     )
 
+    parser.add_argument(
+        '--resume', '-r',
+        action='store_true',
+        help='Resume training from existing checkpoints (use with --train)'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -242,9 +264,14 @@ Examples:
 
     safe_print(format_header("LLM Stylometry CLI", 60))
 
+    # Validate --resume flag usage
+    if args.resume and not args.train:
+        safe_print("\nWarning: --resume flag is ignored without --train flag")
+        args.resume = False
+
     # Train models if requested
     if args.train:
-        if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm):
+        if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume):
             return 1
         # Update data path to use newly generated results
         args.data = 'data/model_results.pkl'

@@ -36,6 +36,52 @@ else:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def check_model_complete(model_name, stop_train_loss=3.0, min_epochs=0):
+    """
+    Check if a model has completed training based on loss logs and weights.
+
+    Returns:
+        tuple: (is_complete, has_weights, epochs_completed)
+            - is_complete: True if model has met stop criteria
+            - has_weights: True if model weights exist
+            - epochs_completed: Number of epochs completed (0 if no logs)
+    """
+    model_dir = MODELS_DIR / model_name
+
+    # Check if model weights exist
+    weights_file = model_dir / "model.safetensors"
+    config_file = model_dir / "config.json"
+    training_state_file = model_dir / "training_state.pt"
+    has_weights = weights_file.exists() and config_file.exists() and training_state_file.exists()
+
+    # Check loss logs
+    loss_log_file = model_dir / "loss_logs.csv"
+    if not loss_log_file.exists():
+        return False, has_weights, 0
+
+    # Read loss logs to check training status
+    import pandas as pd
+    try:
+        df = pd.read_csv(loss_log_file)
+        if df.empty:
+            return False, has_weights, 0
+
+        # Get the last training loss for this model
+        train_losses = df[df['loss_dataset'] == 'train'].sort_values('epochs_completed')
+        if train_losses.empty:
+            return False, has_weights, 0
+
+        last_epoch = train_losses['epochs_completed'].max()
+        last_train_loss = train_losses[train_losses['epochs_completed'] == last_epoch]['loss_value'].iloc[0]
+
+        # Check if model has met stop criteria
+        is_complete = (last_train_loss <= stop_train_loss and last_epoch >= min_epochs)
+
+        return is_complete, has_weights, int(last_epoch)
+    except Exception as e:
+        logger.warning(f"Error reading loss logs for {model_name}: {e}")
+        return False, has_weights, 0
+
 # Detect available devices
 def get_device_info():
     """Detect and return device configuration."""
@@ -51,6 +97,9 @@ def get_device_info():
 device_type, device_count = get_device_info()
 logger.info(f"Device type: {device_type}, Count: {device_count}")
 
+# Check if we're in resume mode
+resume_mode = os.environ.get('RESUME_TRAINING', '0') == '1'
+
 experiments = []
 for seed in range(10):
     for author in AUTHORS:
@@ -59,6 +108,7 @@ for seed in range(10):
                 train_author=author,
                 seed=seed,
                 tokenizer_name="gpt2",
+                resume_training=resume_mode,
             )
         )
 
@@ -297,6 +347,49 @@ def run_experiment(exp: Experiment, device_queue, device_type="cuda"):
 if __name__ == "__main__":
     # Check if we should run sequentially (for subprocess compatibility)
     USE_MULTIPROCESSING = os.environ.get('NO_MULTIPROCESSING', '0') != '1'
+
+    # Filter experiments based on resume mode
+    if resume_mode:
+        logger.info("Checking existing models for resume...")
+        experiments_to_run = []
+        import shutil
+
+        for exp in experiments:
+            is_complete, has_weights, epochs_done = check_model_complete(
+                exp.name,
+                exp.stop_criteria["train_loss"],
+                exp.stop_criteria["min_epochs"]
+            )
+
+            if is_complete:
+                # Model has completed training - skip it
+                logger.info(f"Skipping {exp.name} - already complete (epochs: {epochs_done})")
+            elif has_weights:
+                # Model has weights and can be resumed
+                logger.info(f"Resuming {exp.name} from epoch {epochs_done}")
+                experiments_to_run.append(exp)
+            elif epochs_done > 0:
+                # Loss logs exist but no weights (e.g., after cloning repo) - need to restart
+                logger.info(f"Starting {exp.name} from scratch - no weights available (removing existing logs)")
+                model_dir = MODELS_DIR / exp.name
+                if model_dir.exists():
+                    # Remove only this specific model's directory to start fresh
+                    shutil.rmtree(model_dir)
+                exp.resume_training = False  # Force fresh start for this model
+                experiments_to_run.append(exp)
+            else:
+                # No logs or weights - start fresh for this model
+                logger.info(f"Starting fresh: {exp.name} (no existing logs or weights)")
+                exp.resume_training = False  # No checkpoint to resume from
+                experiments_to_run.append(exp)
+
+        experiments = experiments_to_run
+        total_models = 80  # 8 authors × 10 seeds
+        logger.info(f"Models to train: {len(experiments)} out of {total_models} total")
+
+        if not experiments:
+            logger.info("All models are complete. Nothing to train.")
+            sys.exit(0)
 
     # Use already detected device configuration
     if device_type == "cuda":
