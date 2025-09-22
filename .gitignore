@@ -27,3 +27,5 @@ tests/data/*.pkl
 
 # Temporary test files
 .test_credentials
+models/*/model.safetensors
+models/*/training_state.pt
