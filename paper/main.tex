@@ -227,7 +227,7 @@ $p$-values below $0.001$ after just one epoch, indicating that the models
 rapidly acquire author-specific stylometric patterns. For Twain, this threshold
 is crossed at epoch 47. Figure~\ref{fig:t-stats}B shows the average $t$-values
 across all eight authors as a function of the number of training epochs (final
-epoch: $t(9) = 20.723, p = 6.6 \times 10^{-9}$). This latter plot provides an
+epoch: $t(9) = 13.196, p = 3.41 \times 10^{-7}$). This latter plot provides an
 estimate of the performance we might expect to see in the general case (e.g.,
 across a larger set of authors). Table~\ref{tab:t-tests} summarizes the results
 of the $t$-tests for each author's model after training is complete.
@@ -239,14 +239,14 @@ of the $t$-tests for each author's model after training is complete.
 \hline
 \textbf{Model} & \textbf{$t$-stat} & \textbf{df} & \textbf{$p$-value}\\
 \hline
-Baum        & 16.96 & 10.49 & $5.78 \times 10^{-9}$  \\
-Thompson    & 21.50 & 13.60 & $6.84 \times 10^{-12}$ \\
-Austen      & 47.29 & 54.75 & $4.38 \times 10^{-46}$ \\
-Dickens     & 18.36 & 27.36 & $6.52 \times 10^{-17}$ \\
-Fitzgerald  & 26.03 & 22.66 & $2.22 \times 10^{-18}$ \\
-Melville    & 24.15 & 45.15 & $1.87 \times 10^{-27}$ \\
-Twain       & 20.13 & 12.22 & $9.67 \times 10^{-11}$ \\
-Wells       & 35.17 & 26.33 & $1.16 \times 10^{-23}$ \\
+Baum        & 48.39 & 31.53 & $3.69 \times 10^{-31}$  \\
+Thompson    & 22.35 & 16.39 & $1.04 \times 10^{-13}$ \\
+Austen      & 50.64 & 47.38 & $6.48 \times 10^{-43}$ \\
+Dickens     & 16.37 & 17.84 & $3.46 \times 10^{-12}$ \\
+Fitzgerald  & 25.94 & 23.13 & $1.55 \times 10^{-16}$ \\
+Melville    & 23.38 & 23.13 & $1.35 \times 10^{-17}$ \\
+Twain       & 16.74 & 11.27 & $2.60 \times 10^{-9}$ \\
+Wells       & 35.73 & 23.68 & $4.15 \times 10^{-22}$ \\
 \hline
 \end{tabular}
 
@@ -280,7 +280,7 @@ provide the plot solely as a provocative demonstration.
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.6\textwidth]{figs/source/loss_heatmap_ordered.pdf}
+  \includegraphics[width=0.6\textwidth]{figs/source/average_loss_heatmap.pdf}
 
 
   \caption{\textbf{Confusion matrix.} The matrix displays the average cross-entropy loss assigned by models trained on each
