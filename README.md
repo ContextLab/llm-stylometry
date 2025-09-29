@@ -110,6 +110,9 @@ pip install -e .
 # Train models from scratch (requires GPU)
 ./run_llm_stylometry.sh -t
 
+# Compute statistical analyses (Table 1 and key statistics)
+./run_stats.sh
+
 # Custom data and output paths
 ./run_llm_stylometry.sh -d path/to/model_results.pkl -o path/to/output
 
@@ -167,6 +170,20 @@ fig = generate_all_losses_figure(
 - **3**: Figure 3 - Confusion matrix heatmap (average_loss_heatmap.pdf)
 - **4**: Figure 4 - 3D MDS plot (3d_MDS_plot.pdf)
 - **5**: Figure 5 - Oz authorship analysis (oz_losses.pdf)
+
+### Statistical Analysis
+
+Generate key statistics from the paper:
+
+```bash
+# Compute statistical analyses
+./run_stats.sh
+```
+
+This produces:
+- **Twain p-threshold analysis**: Epoch where Twain model first achieves p < 0.001
+- **Average t-test**: t-test of average t-statistics across seeds, at 500th epoch
+- **Table 1**: Individual author model t-tests comparing self vs. other losses
 
 ## Training Models from Scratch
 
