@@ -23,23 +23,47 @@ echo "=================================================="
 echo
 echo "Usage: $0 [options]"
 echo "Options:"
-echo "  --kill, -k     Kill existing training sessions before starting new one"
-echo "  --resume, -r   Resume training from existing checkpoints"
+echo "  --kill, -k              Kill existing training sessions before starting new one"
+echo "  --resume, -r            Resume training from existing checkpoints"
+echo "  -co, --content-only     Train content-only variant"
+echo "  -fo, --function-only    Train function-only variant"
+echo "  -pos, --part-of-speech  Train part-of-speech variant"
 echo
 
 # Parse command line arguments
 KILL_MODE=false
 RESUME_MODE=false
+VARIANT_ARG=""
 
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --kill|-k)
             echo "Kill mode: Will terminate existing training sessions"
             KILL_MODE=true
+            shift
             ;;
         --resume|-r)
             echo "Resume mode: Will continue training from existing checkpoints"
             RESUME_MODE=true
+            shift
+            ;;
+        -co|--content-only)
+            VARIANT_ARG="-co"
+            echo "Training content-only variant"
+            shift
+            ;;
+        -fo|--function-only)
+            VARIANT_ARG="-fo"
+            echo "Training function-only variant"
+            shift
+            ;;
+        -pos|--part-of-speech)
+            VARIANT_ARG="-pos"
+            echo "Training part-of-speech variant"
+            shift
+            ;;
+        *)
+            shift
             ;;
     esac
 done
@@ -178,10 +202,10 @@ echo "Starting training with run_llm_stylometry.sh..." | tee -a $LOG_FILE
 # Check if we're in resume mode
 if [ "$RESUME_MODE" = "true" ]; then
     echo "Running in resume mode - continuing from existing checkpoints" | tee -a $LOG_FILE
-    ./run_llm_stylometry.sh --train --resume -y 2>&1 | tee -a $LOG_FILE
+    ./run_llm_stylometry.sh --train --resume -y $VARIANT_ARG 2>&1 | tee -a $LOG_FILE
 else
     echo "Running full training from scratch" | tee -a $LOG_FILE
-    ./run_llm_stylometry.sh --train -y 2>&1 | tee -a $LOG_FILE
+    ./run_llm_stylometry.sh --train -y $VARIANT_ARG 2>&1 | tee -a $LOG_FILE
 fi
 
 echo "Training completed at $(date)" | tee -a $LOG_FILE

@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from llm_stylometry.cli_utils import safe_print, format_header, is_windows
 
 
-def train_models(max_gpus=None, no_confirm=False, resume=False):
+def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     """Train all models from scratch or resume from checkpoints."""
     safe_print("\n" + "=" * 60)
     if resume:
@@ -43,6 +43,10 @@ def train_models(max_gpus=None, no_confirm=False, resume=False):
 
     safe_print(f"\n{warning}  Warning: This will train 80 models (8 authors × 10 seeds)")
     safe_print(f"   Device: {device_info}")
+    if variant:
+        safe_print(f"   Variant: {variant}_only")
+    else:
+        safe_print("   Variant: baseline")
     safe_print("   Training time depends on hardware (hours on GPU, days on CPU)")
 
     if not no_confirm:
@@ -114,6 +118,10 @@ def train_models(max_gpus=None, no_confirm=False, resume=False):
         # Pass through resume flag if specified
         if resume:
             env['RESUME_TRAINING'] = '1'
+        # Pass through analysis variant if specified
+        if variant:
+            env['ANALYSIS_VARIANT'] = variant
+            safe_print(f"Training {variant} variant models")
         # Run without capturing output so we can see progress
         result = subprocess.run([sys.executable, 'code/main.py'], env=env, check=False)
         if result.returncode != 0:
@@ -249,6 +257,13 @@ Examples:
         help='Resume training from existing checkpoints (use with --train)'
     )
 
+    parser.add_argument(
+        '--variant',
+        choices=['content', 'function', 'pos'],
+        default=None,
+        help='Analysis variant for training (content-only, function-only, or POS-only)'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -271,7 +286,7 @@ Examples:
 
     # Train models if requested
     if args.train:
-        if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume):
+        if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume, variant=args.variant):
             return 1
         # Update data path to use newly generated results
         args.data = 'data/model_results.pkl'

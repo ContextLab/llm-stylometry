@@ -41,6 +41,9 @@ OPTIONS:
     -d, --data PATH         Path to model_results.pkl (default: data/model_results.pkl)
     -o, --output DIR        Output directory for figures (default: paper/figs/source)
     -l, --list              List available figures
+    -co, --content-only     Train content-only variant (function words masked)
+    -fo, --function-only    Train function-only variant (content words masked)
+    -pos, --part-of-speech  Train part-of-speech variant (words → POS tags)
     --setup-only            Only setup environment without generating figures
     --no-setup              Skip environment setup (assume already configured)
     --force-install         Force reinstall of all dependencies
@@ -53,6 +56,9 @@ EXAMPLES:
     $0 -f 4                 # Generate only Figure 4 (MDS plot)
     $0 -t                   # Train models from scratch using all GPUs
     $0 -t -g 2              # Train models using only 2 GPUs
+    $0 -t -co               # Train content-only variant models
+    $0 -t -fo               # Train function-only variant models
+    $0 -t -pos              # Train part-of-speech variant models
     $0 -l                   # List available figures
     $0 --setup-only         # Only setup the environment
     $0 --clean              # Remove environment and reinstall from scratch
@@ -293,6 +299,7 @@ FORCE_INSTALL=false
 CLEAN=false
 CLEAN_CACHE=false
 NO_CONFIRM=false
+VARIANT=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -350,6 +357,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --clean-cache)
             CLEAN_CACHE=true
+            shift
+            ;;
+        -co|--content-only)
+            VARIANT="content"
+            shift
+            ;;
+        -fo|--function-only)
+            VARIANT="function"
+            shift
+            ;;
+        -pos|--part-of-speech)
+            VARIANT="pos"
             shift
             ;;
         *)
@@ -453,6 +472,10 @@ fi
 
 if [ "$OUTPUT_DIR" != "paper/figs/source" ]; then
     PYTHON_CMD="$PYTHON_CMD --output $OUTPUT_DIR"
+fi
+
+if [ -n "$VARIANT" ]; then
+    PYTHON_CMD="$PYTHON_CMD --variant $VARIANT"
 fi
 
 # Execute the Python script
