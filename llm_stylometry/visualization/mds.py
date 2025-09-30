@@ -75,7 +75,8 @@ def generate_3d_mds_figure(
     output_path=None,
     figsize=(9, 7),
     font='Helvetica',
-    zoom_factor=0.1
+    zoom_factor=0.1,
+    variant=None
 ):
     """
     Generate Figure 4: 3D MDS plot from loss matrix.
