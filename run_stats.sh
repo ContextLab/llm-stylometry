@@ -25,6 +25,64 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Parse command line arguments
+VARIANTS=()
+DATA_PATH="data/model_results.pkl"
+
+show_help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo
+    echo "Options:"
+    echo "  -h, --help              Show this help message"
+    echo "  -d, --data PATH         Path to model results file (default: data/model_results.pkl)"
+    echo "  -co, --content-only     Compute statistics for content-word variant only"
+    echo "  -fo, --function-only    Compute statistics for function-word variant only"
+    echo "  -pos, --part-of-speech  Compute statistics for part-of-speech variant only"
+    echo "  -a, --all               Compute statistics for baseline + all 3 variants"
+    echo
+    echo "If no variant flags are specified, computes baseline statistics only."
+    echo
+    exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            ;;
+        -d|--data)
+            DATA_PATH="$2"
+            shift 2
+            ;;
+        -co|--content-only)
+            VARIANTS+=("content")
+            shift
+            ;;
+        -fo|--function-only)
+            VARIANTS+=("function")
+            shift
+            ;;
+        -pos|--part-of-speech)
+            VARIANTS+=("pos")
+            shift
+            ;;
+        -a|--all)
+            VARIANTS=("baseline" "content" "function" "pos")
+            shift
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# If no variants specified, default to baseline only
+if [ ${#VARIANTS[@]} -eq 0 ]; then
+    VARIANTS=("baseline")
+fi
+
 # Check if script is being run from correct directory
 if [ ! -f "run_llm_stylometry.sh" ]; then
     print_error "This script must be run from the root of the llm-stylometry repository"
@@ -34,8 +92,8 @@ fi
 print_header
 
 # Check if data exists
-if [ ! -f "data/model_results.pkl" ]; then
-    print_error "Model results not found at data/model_results.pkl"
+if [ ! -f "$DATA_PATH" ]; then
+    print_error "Model results not found at $DATA_PATH"
     print_info "Please run './run_llm_stylometry.sh' first to generate results"
     exit 1
 fi
@@ -58,10 +116,17 @@ python -c "import scipy, pandas, numpy" 2>/dev/null || {
     pip install scipy pandas numpy
 }
 
-# Run the statistical analysis
-print_info "Computing statistics..."
-echo
-
-python code/compute_stats.py
+# Run the statistical analysis for each variant
+for variant in "${VARIANTS[@]}"; do
+    echo
+    if [ "$variant" == "baseline" ]; then
+        print_info "Computing baseline statistics..."
+        python code/compute_stats.py --data "$DATA_PATH"
+    else
+        print_info "Computing statistics for $variant variant..."
+        python code/compute_stats.py --data "$DATA_PATH" --variant "$variant"
+    fi
+    echo
+done
 
 print_success "Statistical analysis complete!"
