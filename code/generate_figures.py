@@ -147,7 +147,7 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     return True
 
 
-def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir='paper/figs/source'):
+def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir='paper/figs/source', variant=None):
     """Generate a specific figure."""
     from llm_stylometry.visualization import (
         generate_all_losses_figure,
@@ -179,7 +179,7 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
 
     safe_print(f"Generating Figure {figure_name.upper()}: {name}...")
     try:
-        kwargs = {'data_path': data_path, 'output_path': str(output_path)}
+        kwargs = {'data_path': data_path, 'output_path': str(output_path), 'variant': variant}
         if name in ['all_losses', 'stripplot', 't_test', 't_test_avg', 'oz']:
             kwargs['show_legend'] = False
         fig = func(**kwargs)
@@ -308,7 +308,7 @@ Examples:
 
     # Generate specific figure if requested
     if args.figure:
-        success = generate_figure(args.figure, args.data, args.output)
+        success = generate_figure(args.figure, args.data, args.output, variant=args.variant)
         return 0 if success else 1
 
     safe_print("\n" + "=" * 60)
@@ -331,41 +331,48 @@ Examples:
          lambda: generate_all_losses_figure(
              data_path=args.data,
              output_path=f'{args.output}/all_losses.pdf',
-             show_legend=False
+             show_legend=False,
+             variant=args.variant
          )),
         ('Figure 1B: Strip plot',
          lambda: generate_stripplot_figure(
              data_path=args.data,
              output_path=f'{args.output}/stripplot.pdf',
-             show_legend=False
+             show_legend=False,
+             variant=args.variant
          )),
         ('Figure 2A: Individual t-tests',
          lambda: generate_t_test_figure(
              data_path=args.data,
              output_path=f'{args.output}/t_test.pdf',
-             show_legend=False
+             show_legend=False,
+             variant=args.variant
          )),
         ('Figure 2B: Average t-test',
          lambda: generate_t_test_avg_figure(
              data_path=args.data,
              output_path=f'{args.output}/t_test_avg.pdf',
-             show_legend=False
+             show_legend=False,
+             variant=args.variant
          )),
         ('Figure 3: Confusion matrix',
          lambda: generate_loss_heatmap_figure(
              data_path=args.data,
-             output_path=f'{args.output}/average_loss_heatmap.pdf'
+             output_path=f'{args.output}/average_loss_heatmap.pdf',
+             variant=args.variant
          )),
         ('Figure 4: 3D MDS plot',
          lambda: generate_3d_mds_figure(
              data_path=args.data,
-             output_path=f'{args.output}/3d_MDS_plot.pdf'
+             output_path=f'{args.output}/3d_MDS_plot.pdf',
+             variant=args.variant
          )),
         ('Figure 5: Oz losses',
          lambda: generate_oz_losses_figure(
              data_path=args.data,
              output_path=f'{args.output}/oz_losses.pdf',
-             show_legend=False
+             show_legend=False,
+             variant=args.variant
          )),
     ]
 
