@@ -12,7 +12,8 @@ def generate_loss_heatmap_figure(
     data_path="data/model_results.pkl",
     output_path=None,
     figsize=(8, 6),
-    font='Helvetica'
+    font='Helvetica',
+    variant=None
 ):
     """
     Generate Figure 3: Loss heatmap (confusion matrix).
@@ -23,6 +24,8 @@ def generate_loss_heatmap_figure(
         figsize: Figure size
         font: Font family to use
 
+        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+
     Returns:
         matplotlib figure object
     """
@@ -32,6 +35,18 @@ def generate_loss_heatmap_figure(
 
     # Load data
     df = pd.read_pickle(data_path)
+
+    # Filter by variant
+    if variant is None:
+        # Baseline: exclude variant models
+        if 'variant' in df.columns:
+            df = df[df['variant'].isna()].copy()
+    else:
+        # Specific variant
+        if 'variant' not in df.columns:
+            raise ValueError(f"No variant column in data")
+        df = df[df['variant'] == variant].copy()
+
 
     # Define authors in requested order
     AUTHORS = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
@@ -99,6 +114,11 @@ def generate_loss_heatmap_figure(
 
     # Save if path provided
     if output_path:
+        # Add variant suffix to filename if variant specified
+        if variant:
+            from pathlib import Path
+            output_path = Path(output_path)
+            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig
