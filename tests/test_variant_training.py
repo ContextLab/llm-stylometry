@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
-Real integration test for variant training.
-Tests training a single model on content_only variant.
+Fast integration test for variant training.
+Tests training a minimal model (2 layers, 3 epochs) on all variants including baseline.
+Should complete in 8-15 minutes total (4 variants × 2-4 min each).
 """
 
 import os
@@ -14,39 +15,44 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent / 'code'))
 
 from experiment import Experiment
-from constants import AUTHORS, MODELS_DIR, get_data_dir
+from constants import AUTHORS, MODELS_DIR, get_data_dir, ANALYSIS_VARIANTS
 
-def test_content_variant_single_model():
-    """Test training a single model on content-only variant."""
+def train_variant_model(variant, test_author="fitzgerald", test_seed=42):
+    """Train a single test model on specified variant (or None for baseline)."""
+    variant_name = variant or "baseline"
     print("\n" + "="*60)
-    print("Test: Single Model Training on Content Variant")
+    print(f"Test: Training on {variant_name} variant")
     print("="*60)
-
-    # Test parameters
-    test_author = "fitzgerald"  # Smallest author corpus
-    test_seed = 42
-    variant = "content"
 
     # Verify variant data exists
     variant_dir = get_data_dir(variant)
     assert variant_dir.exists(), f"Variant directory not found: {variant_dir}"
     print(f"✓ Variant directory exists: {variant_dir}")
 
-    # Create test experiment
+    # Create test experiment with minimal model for fast testing
     exp = Experiment(
         train_author=test_author,
         seed=test_seed,
         tokenizer_name="gpt2",
         analysis_variant=variant,
+        n_train_tokens=10000,  # Much smaller dataset for testing
+        n_positions=128,       # Smaller context
+        n_embd=64,            # Tiny model
+        n_layer=2,            # Just 2 layers
+        n_head=2,             # 2 attention heads
+        batch_size=4,         # Smaller batch
         stop_criteria={
-            "train_loss": 4.0,  # Higher threshold for faster testing
-            "min_epochs": 2,    # Minimum 2 epochs
-            "max_epochs": 10,   # Max 10 epochs for testing
+            "train_loss": 2.0,  # Realistic threshold that won't trigger early
+            "min_epochs": 3,    # Run all 3 epochs
+            "max_epochs": 3,    # Only 3 epochs for testing
         }
     )
 
     # Verify naming convention
-    expected_name = f"{test_author}_variant={variant}_tokenizer=gpt2_seed={test_seed}"
+    if variant:
+        expected_name = f"{test_author}_variant={variant}_tokenizer=gpt2_seed={test_seed}"
+    else:
+        expected_name = f"{test_author}_tokenizer=gpt2_seed={test_seed}"
     assert exp.name == expected_name, f"Name mismatch: {exp.name} != {expected_name}"
     print(f"✓ Model name correct: {exp.name}")
 
@@ -64,8 +70,8 @@ def test_content_variant_single_model():
     os.environ['NO_MULTIPROCESSING'] = '1'
 
     # Import run_experiment function only (avoid module-level execution)
-    print("\nStarting training (max 10 epochs)...")
-    print("This may take 10-30 minutes depending on hardware...")
+    print("\nStarting training (3 epochs, tiny model)...")
+    print("Expected time: 2-5 minutes depending on hardware...")
 
     # Import required modules
     import torch
@@ -232,14 +238,15 @@ def test_content_variant_single_model():
     assert 'loss_dataset' in df.columns
     assert 'epochs_completed' in df.columns
 
-    # Check that training ran for at least min_epochs
+    # Check that training ran for exactly 3 epochs
     max_epoch = df['epochs_completed'].max()
-    assert max_epoch >= 2, f"Training didn't reach min_epochs: {max_epoch}"
+    assert max_epoch == 3, f"Expected 3 epochs, got: {max_epoch}"
     print(f"✓ Training completed {max_epoch} epochs")
 
     # Verify train loss was logged
     train_losses = df[df['loss_dataset'] == 'train']
     assert not train_losses.empty, "No training losses logged"
+    assert len(train_losses) == 3, f"Expected 3 train loss entries, got {len(train_losses)}"
     print(f"✓ Training losses logged: {len(train_losses)} entries")
 
     # Verify eval losses were logged for all authors
@@ -248,13 +255,33 @@ def test_content_variant_single_model():
         assert not author_losses.empty, f"No eval losses for {author}"
     print(f"✓ Eval losses logged for all {len(AUTHORS)} authors")
 
-    print("\n" + "="*60)
-    print("✓ ALL TESTS PASSED")
-    print("="*60)
+    print(f"✓ {variant_name.upper()} VARIANT TEST PASSED")
 
     # Clean up test model
-    print(f"\nCleaning up test model: {model_dir}")
+    print(f"Cleaning up test model...")
     shutil.rmtree(model_dir)
 
+
+def test_all_variants():
+    """Test training on baseline and all three variants."""
+    print("\n" + "="*60)
+    print("INTEGRATION TEST: All Variants")
+    print("="*60)
+    print("Testing: baseline, content, function, pos")
+    print("Expected time: 8-15 minutes total")
+    print("="*60)
+
+    # Test baseline
+    train_variant_model(None)
+
+    # Test each variant
+    for variant in ANALYSIS_VARIANTS:
+        train_variant_model(variant)
+
+    print("\n" + "="*60)
+    print("✓ ALL VARIANT TESTS PASSED")
+    print("="*60)
+
+
 if __name__ == "__main__":
-    test_content_variant_single_model()
+    test_all_variants()
