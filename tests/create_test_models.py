@@ -203,32 +203,64 @@ def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup
 
 
 def main():
-    """Create test models for all variants."""
+    """Create test models for all variants with multiple authors and seeds."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Create test models for variant testing')
+    parser.add_argument('--authors', nargs='+', default=['fitzgerald', 'twain', 'austen'],
+                       help='Authors to create models for (default: fitzgerald, twain, austen)')
+    parser.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44],
+                       help='Seeds to use (default: 42, 43, 44)')
+    parser.add_argument('--variants', nargs='+', default=['baseline', 'content', 'function', 'pos'],
+                       help='Variants to create (default: all)')
+
+    args = parser.parse_args()
+
+    # Convert 'baseline' to None in variants list
+    variants_to_create = [None if v == 'baseline' else v for v in args.variants]
+
+    total_models = len(args.authors) * len(args.seeds) * len(variants_to_create)
+
     print("\n" + "="*60)
-    print("Creating Test Models for Variant Testing")
+    print("Creating Comprehensive Test Models for Variant Testing")
     print("="*60)
-    print("This will create 4 models (baseline + 3 variants)")
-    print("Models will be kept for consolidation testing")
+    print(f"Authors: {', '.join(args.authors)}")
+    print(f"Seeds: {', '.join(map(str, args.seeds))}")
+    print(f"Variants: {', '.join(args.variants)}")
+    print(f"Total models to create: {total_models}")
+    print(f"Estimated time: ~{total_models * 2.5:.0f} minutes (2-3 min per model)")
     print("="*60)
+
+    response = input("\nProceed? [y/N]: ")
+    if response.lower() != 'y':
+        print("Cancelled.")
+        return
 
     models_created = []
+    models_skipped = []
 
-    # Create baseline model
-    model_dir = train_variant_model(None)
-    models_created.append(model_dir)
+    for author in args.authors:
+        for seed in args.seeds:
+            for variant in variants_to_create:
+                variant_name = variant or 'baseline'
+                print(f"\n[{len(models_created)+len(models_skipped)+1}/{total_models}] {author}, seed={seed}, variant={variant_name}")
 
-    # Create variant models
-    for variant in ANALYSIS_VARIANTS:
-        model_dir = train_variant_model(variant)
-        models_created.append(model_dir)
+                try:
+                    model_dir = train_variant_model(variant, test_author=author, test_seed=seed)
+                    models_created.append(model_dir)
+                except Exception as e:
+                    print(f"✗ ERROR: {e}")
+                    models_skipped.append((author, seed, variant_name))
 
     print("\n" + "="*60)
-    print("✓ ALL TEST MODELS CREATED")
+    print("✓ MODEL CREATION COMPLETE")
     print("="*60)
-    print(f"Created {len(models_created)} models:")
-    for model_dir in models_created:
-        print(f"  - {model_dir.name}")
-    print("\nThese models are ready for consolidation testing.")
+    print(f"Successfully created: {len(models_created)} models")
+    if models_skipped:
+        print(f"Skipped (errors): {len(models_skipped)} models")
+        for author, seed, variant in models_skipped:
+            print(f"  - {author}, seed={seed}, variant={variant}")
+    print("\nThese models are ready for consolidation and testing.")
     print("="*60)
 
 
