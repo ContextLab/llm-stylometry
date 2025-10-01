@@ -10,10 +10,32 @@ from scipy import stats
 from pathlib import Path
 from constants import AUTHORS
 
-def load_data():
-    """Load the model results data."""
-    with open('data/model_results.pkl', 'rb') as f:
-        return pickle.load(f)
+def load_data(data_path='data/model_results.pkl', variant=None):
+    """
+    Load and filter model results by variant.
+
+    Args:
+        data_path: Path to consolidated results pickle file
+        variant: One of ['content', 'function', 'pos'] or None for baseline
+
+    Returns:
+        DataFrame filtered to specified variant
+    """
+    with open(data_path, 'rb') as f:
+        df = pickle.load(f)
+
+    # Filter by variant
+    if variant is None:
+        # Baseline: exclude any models with variant column set
+        if 'variant' in df.columns:
+            df = df[df['variant'].isna()].copy()
+    else:
+        # Specific variant: filter to that variant
+        if 'variant' not in df.columns:
+            raise ValueError(f"No variant column in data. Cannot filter for variant '{variant}'")
+        df = df[df['variant'] == variant].copy()
+
+    return df
 
 
 def find_twain_threshold_epoch(df, p_threshold=0.001):
@@ -138,13 +160,32 @@ def generate_author_comparison_table(df):
 
 def main():
     """Main function to compute and display all statistics."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Compute statistics for LLM stylometry')
+    parser.add_argument(
+        '--variant',
+        choices=['content', 'function', 'pos'],
+        default=None,
+        help='Analysis variant to compute stats for (default: baseline)'
+    )
+    parser.add_argument(
+        '--data',
+        default='data/model_results.pkl',
+        help='Path to model results file (default: data/model_results.pkl)'
+    )
+
+    args = parser.parse_args()
+
+    # Update header to show variant
+    variant_label = f" (Variant: {args.variant})" if args.variant else " (Baseline)"
     print("=" * 60)
-    print("LLM Stylometry Statistical Analysis")
+    print(f"LLM Stylometry Statistical Analysis{variant_label}")
     print("=" * 60)
 
-    # Load data
+    # Load data with variant filter
     print("\nLoading data...")
-    df = load_data()
+    df = load_data(data_path=args.data, variant=args.variant)
 
     # 1. Find Twain threshold epoch
     print("\n1. Twain Model P-Threshold Analysis")

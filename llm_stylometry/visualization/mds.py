@@ -75,7 +75,8 @@ def generate_3d_mds_figure(
     output_path=None,
     figsize=(9, 7),
     font='Helvetica',
-    zoom_factor=0.1
+    zoom_factor=0.1,
+    variant=None
 ):
     """
     Generate Figure 4: 3D MDS plot from loss matrix.
@@ -87,6 +88,8 @@ def generate_3d_mds_figure(
         font: Font family to use
         zoom_factor: Zoom factor for axis limits
 
+        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+
     Returns:
         matplotlib figure object
     """
@@ -96,6 +99,18 @@ def generate_3d_mds_figure(
 
     # Load data and create loss matrix
     df = pd.read_pickle(data_path)
+
+    # Filter by variant
+    if variant is None:
+        # Baseline: exclude variant models
+        if 'variant' in df.columns:
+            df = df[df['variant'].isna()].copy()
+    else:
+        # Specific variant
+        if 'variant' not in df.columns:
+            raise ValueError(f"No variant column in data")
+        df = df[df['variant'] == variant].copy()
+
     loss_matrix, author_names = create_loss_matrix(df)
 
     # Symmetrize the matrix for MDS
@@ -170,6 +185,11 @@ def generate_3d_mds_figure(
 
     # Save if path provided
     if output_path:
+        # Add variant suffix to filename if variant specified
+        if variant:
+            from pathlib import Path
+            output_path = Path(output_path)
+            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight", dpi=300)
 
     return fig

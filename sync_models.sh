@@ -17,9 +17,80 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Default: nothing selected (will default to baseline if nothing specified)
+SYNC_BASELINE=false
+SYNC_CONTENT=false
+SYNC_FUNCTION=false
+SYNC_POS=false
+
+# Parse command line arguments (stackable)
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -b|--baseline)
+            SYNC_BASELINE=true
+            shift
+            ;;
+        -co|--content-only)
+            SYNC_CONTENT=true
+            shift
+            ;;
+        -fo|--function-only)
+            SYNC_FUNCTION=true
+            shift
+            ;;
+        -pos|--part-of-speech)
+            SYNC_POS=true
+            shift
+            ;;
+        -a|--all)
+            SYNC_BASELINE=true
+            SYNC_CONTENT=true
+            SYNC_FUNCTION=true
+            SYNC_POS=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  -b, --baseline          Sync baseline models"
+            echo "  -co, --content-only     Sync content-only variant models"
+            echo "  -fo, --function-only    Sync function-only variant models"
+            echo "  -pos, --part-of-speech  Sync part-of-speech variant models"
+            echo "  -a, --all               Sync all models (baseline + all variants)"
+            echo "  -h, --help              Show this help message"
+            echo ""
+            echo "Flags are stackable. Examples:"
+            echo "  $0                      # Sync baseline only (default)"
+            echo "  $0 -b -co               # Sync baseline and content-only"
+            echo "  $0 -fo -pos             # Sync function-only and POS"
+            echo "  $0 -a                   # Sync everything"
+            echo ""
+            echo "Default: Sync baseline models only"
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# If nothing was selected, default to baseline
+if [ "$SYNC_BASELINE" = false ] && [ "$SYNC_CONTENT" = false ] && [ "$SYNC_FUNCTION" = false ] && [ "$SYNC_POS" = false ]; then
+    SYNC_BASELINE=true
+fi
+
 echo "=================================================="
 echo "       LLM Stylometry Model Sync"
 echo "=================================================="
+echo
+echo "Sync configuration:"
+[ "$SYNC_BASELINE" = true ] && echo "  ✓ Baseline models"
+[ "$SYNC_CONTENT" = true ] && echo "  ✓ Content-only variant"
+[ "$SYNC_FUNCTION" = true ] && echo "  ✓ Function-only variant"
+[ "$SYNC_POS" = true ] && echo "  ✓ Part-of-speech variant"
 echo
 
 # Get server details
@@ -40,105 +111,175 @@ print_info "Checking model status on remote server..."
 # Create temporary file for remote check results
 TEMP_FILE=$(mktemp)
 
-# Check if all models are trained
-ssh "$USERNAME@$SERVER_ADDRESS" 'bash -s' << 'ENDSSH' > "$TEMP_FILE"
+# Pass sync flags to remote script via environment
+REMOTE_SYNC_BASELINE=$SYNC_BASELINE
+REMOTE_SYNC_CONTENT=$SYNC_CONTENT
+REMOTE_SYNC_FUNCTION=$SYNC_FUNCTION
+REMOTE_SYNC_POS=$SYNC_POS
+
+# Check which models are available on remote server
+ssh "$USERNAME@$SERVER_ADDRESS" \
+    "SYNC_BASELINE='$REMOTE_SYNC_BASELINE' SYNC_CONTENT='$REMOTE_SYNC_CONTENT' SYNC_FUNCTION='$REMOTE_SYNC_FUNCTION' SYNC_POS='$REMOTE_SYNC_POS' bash -s" << 'ENDSSH' > "$TEMP_FILE"
 #!/bin/bash
 
 MODELS_DIR="$HOME/llm-stylometry/models"
-EXPECTED_MODELS=80
+EXPECTED_MODELS_PER_VARIANT=80  # 8 authors × 10 seeds
 
 if [ ! -d "$MODELS_DIR" ]; then
     echo "STATUS=ERROR"
     exit 0
 fi
 
-# Count model directories
-MODEL_COUNT=0
-MISSING_MODELS=""
+# Function to check models for a specific variant
+check_variant() {
+    local variant_name=$1
+    local variant_suffix=$2
+    local count=0
+    local missing=""
 
-# Use simple loop instead of array
-for author in austen baum dickens fitzgerald melville thompson twain wells; do
-    for seed in 0 1 2 3 4 5 6 7 8 9; do
-        MODEL_DIR="$MODELS_DIR/${author}_tokenizer=gpt2_seed=${seed}"
-        if [ -d "$MODEL_DIR" ]; then
-            # Check for model weights (looking for .pth or .bin files)
-            if ls "$MODEL_DIR"/*.pth &>/dev/null || ls "$MODEL_DIR"/*.bin &>/dev/null || ls "$MODEL_DIR"/model.safetensors &>/dev/null; then
-                ((MODEL_COUNT++))
+    for author in austen baum dickens fitzgerald melville thompson twain wells; do
+        for seed in 0 1 2 3 4 5 6 7 8 9; do
+            if [ -z "$variant_suffix" ]; then
+                # Baseline model
+                MODEL_DIR="$MODELS_DIR/${author}_tokenizer=gpt2_seed=${seed}"
             else
-                MISSING_MODELS="${MISSING_MODELS}${author}_seed=${seed} (no weights), "
+                # Variant model
+                MODEL_DIR="$MODELS_DIR/${author}_variant=${variant_suffix}_tokenizer=gpt2_seed=${seed}"
             fi
-        else
-            MISSING_MODELS="${MISSING_MODELS}${author}_seed=${seed} (no dir), "
-        fi
+
+            if [ -d "$MODEL_DIR" ]; then
+                # Check for model weights
+                if ls "$MODEL_DIR"/*.pth &>/dev/null || ls "$MODEL_DIR"/*.bin &>/dev/null || ls "$MODEL_DIR"/model.safetensors &>/dev/null; then
+                    ((count++))
+                else
+                    missing="${missing}${author}_seed=${seed} (no weights), "
+                fi
+            else
+                missing="${missing}${author}_seed=${seed} (no dir), "
+            fi
+        done
     done
-done
 
-echo "MODEL_COUNT=$MODEL_COUNT"
-if [ -n "$MISSING_MODELS" ]; then
-    echo "MISSING_MODELS=${MISSING_MODELS%, }"
-fi
+    echo "${variant_name}_COUNT=$count"
+    if [ -n "$missing" ]; then
+        echo "${variant_name}_MISSING=${missing%, }"
+    fi
 
-# If all models exist, create tarball
-if [ $MODEL_COUNT -eq $EXPECTED_MODELS ]; then
-    echo "STATUS=COMPLETE"
+    if [ $count -eq $EXPECTED_MODELS_PER_VARIANT ]; then
+        echo "${variant_name}_STATUS=COMPLETE"
+    else
+        echo "${variant_name}_STATUS=INCOMPLETE"
+    fi
+}
 
-    # Create tarball
-    cd "$HOME/llm-stylometry"
-    TAR_FILE="$HOME/llm_stylometry_models_$(date +%Y%m%d_%H%M%S).tar.gz"
-    echo "Creating tarball: $TAR_FILE" >&2
-    tar -czf "$TAR_FILE" models/
+# Check each requested variant
+[ "$SYNC_BASELINE" = "true" ] && check_variant "BASELINE" ""
+[ "$SYNC_CONTENT" = "true" ] && check_variant "CONTENT" "content"
+[ "$SYNC_FUNCTION" = "true" ] && check_variant "FUNCTION" "function"
+[ "$SYNC_POS" = "true" ] && check_variant "POS" "pos"
 
-    # Get file size
-    SIZE=$(ls -lh "$TAR_FILE" | awk '{print $5}')
-    echo "TAR_FILE=$TAR_FILE"
-    echo "TAR_SIZE=$SIZE"
-else
-    echo "STATUS=INCOMPLETE"
-fi
+echo "STATUS=CHECKED"
 ENDSSH
 
 # Parse the remote check results
+declare -A VARIANT_COUNTS
+declare -A VARIANT_MISSING
+declare -A VARIANT_STATUS
+
 while IFS= read -r line; do
-    if [[ $line == STATUS=* ]]; then
-        STATUS="${line#STATUS=}"
-    elif [[ $line == MODEL_COUNT=* ]]; then
-        MODEL_COUNT="${line#MODEL_COUNT=}"
-    elif [[ $line == MISSING_MODELS=* ]]; then
-        MISSING_MODELS="${line#MISSING_MODELS=}"
-    elif [[ $line == TAR_FILE=* ]]; then
-        TAR_FILE="${line#TAR_FILE=}"
-    elif [[ $line == TAR_SIZE=* ]]; then
-        TAR_SIZE="${line#TAR_SIZE=}"
+    if [[ $line == *_COUNT=* ]]; then
+        variant="${line%%_COUNT=*}"
+        count="${line#*=}"
+        VARIANT_COUNTS[$variant]=$count
+    elif [[ $line == *_MISSING=* ]]; then
+        variant="${line%%_MISSING=*}"
+        missing="${line#*=}"
+        VARIANT_MISSING[$variant]=$missing
+    elif [[ $line == *_STATUS=* ]]; then
+        variant="${line%%_STATUS=*}"
+        status="${line#*=}"
+        VARIANT_STATUS[$variant]=$status
+    elif [[ $line == STATUS=* ]]; then
+        OVERALL_STATUS="${line#STATUS=}"
     fi
 done < "$TEMP_FILE"
 
 # Clean up temp file
 rm -f "$TEMP_FILE"
 
-if [ "$STATUS" = "ERROR" ]; then
+if [ "$OVERALL_STATUS" = "ERROR" ]; then
     print_error "Models directory not found on remote server"
-    exit 1
-elif [ "$STATUS" = "INCOMPLETE" ]; then
-    print_warning "Training is not complete!"
-    echo
-    echo "Found: $MODEL_COUNT / 80 models"
-    if [ -n "$MISSING_MODELS" ]; then
-        echo "Missing models: $MISSING_MODELS"
-    fi
-    echo
-    echo "Please wait for all models to finish training before syncing."
-    exit 1
-elif [ "$STATUS" = "COMPLETE" ]; then
-    print_success "All 80 models found with weights!"
-    echo "Tarball created: $TAR_FILE ($TAR_SIZE)"
-    echo
-else
-    print_error "Unexpected status from remote server"
     exit 1
 fi
 
+# Report status for each variant
+echo
+echo "Remote model status:"
+echo "===================="
+
+VARIANTS_TO_SYNC=()
+
+if [ "$SYNC_BASELINE" = true ]; then
+    count=${VARIANT_COUNTS[BASELINE]:-0}
+    status=${VARIANT_STATUS[BASELINE]:-INCOMPLETE}
+    if [ "$status" = "COMPLETE" ]; then
+        print_success "Baseline: $count/80 models complete"
+        VARIANTS_TO_SYNC+=("baseline")
+    else
+        print_warning "Baseline: $count/80 models complete - SKIPPING"
+        [ -n "${VARIANT_MISSING[BASELINE]}" ] && echo "  Missing: ${VARIANT_MISSING[BASELINE]}"
+    fi
+fi
+
+if [ "$SYNC_CONTENT" = true ]; then
+    count=${VARIANT_COUNTS[CONTENT]:-0}
+    status=${VARIANT_STATUS[CONTENT]:-INCOMPLETE}
+    if [ "$status" = "COMPLETE" ]; then
+        print_success "Content-only: $count/80 models complete"
+        VARIANTS_TO_SYNC+=("content")
+    else
+        print_warning "Content-only: $count/80 models complete - SKIPPING"
+        [ -n "${VARIANT_MISSING[CONTENT]}" ] && echo "  Missing: ${VARIANT_MISSING[CONTENT]}"
+    fi
+fi
+
+if [ "$SYNC_FUNCTION" = true ]; then
+    count=${VARIANT_COUNTS[FUNCTION]:-0}
+    status=${VARIANT_STATUS[FUNCTION]:-INCOMPLETE}
+    if [ "$status" = "COMPLETE" ]; then
+        print_success "Function-only: $count/80 models complete"
+        VARIANTS_TO_SYNC+=("function")
+    else
+        print_warning "Function-only: $count/80 models complete - SKIPPING"
+        [ -n "${VARIANT_MISSING[FUNCTION]}" ] && echo "  Missing: ${VARIANT_MISSING[FUNCTION]}"
+    fi
+fi
+
+if [ "$SYNC_POS" = true ]; then
+    count=${VARIANT_COUNTS[POS]:-0}
+    status=${VARIANT_STATUS[POS]:-INCOMPLETE}
+    if [ "$status" = "COMPLETE" ]; then
+        print_success "Part-of-speech: $count/80 models complete"
+        VARIANTS_TO_SYNC+=("pos")
+    else
+        print_warning "Part-of-speech: $count/80 models complete - SKIPPING"
+        [ -n "${VARIANT_MISSING[POS]}" ] && echo "  Missing: ${VARIANT_MISSING[POS]}"
+    fi
+fi
+
+# Check if we have anything to sync
+if [ ${#VARIANTS_TO_SYNC[@]} -eq 0 ]; then
+    echo
+    print_error "No complete model sets found to sync"
+    exit 1
+fi
+
+echo
+print_info "Will sync: ${VARIANTS_TO_SYNC[*]}"
+
 # Ask for confirmation before downloading
-echo "This will download and replace your local models directory."
+echo
+echo "This will download and replace your local models for the selected variants."
 read -p "Continue? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -147,56 +288,59 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Create local backup if models exist
-LOCAL_MODELS_DIR="$HOME/llm-stylometry/models"
+LOCAL_MODELS_DIR="$PWD/models"
 if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
     print_info "Backing up existing local models..."
-    BACKUP_DIR="$HOME/llm-stylometry/models_backup_$(date +%Y%m%d_%H%M%S)"
+    BACKUP_DIR="${PWD}/models_backup_$(date +%Y%m%d_%H%M%S)"
     mv "$LOCAL_MODELS_DIR" "$BACKUP_DIR"
     print_success "Local models backed up to: $BACKUP_DIR"
 fi
 
-# Download the tarball
-print_info "Downloading models from remote server..."
-LOCAL_TAR="$HOME/$(basename $TAR_FILE)"
+# Create models directory
+mkdir -p "$LOCAL_MODELS_DIR"
 
-# Use rsync for efficient transfer with progress
-rsync -avz --progress "$USERNAME@$SERVER_ADDRESS:$TAR_FILE" "$LOCAL_TAR"
+# Download models for each variant
+TOTAL_SYNCED=0
 
-if [ ! -f "$LOCAL_TAR" ]; then
-    print_error "Download failed"
-    exit 1
-fi
+for variant in "${VARIANTS_TO_SYNC[@]}"; do
+    print_info "Syncing $variant models..."
 
-# Extract the tarball
-print_info "Extracting models..."
-cd "$HOME/llm-stylometry"
-tar -xzf "$LOCAL_TAR"
+    if [ "$variant" = "baseline" ]; then
+        # Sync baseline models (no variant suffix)
+        rsync -avz --progress --include="*_tokenizer=gpt2_seed=*/" \
+            --exclude="*_variant=*" \
+            --include="*/" --include="**" \
+            "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
+    else
+        # Sync variant models
+        rsync -avz --progress --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
+            --include="*/" --include="**" \
+            "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
+    fi
 
-# Verify extraction
-if [ -d "models" ]; then
-    MODEL_COUNT=$(find models -maxdepth 1 -type d -name "*_tokenizer=gpt2_seed=*" | wc -l)
-    print_success "Successfully extracted $MODEL_COUNT model directories"
-else
-    print_error "Extraction failed"
-    exit 1
-fi
+    if [ $? -eq 0 ]; then
+        print_success "$variant models synced successfully"
+        ((TOTAL_SYNCED++))
+    else
+        print_error "Failed to sync $variant models"
+    fi
+done
 
-# Clean up tarball
-rm "$LOCAL_TAR"
-print_info "Removed temporary tarball"
+# Verify synced models
+echo
+print_info "Verifying synced models..."
+SYNCED_COUNT=$(find "$LOCAL_MODELS_DIR" -maxdepth 1 -type d -name "*_tokenizer=gpt2_seed=*" -o -name "*_variant=*_tokenizer=gpt2_seed=*" | wc -l)
+print_success "Successfully synced $SYNCED_COUNT model directories"
 
-# Clean up remote tarball
-print_info "Cleaning up remote tarball..."
-ssh "$USERNAME@$SERVER_ADDRESS" "rm $TAR_FILE"
-
-# Also download model_results.pkl if it exists
+# Also download model_results.pkl if it exists (for any synced variant)
 print_info "Checking for consolidated results file..."
 RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" '[ -f "$HOME/llm-stylometry/data/model_results.pkl" ] && echo "yes" || echo "no"')
 
 if [ "$RESULTS_EXISTS" = "yes" ]; then
     print_info "Downloading model_results.pkl..."
+    mkdir -p "$PWD/data"
     rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/model_results.pkl" \
-        "$HOME/llm-stylometry/data/model_results.pkl"
+        "$PWD/data/model_results.pkl"
     print_success "Downloaded model_results.pkl"
 else
     print_warning "model_results.pkl not found on remote server"
@@ -208,7 +352,8 @@ echo
 echo "=================================================="
 echo "                 Sync Complete!"
 echo "=================================================="
-echo "✓ Downloaded and extracted $MODEL_COUNT models"
+echo "✓ Synced $TOTAL_SYNCED variant(s)"
+echo "✓ Total model directories: $SYNCED_COUNT"
 if [ "$RESULTS_EXISTS" = "yes" ]; then
     echo "✓ Downloaded model_results.pkl"
 fi
@@ -219,5 +364,4 @@ echo
 echo "Models are now available in: $LOCAL_MODELS_DIR"
 echo
 echo "You can generate figures with:"
-echo "  cd $HOME/llm-stylometry"
 echo "  ./run_llm_stylometry.sh"

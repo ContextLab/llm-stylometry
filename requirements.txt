@@ -1,0 +1,13 @@
+# Core dependencies
+numpy<2
+scipy
+transformers
+matplotlib
+seaborn
+pandas
+tqdm
+cleantext
+plotly
+scikit-learn
+nltk>=3.8.0
+torch>=2.0.0

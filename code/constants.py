@@ -37,3 +37,29 @@ AUTHORS = [
     "fitzgerald",
     "twain",
 ]
+
+# Analysis variants
+ANALYSIS_VARIANTS = ['content', 'function', 'pos']
+
+
+def get_data_dir(variant=None):
+    """
+    Get data directory based on analysis variant.
+
+    Args:
+        variant: One of ANALYSIS_VARIANTS or None for baseline
+
+    Returns:
+        Path to data directory
+    """
+    if variant is None:
+        return CLEANED_DATA_DIR
+
+    if variant not in ANALYSIS_VARIANTS:
+        raise ValueError(f"Invalid variant: {variant}. Must be one of {ANALYSIS_VARIANTS}")
+
+    variant_dir = CLEANED_DATA_DIR / f"{variant}_only"
+    if not variant_dir.exists():
+        raise FileNotFoundError(f"Variant directory not found: {variant_dir}")
+
+    return variant_dir

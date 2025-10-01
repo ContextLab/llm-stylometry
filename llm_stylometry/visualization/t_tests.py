@@ -63,7 +63,8 @@ def generate_t_test_figure(
     output_path=None,
     figsize=(6, 4),
     show_legend=False,
-    font='Helvetica'
+    font='Helvetica',
+    variant=None
 ):
     """
     Generate Figure 2A: t-statistics for individual authors.
@@ -75,6 +76,8 @@ def generate_t_test_figure(
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
 
+        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+
     Returns:
         matplotlib figure object
     """
@@ -84,6 +87,18 @@ def generate_t_test_figure(
 
     # Load data and calculate t-statistics
     df = pd.read_pickle(data_path)
+
+    # Filter by variant
+    if variant is None:
+        # Baseline: exclude variant models
+        if 'variant' in df.columns:
+            df = df[df['variant'].isna()].copy()
+    else:
+        # Specific variant
+        if 'variant' not in df.columns:
+            raise ValueError(f"No variant column in data")
+        df = df[df['variant'] == variant].copy()
+
     t_raws_df, _ = calculate_t_statistics(df)
 
     # Define color palette
@@ -136,6 +151,11 @@ def generate_t_test_figure(
     plt.tight_layout()
 
     if output_path:
+        # Add variant suffix to filename if variant specified
+        if variant:
+            from pathlib import Path
+            output_path = Path(output_path)
+            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig
@@ -146,7 +166,8 @@ def generate_t_test_avg_figure(
     output_path=None,
     figsize=(6, 4),
     show_legend=False,
-    font='Helvetica'
+    font='Helvetica',
+    variant=None
 ):
     """
     Generate Figure 2B: Average t-statistic across all authors.
@@ -158,6 +179,8 @@ def generate_t_test_avg_figure(
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
 
+        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+
     Returns:
         matplotlib figure object
     """
@@ -167,6 +190,18 @@ def generate_t_test_avg_figure(
 
     # Load data and calculate t-statistics
     df = pd.read_pickle(data_path)
+
+    # Filter by variant
+    if variant is None:
+        # Baseline: exclude variant models
+        if 'variant' in df.columns:
+            df = df[df['variant'].isna()].copy()
+    else:
+        # Specific variant
+        if 'variant' not in df.columns:
+            raise ValueError(f"No variant column in data")
+        df = df[df['variant'] == variant].copy()
+
     t_raws_df, _ = calculate_t_statistics(df)
 
     # Create figure
@@ -210,6 +245,11 @@ def generate_t_test_avg_figure(
     plt.tight_layout()
 
     if output_path:
+        # Add variant suffix to filename if variant specified
+        if variant:
+            from pathlib import Path
+            output_path = Path(output_path)
+            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig
