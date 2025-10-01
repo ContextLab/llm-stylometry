@@ -1,0 +1,3 @@
+seed,train_author,epochs_completed,loss_dataset,loss_value
+0,austen,0,baum,10.823785954255325
+0,austen,0,thompson,10.820461357341093

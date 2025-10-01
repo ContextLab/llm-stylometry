@@ -100,6 +100,21 @@ logger.info(f"Device type: {device_type}, Count: {device_count}")
 # Check if we're in resume mode
 resume_mode = os.environ.get('RESUME_TRAINING', '0') == '1'
 
+# Check for analysis variant
+variant = os.environ.get('ANALYSIS_VARIANT', None)
+if variant == '':
+    variant = None  # Empty string should be treated as None
+
+# Validate variant if provided
+if variant:
+    from constants import ANALYSIS_VARIANTS
+    if variant not in ANALYSIS_VARIANTS:
+        logger.error(f"Invalid ANALYSIS_VARIANT: {variant}. Must be one of {ANALYSIS_VARIANTS}")
+        sys.exit(1)
+    logger.info(f"Training variant: {variant}")
+else:
+    logger.info("Training baseline models")
+
 experiments = []
 for seed in range(10):
     for author in AUTHORS:
@@ -108,6 +123,7 @@ for seed in range(10):
                 train_author=author,
                 seed=seed,
                 tokenizer_name="gpt2",
+                analysis_variant=variant,
                 resume_training=resume_mode,
             )
         )
@@ -145,7 +161,7 @@ def run_experiment(exp: Experiment, device_queue, device_type="cuda"):
 
         # Set up train dataloader with on-the-fly sampling
         train_dataloader = get_train_data_loader(
-            path=CLEANED_DATA_DIR / exp.train_author,
+            path=exp.data_dir / exp.train_author,
             tokenizer=tokenizer,
             n_positions=exp.n_positions,
             batch_size=exp.batch_size,
