@@ -273,14 +273,29 @@ def get_eval_data_loader(
     )
 
 
-def sample_book_path(author, seed):
+def sample_book_path(author, seed, variant=None):
     """
     Randomly select a book path from an author's corpus.
+
+    Args:
+        author: Author name
+        seed: Random seed for reproducibility
+        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+
+    Returns:
+        Path to randomly selected book
     """
-    author_dir = CLEANED_DATA_DIR / author
-    assert author_dir.exists(), f"Author directory not found: {author_dir}"
+    from constants import get_data_dir
+
+    author_dir = get_data_dir(variant) / author
+
+    if not author_dir.exists():
+        raise FileNotFoundError(f"Author directory not found: {author_dir}")
+
     book_paths = list(author_dir.glob("*.txt"))
-    assert book_paths, f"No book files found in {author_dir}"
+    if not book_paths:
+        raise ValueError(f"No book files found in {author_dir}")
+
     random.seed(seed)
     return random.choice(book_paths)
 

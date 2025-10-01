@@ -12,7 +12,8 @@ def generate_oz_losses_figure(
     output_path=None,
     figsize=(12, 8),
     show_legend=False,
-    font='Helvetica'
+    font='Helvetica',
+    variant=None
 ):
     """
     Generate Figure 5: Oz losses analysis.
@@ -24,6 +25,8 @@ def generate_oz_losses_figure(
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
 
+        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+
     Returns:
         matplotlib figure object
     """
@@ -33,6 +36,18 @@ def generate_oz_losses_figure(
 
     # Load data
     df = pd.read_pickle(data_path)
+
+    # Filter by variant
+    if variant is None:
+        # Baseline: exclude variant models
+        if 'variant' in df.columns:
+            df = df[df['variant'].isna()].copy()
+    else:
+        # Specific variant
+        if 'variant' not in df.columns:
+            raise ValueError(f"No variant column in data")
+        df = df[df['variant'] == variant].copy()
+
 
     # Filter for Baum and Thompson models and relevant datasets
     oz_datasets = ["baum", "thompson", "contested", "non_oz_baum", "non_oz_thompson", "train"]
@@ -124,6 +139,11 @@ def generate_oz_losses_figure(
 
     # Save if path provided
     if output_path:
+        # Add variant suffix to filename if variant specified
+        if variant:
+            from pathlib import Path
+            output_path = Path(output_path)
+            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig

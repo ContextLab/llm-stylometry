@@ -46,15 +46,19 @@ def consolidate_model_results(models_dir='models', output_path='data/model_resul
         dir_name = model_dir.name
         parts = dir_name.split('_')
 
-        # Extract author and seed from directory name
-        # Format: {author}_tokenizer={tokenizer}_seed={seed}
+        # Extract author, variant, tokenizer, and seed from directory name
+        # Baseline format: {author}_tokenizer={tokenizer}_seed={seed}
+        # Variant format: {author}_variant={variant}_tokenizer={tokenizer}_seed={seed}
         author = parts[0]
 
-        # Find tokenizer and seed
+        # Find variant, tokenizer, and seed
+        variant = None
         tokenizer = None
         seed = None
         for part in parts[1:]:
-            if part.startswith('tokenizer='):
+            if part.startswith('variant='):
+                variant = part.split('=')[1]
+            elif part.startswith('tokenizer='):
                 tokenizer = part.split('=')[1]
             elif part.startswith('seed='):
                 seed = int(part.split('=')[1])
@@ -75,6 +79,7 @@ def consolidate_model_results(models_dir='models', output_path='data/model_resul
         # Add model metadata
         df['model_name'] = dir_name
         df['author'] = author
+        df['variant'] = variant  # None for baseline, variant name for variant models
         df['tokenizer'] = tokenizer
         df['checkpoint_path'] = str(model_dir)
 
@@ -103,7 +108,7 @@ def consolidate_model_results(models_dir='models', output_path='data/model_resul
     # Ensure column order matches expected format
     expected_columns = [
         'seed', 'train_author', 'epochs_completed', 'loss_dataset',
-        'loss_value', 'model_name', 'author', 'tokenizer',
+        'loss_value', 'model_name', 'author', 'variant', 'tokenizer',
         'model_config', 'generation_config', 'checkpoint_path'
     ]
 
@@ -128,10 +133,18 @@ def consolidate_model_results(models_dir='models', output_path='data/model_resul
         print(f"Also saved CSV for inspection: {csv_path}")
 
     # Print summary statistics
-    print("\nSummary by author:")
-    summary = consolidated_df.groupby('train_author')['seed'].nunique()
-    for author, num_seeds in summary.items():
-        print(f"  {author}: {num_seeds} seeds")
+    print("\nSummary by author and variant:")
+    if 'variant' in consolidated_df.columns:
+        # Use dropna=False to include None (baseline) values
+        summary = consolidated_df.groupby(['train_author', 'variant'], dropna=False)['seed'].nunique()
+        for (author, variant), num_seeds in summary.items():
+            variant_label = "baseline" if pd.isna(variant) else variant
+            print(f"  {author} ({variant_label}): {num_seeds} seeds")
+    else:
+        # Fallback for old data without variant column
+        summary = consolidated_df.groupby('train_author')['seed'].nunique()
+        for author, num_seeds in summary.items():
+            print(f"  {author}: {num_seeds} seeds")
 
     return consolidated_df
 
