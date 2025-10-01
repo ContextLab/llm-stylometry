@@ -143,6 +143,127 @@ python generate_figures.py --list
 
 **Note**: The t-test calculations (Figure 2) take approximately 2-3 minutes due to statistical computations across all epochs and authors.
 
+## Analysis Variants
+
+The project supports three linguistic analysis variants to understand what stylistic features models learn:
+
+### Content-Only Variant
+Masks function words with `<FUNC>` token, preserving only content words (nouns, verbs, adjectives, etc.)
+- **Tests:** Whether models distinguish authors based on vocabulary and word choice
+- **Example transformation:**
+  - Original: "The quick brown fox jumps over the lazy dog"
+  - Transformed: "<FUNC> quick brown fox jumps <FUNC> <FUNC> lazy dog"
+
+### Function-Only Variant
+Masks content words with `<CONTENT>` token, preserving only function words (articles, prepositions, conjunctions)
+- **Tests:** Whether models distinguish authors based on grammatical structure
+- **Example transformation:**
+  - Original: "The quick brown fox jumps over the lazy dog"
+  - Transformed: "The <CONTENT> <CONTENT> <CONTENT> <CONTENT> over the <CONTENT> <CONTENT>"
+
+### Part-of-Speech (POS) Variant
+Replaces all words with their POS tags using Universal Dependencies tagset
+- **Tests:** Whether models distinguish authors based on syntactic patterns
+- **Example transformation:**
+  - Original: "The quick brown fox jumps over the lazy dog"
+  - Transformed: "DET ADJ ADJ NOUN VERB ADP DET ADJ NOUN"
+
+### Training Variants
+
+```bash
+# Train a single variant (8 authors × 10 seeds = 80 models per variant)
+./run_llm_stylometry.sh --train --content-only
+./run_llm_stylometry.sh --train --function-only
+./run_llm_stylometry.sh --train --part-of-speech
+
+# Short flags
+./run_llm_stylometry.sh -t -co   # content-only
+./run_llm_stylometry.sh -t -fo   # function-only
+./run_llm_stylometry.sh -t -pos  # part-of-speech
+
+# Train baseline (no variant flag)
+./run_llm_stylometry.sh -t       # baseline (80 models)
+
+# To train all conditions sequentially (baseline + 3 variants = 320 models total):
+./run_llm_stylometry.sh -t                    # baseline
+./run_llm_stylometry.sh -t --content-only     # content variant
+./run_llm_stylometry.sh -t --function-only    # function variant
+./run_llm_stylometry.sh -t --part-of-speech   # POS variant
+```
+
+### Generating Variant Figures
+
+```bash
+# Generate all figures for a single variant
+./run_llm_stylometry.sh --content-only
+./run_llm_stylometry.sh --function-only
+./run_llm_stylometry.sh --part-of-speech
+
+# Generate specific figure for a variant
+./run_llm_stylometry.sh -f 1a --content-only
+./run_llm_stylometry.sh -f 1a --function-only
+
+# Generate baseline figures (no variant flag)
+./run_llm_stylometry.sh           # all baseline figures
+./run_llm_stylometry.sh -f 1a     # specific baseline figure
+
+# To generate all figures for all conditions:
+./run_llm_stylometry.sh                    # baseline
+./run_llm_stylometry.sh --content-only     # content variant
+./run_llm_stylometry.sh --function-only    # function variant
+./run_llm_stylometry.sh --part-of-speech   # POS variant
+```
+
+### Computing Variant Statistics
+
+```bash
+# Single variant statistics
+./run_stats.sh                    # baseline (default)
+./run_stats.sh --content-only     # content variant
+./run_stats.sh --function-only    # function variant
+./run_stats.sh --part-of-speech   # POS variant
+
+# All statistics (baseline + all 3 variants)
+./run_stats.sh --all
+```
+
+### Remote Training with Variants
+
+```bash
+# Train a single variant on GPU server
+./remote_train.sh --content-only
+./remote_train.sh --function-only
+./remote_train.sh --part-of-speech
+
+# Resume variant training
+./remote_train.sh --resume --content-only
+
+# Train baseline on remote server (no variant flag)
+./remote_train.sh
+
+# To train all conditions on remote server, run sequentially:
+./remote_train.sh                    # baseline
+./remote_train.sh --content-only     # content variant
+./remote_train.sh --function-only    # function variant
+./remote_train.sh --part-of-speech   # POS variant
+```
+
+### Model Naming Convention
+
+Models include variant in their directory names:
+- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
+- Content: `{author}_variant=content_tokenizer=gpt2_seed={0-9}/`
+- Function: `{author}_variant=function_tokenizer=gpt2_seed={0-9}/`
+- POS: `{author}_variant=pos_tokenizer=gpt2_seed={0-9}/`
+
+### Figure Output Paths
+
+Figures include variant suffix:
+- Baseline: `paper/figs/source/all_losses.pdf`
+- Content: `paper/figs/source/all_losses_content.pdf`
+- Function: `paper/figs/source/all_losses_function.pdf`
+- POS: `paper/figs/source/all_losses_pos.pdf`
+
 ### Using Pre-computed Results
 
 The repository includes pre-computed results from training 80 models (8 authors × 10 random seeds). These results are consolidated in `data/model_results.pkl`.
