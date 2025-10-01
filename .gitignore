@@ -28,4 +28,6 @@ tests/data/*.pkl
 # Temporary test files
 .test_credentials
 models/*/model.safetensors
+models/*/model.pth
+models/*/pytorch_model.bin
 models/*/training_state.pt

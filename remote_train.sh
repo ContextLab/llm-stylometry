@@ -91,7 +91,7 @@ fi
 echo
 
 # Execute the remote script via SSH
-ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' bash -s" << 'ENDSSH'
+ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' bash -s" << 'ENDSSH'
 #!/bin/bash
 set -e
 
@@ -172,8 +172,9 @@ sleep 5
 screen -X -S llm_training quit 2>/dev/null || true
 
 # Start training in screen (use --no-confirm flag for non-interactive mode)
-# Create a script file first with RESUME_MODE variable
+# Create a script file first with RESUME_MODE and VARIANT_ARG variables
 echo "RESUME_MODE='$RESUME_MODE'" > /tmp/llm_train.sh
+echo "VARIANT_ARG='$VARIANT_ARG'" >> /tmp/llm_train.sh
 cat >> /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 set -e  # Exit on error
