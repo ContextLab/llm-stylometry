@@ -105,15 +105,14 @@ The easiest way to use the toolbox is via the CLI wrapper scripts:
 ./run_llm_stylometry.sh -f 1a    # Figure 1A only
 ./run_llm_stylometry.sh -l       # List available figures
 
-# Train models from scratch (requires GPU)
-./run_llm_stylometry.sh -t
-
 # Compute statistical analyses
 ./run_stats.sh
 
 # Get help
 ./run_llm_stylometry.sh -h
 ```
+
+For training models from scratch, see [Training Models from Scratch](#training-models-from-scratch).
 
 **Python API:** You can also use Python directly for programmatic access:
 
@@ -141,32 +140,17 @@ The project supports three linguistic variants to understand what stylistic feat
 
 **Part-of-Speech** (`-pos`, `--part-of-speech`): Replaces words with POS tags (Universal Dependencies tagset). Tests syntactic patterns.
 
-### Using Variants
-
-All commands accept variant flags. Without a flag, the baseline model is used:
+All CLI commands accept variant flags. Without a flag, the baseline condition is used. Each variant trains 80 models (8 authors × 10 seeds). See [Training Models from Scratch](#training-models-from-scratch) for training details.
 
 ```bash
-# Training (each variant: 8 authors × 10 seeds = 80 models)
-./run_llm_stylometry.sh -t -co              # Content-only variant
-./run_llm_stylometry.sh -t -fo              # Function-only variant
-./run_llm_stylometry.sh -t -pos             # POS variant
-./run_llm_stylometry.sh -t                  # Baseline (no flag)
-
-# Generating figures
+# Generate figures for variants
 ./run_llm_stylometry.sh -f 1a -co           # Figure 1A, content variant
 ./run_llm_stylometry.sh --function-only     # All figures, function variant
-./run_llm_stylometry.sh                     # All figures, baseline
 
-# Computing statistics
+# Compute statistics
 ./run_stats.sh --all                        # All variants at once
 ./run_stats.sh -co                          # Single variant
-
-# Remote training
-./remote_train.sh -co                       # Train content variant remotely
-./remote_train.sh --resume -fo              # Resume function variant
 ```
-
-### Technical Details
 
 **Model directories:**
 - Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
@@ -178,27 +162,36 @@ All commands accept variant flags. Without a flag, the baseline model is used:
 
 ## Training Models from Scratch
 
-**Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
+**Note**: Training requires a CUDA-enabled GPU and takes significant time (80 models per condition, 320 total for all conditions).
 
 ### Local Training
 
 ```bash
-# Using the CLI (recommended - handles all steps automatically)
+# Train baseline models
 ./run_llm_stylometry.sh --train
+
+# Train analysis variants
+./run_llm_stylometry.sh --train --content-only     # Content variant
+./run_llm_stylometry.sh --train --function-only    # Function variant
+./run_llm_stylometry.sh --train --part-of-speech   # POS variant
+
+# Short flags
+./run_llm_stylometry.sh -t -co              # Content variant
+./run_llm_stylometry.sh -t -fo              # Function variant
+./run_llm_stylometry.sh -t -pos             # POS variant
 
 # Resume training from existing checkpoints
 ./run_llm_stylometry.sh --train --resume
+./run_llm_stylometry.sh -t -r -co           # Resume content variant
 
 # Limit GPU usage if needed
 ./run_llm_stylometry.sh --train --max-gpus 4
 ```
 
-This command will:
+Each training run will:
 1. Clean and prepare the data if needed
-2. Train 80 models for the selected condition (8 authors × 10 seeds)
+2. Train 80 models (8 authors × 10 seeds)
 3. Consolidate results into `data/model_results.pkl`
-
-**Note:** Training all conditions (baseline + 3 variants) requires training 320 models total.
 
 **Resume Training**: The `--resume` flag allows you to continue training from existing checkpoints:
 - Models that have already met training criteria are automatically skipped
@@ -245,29 +238,33 @@ git pull  # This should work without prompting for credentials
 Once Git credentials are configured on your server, run `remote_train.sh` **from your local machine** (not on the GPU server):
 
 ```bash
-# From your local machine, start training on the remote GPU server
+# Train baseline models
 ./remote_train.sh
 
+# Train analysis variants
+./remote_train.sh --content-only        # Content variant
+./remote_train.sh -fo                   # Function variant (short flag)
+./remote_train.sh --part-of-speech      # POS variant
+
 # Resume training from existing checkpoints
-./remote_train.sh --resume  # or -r
+./remote_train.sh --resume              # Resume baseline
+./remote_train.sh -r -co                # Resume content variant
 
-# Kill existing training sessions and optionally start new one
-./remote_train.sh --kill  # or -k
-
-# Kill and resume (restart interrupted training)
-./remote_train.sh --kill --resume
+# Kill existing training sessions
+./remote_train.sh --kill                # Kill and exit
+./remote_train.sh --kill --resume       # Kill and restart
 
 # You'll be prompted for:
 # - Server address (hostname or IP)
 # - Username
 ```
 
-**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (or `--train --resume -y` if resuming) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
+**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (with any variant flags you specify) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
 
 The script will:
 1. SSH into your GPU server
 2. Update the repository in `~/llm-stylometry` (or clone if it doesn't exist)
-3. Start `run_llm_stylometry.sh --train -y` in a `screen` session
+3. Start training in a `screen` session with the specified options
 4. Exit, allowing your local machine to disconnect while training continues on the server
 
 #### Monitoring training progress
