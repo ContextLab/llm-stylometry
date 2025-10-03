@@ -287,17 +287,28 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-# Create local backup if models exist
+# Prepare local models directory
 LOCAL_MODELS_DIR="$PWD/models"
-if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
-    print_info "Backing up existing local models..."
-    BACKUP_DIR="${PWD}/models_backup_$(date +%Y%m%d_%H%M%S)"
-    mv "$LOCAL_MODELS_DIR" "$BACKUP_DIR"
-    print_success "Local models backed up to: $BACKUP_DIR"
-fi
+BACKUP_DIR=""
 
-# Create models directory
-mkdir -p "$LOCAL_MODELS_DIR"
+# Only backup if doing a full replacement (all variants selected)
+# Otherwise, merge new models into existing directory
+if [ "$SYNC_BASELINE" = true ] && [ "$SYNC_CONTENT" = true ] && [ "$SYNC_FUNCTION" = true ] && [ "$SYNC_POS" = true ]; then
+    # Full replacement - backup existing models
+    if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
+        print_info "Full sync requested - backing up ALL existing local models..."
+        BACKUP_DIR="${PWD}/models_backup_$(date +%Y%m%d_%H%M%S)"
+        mv "$LOCAL_MODELS_DIR" "$BACKUP_DIR"
+        print_success "Local models backed up to: $BACKUP_DIR"
+    fi
+    mkdir -p "$LOCAL_MODELS_DIR"
+else
+    # Partial sync - merge into existing directory
+    mkdir -p "$LOCAL_MODELS_DIR"
+    if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
+        print_info "Merging new models into existing directory (existing models from other variants preserved)"
+    fi
+fi
 
 # Download models for each variant
 TOTAL_SYNCED=0
