@@ -60,20 +60,34 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
 
     # Handle models directory based on resume flag
     import shutil
+    import glob
     models_dir = Path('models')
 
     if not resume:
-        # Remove existing models directory to train from scratch
+        # Remove only the models for the current variant
         if models_dir.exists():
-            safe_print("\nRemoving existing models directory...")
-            shutil.rmtree(models_dir)
-            safe_print("Existing models removed.")
-
-        # Also remove existing model results file
-        model_results_path = Path('data/model_results.pkl')
-        if model_results_path.exists():
-            safe_print("Removing existing model_results.pkl...")
-            model_results_path.unlink()
+            if variant:
+                # For variant training, only remove models with that variant
+                pattern = f"*_variant={variant}_*"
+                variant_models = list(models_dir.glob(pattern))
+                if variant_models:
+                    safe_print(f"\nRemoving existing {variant} variant models ({len(variant_models)} directories)...")
+                    for model_path in variant_models:
+                        shutil.rmtree(model_path)
+                    safe_print(f"Existing {variant} variant models removed.")
+                else:
+                    safe_print(f"\nNo existing {variant} variant models found.")
+            else:
+                # For baseline training, only remove baseline models (no variant in name)
+                baseline_models = [p for p in models_dir.iterdir()
+                                   if p.is_dir() and '_variant=' not in p.name]
+                if baseline_models:
+                    safe_print(f"\nRemoving existing baseline models ({len(baseline_models)} directories)...")
+                    for model_path in baseline_models:
+                        shutil.rmtree(model_path)
+                    safe_print("Existing baseline models removed.")
+                else:
+                    safe_print("\nNo existing baseline models found.")
     else:
         # When resuming, keep existing models and check their status
         if models_dir.exists():
@@ -134,7 +148,12 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     # Consolidate results
     safe_print("\nConsolidating model results...")
     try:
-        result = subprocess.run([sys.executable, 'code/consolidate_model_results.py'], check=False)
+        # Build consolidation command with variant if specified
+        consolidate_cmd = [sys.executable, 'code/consolidate_model_results.py']
+        if variant:
+            consolidate_cmd.extend(['--variant', variant])
+
+        result = subprocess.run(consolidate_cmd, check=False)
         if result.returncode != 0:
             safe_print(f"Error: Consolidation script exited with code {result.returncode}")
             return False
@@ -222,8 +241,8 @@ Examples:
 
     parser.add_argument(
         '--data', '-d',
-        help='Path to model_results.pkl (default: data/model_results.pkl)',
-        default='data/model_results.pkl'
+        help='Path to model_results.pkl (auto-detected based on variant if not specified)',
+        default=None
     )
 
     parser.add_argument(
@@ -284,12 +303,17 @@ Examples:
         safe_print("\nWarning: --resume flag is ignored without --train flag")
         args.resume = False
 
+    # Auto-detect data path if not specified
+    if args.data is None:
+        if args.variant:
+            args.data = f'data/model_results_{args.variant}.pkl'
+        else:
+            args.data = 'data/model_results.pkl'
+
     # Train models if requested
     if args.train:
         if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume, variant=args.variant):
             return 1
-        # Update data path to use newly generated results
-        args.data = 'data/model_results.pkl'
 
     # Check for data file
     data_file = Path(args.data)
