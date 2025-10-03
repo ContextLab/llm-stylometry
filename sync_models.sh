@@ -182,23 +182,45 @@ echo "STATUS=CHECKED"
 ENDSSH
 
 # Parse the remote check results
-declare -A VARIANT_COUNTS
-declare -A VARIANT_MISSING
-declare -A VARIANT_STATUS
+# Using simple variables for Bash 3.2 compatibility (macOS default)
+BASELINE_COUNT=0
+BASELINE_MISSING=""
+BASELINE_STATUS="INCOMPLETE"
+CONTENT_COUNT=0
+CONTENT_MISSING=""
+CONTENT_STATUS="INCOMPLETE"
+FUNCTION_COUNT=0
+FUNCTION_MISSING=""
+FUNCTION_STATUS="INCOMPLETE"
+POS_COUNT=0
+POS_MISSING=""
+POS_STATUS="INCOMPLETE"
 
 while IFS= read -r line; do
-    if [[ $line == *_COUNT=* ]]; then
-        variant="${line%%_COUNT=*}"
-        count="${line#*=}"
-        VARIANT_COUNTS[$variant]=$count
-    elif [[ $line == *_MISSING=* ]]; then
-        variant="${line%%_MISSING=*}"
-        missing="${line#*=}"
-        VARIANT_MISSING[$variant]=$missing
-    elif [[ $line == *_STATUS=* ]]; then
-        variant="${line%%_STATUS=*}"
-        status="${line#*=}"
-        VARIANT_STATUS[$variant]=$status
+    if [[ $line == BASELINE_COUNT=* ]]; then
+        BASELINE_COUNT="${line#*=}"
+    elif [[ $line == BASELINE_MISSING=* ]]; then
+        BASELINE_MISSING="${line#*=}"
+    elif [[ $line == BASELINE_STATUS=* ]]; then
+        BASELINE_STATUS="${line#*=}"
+    elif [[ $line == CONTENT_COUNT=* ]]; then
+        CONTENT_COUNT="${line#*=}"
+    elif [[ $line == CONTENT_MISSING=* ]]; then
+        CONTENT_MISSING="${line#*=}"
+    elif [[ $line == CONTENT_STATUS=* ]]; then
+        CONTENT_STATUS="${line#*=}"
+    elif [[ $line == FUNCTION_COUNT=* ]]; then
+        FUNCTION_COUNT="${line#*=}"
+    elif [[ $line == FUNCTION_MISSING=* ]]; then
+        FUNCTION_MISSING="${line#*=}"
+    elif [[ $line == FUNCTION_STATUS=* ]]; then
+        FUNCTION_STATUS="${line#*=}"
+    elif [[ $line == POS_COUNT=* ]]; then
+        POS_COUNT="${line#*=}"
+    elif [[ $line == POS_MISSING=* ]]; then
+        POS_MISSING="${line#*=}"
+    elif [[ $line == POS_STATUS=* ]]; then
+        POS_STATUS="${line#*=}"
     elif [[ $line == STATUS=* ]]; then
         OVERALL_STATUS="${line#STATUS=}"
     fi
@@ -220,50 +242,42 @@ echo "===================="
 VARIANTS_TO_SYNC=()
 
 if [ "$SYNC_BASELINE" = true ]; then
-    count=${VARIANT_COUNTS[BASELINE]:-0}
-    status=${VARIANT_STATUS[BASELINE]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Baseline: $count/80 models complete"
+    if [ "$BASELINE_STATUS" = "COMPLETE" ]; then
+        print_success "Baseline: $BASELINE_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("baseline")
     else
-        print_warning "Baseline: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[BASELINE]}" ] && echo "  Missing: ${VARIANT_MISSING[BASELINE]}"
+        print_warning "Baseline: $BASELINE_COUNT/80 models complete - SKIPPING"
+        [ -n "$BASELINE_MISSING" ] && echo "  Missing: $BASELINE_MISSING"
     fi
 fi
 
 if [ "$SYNC_CONTENT" = true ]; then
-    count=${VARIANT_COUNTS[CONTENT]:-0}
-    status=${VARIANT_STATUS[CONTENT]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Content-only: $count/80 models complete"
+    if [ "$CONTENT_STATUS" = "COMPLETE" ]; then
+        print_success "Content-only: $CONTENT_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("content")
     else
-        print_warning "Content-only: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[CONTENT]}" ] && echo "  Missing: ${VARIANT_MISSING[CONTENT]}"
+        print_warning "Content-only: $CONTENT_COUNT/80 models complete - SKIPPING"
+        [ -n "$CONTENT_MISSING" ] && echo "  Missing: $CONTENT_MISSING"
     fi
 fi
 
 if [ "$SYNC_FUNCTION" = true ]; then
-    count=${VARIANT_COUNTS[FUNCTION]:-0}
-    status=${VARIANT_STATUS[FUNCTION]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Function-only: $count/80 models complete"
+    if [ "$FUNCTION_STATUS" = "COMPLETE" ]; then
+        print_success "Function-only: $FUNCTION_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("function")
     else
-        print_warning "Function-only: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[FUNCTION]}" ] && echo "  Missing: ${VARIANT_MISSING[FUNCTION]}"
+        print_warning "Function-only: $FUNCTION_COUNT/80 models complete - SKIPPING"
+        [ -n "$FUNCTION_MISSING" ] && echo "  Missing: $FUNCTION_MISSING"
     fi
 fi
 
 if [ "$SYNC_POS" = true ]; then
-    count=${VARIANT_COUNTS[POS]:-0}
-    status=${VARIANT_STATUS[POS]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Part-of-speech: $count/80 models complete"
+    if [ "$POS_STATUS" = "COMPLETE" ]; then
+        print_success "Part-of-speech: $POS_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("pos")
     else
-        print_warning "Part-of-speech: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[POS]}" ] && echo "  Missing: ${VARIANT_MISSING[POS]}"
+        print_warning "Part-of-speech: $POS_COUNT/80 models complete - SKIPPING"
+        [ -n "$POS_MISSING" ] && echo "  Missing: $POS_MISSING"
     fi
 fi
 
