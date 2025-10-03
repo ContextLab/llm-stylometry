@@ -95,217 +95,86 @@ pip install -e .
 
 ## Quick Start
 
-### Using the CLI
+The easiest way to use the toolbox is via the CLI wrapper scripts:
 
 ```bash
-# Generate all figures (default)
+# Generate all figures from pre-computed results
 ./run_llm_stylometry.sh
 
 # Generate specific figure
 ./run_llm_stylometry.sh -f 1a    # Figure 1A only
-./run_llm_stylometry.sh -f 4     # Figure 4 (MDS plot) only
-
-# List available figures
-./run_llm_stylometry.sh -l
+./run_llm_stylometry.sh -l       # List available figures
 
 # Train models from scratch (requires GPU)
 ./run_llm_stylometry.sh -t
 
-# Compute statistical analyses (Table 1 and key statistics)
+# Compute statistical analyses
 ./run_stats.sh
-
-# Custom data and output paths
-./run_llm_stylometry.sh -d path/to/model_results.pkl -o path/to/output
 
 # Get help
 ./run_llm_stylometry.sh -h
 ```
 
-### Using Python Directly
-
-```bash
-conda activate llm-stylometry
-
-# Generate all figures
-python generate_figures.py
-
-# Generate specific figure
-python generate_figures.py --figure 1a
-
-# Train models from scratch
-python generate_figures.py --train
-
-# Resume training from existing checkpoints
-python generate_figures.py --train --resume
-
-# List available figures
-python generate_figures.py --list
-```
-
-**Note**: The t-test calculations (Figure 2) take approximately 2-3 minutes due to statistical computations across all epochs and authors.
-
-## Analysis Variants
-
-The project supports three linguistic analysis variants to understand what stylistic features models learn:
-
-### Content-Only Variant
-Masks function words with `<FUNC>` token, preserving only content words (nouns, verbs, adjectives, etc.)
-- **Tests:** Whether models distinguish authors based on vocabulary and word choice
-- **Example transformation:**
-  - Original: "The quick brown fox jumps over the lazy dog"
-  - Transformed: "<FUNC> quick brown fox jumps <FUNC> <FUNC> lazy dog"
-
-### Function-Only Variant
-Masks content words with `<CONTENT>` token, preserving only function words (articles, prepositions, conjunctions)
-- **Tests:** Whether models distinguish authors based on grammatical structure
-- **Example transformation:**
-  - Original: "The quick brown fox jumps over the lazy dog"
-  - Transformed: "The <CONTENT> <CONTENT> <CONTENT> <CONTENT> over the <CONTENT> <CONTENT>"
-
-### Part-of-Speech (POS) Variant
-Replaces all words with their POS tags using Universal Dependencies tagset
-- **Tests:** Whether models distinguish authors based on syntactic patterns
-- **Example transformation:**
-  - Original: "The quick brown fox jumps over the lazy dog"
-  - Transformed: "DET ADJ ADJ NOUN VERB ADP DET ADJ NOUN"
-
-### Training Variants
-
-```bash
-# Train a single variant (8 authors × 10 seeds = 80 models per variant)
-./run_llm_stylometry.sh --train --content-only
-./run_llm_stylometry.sh --train --function-only
-./run_llm_stylometry.sh --train --part-of-speech
-
-# Short flags
-./run_llm_stylometry.sh -t -co   # content-only
-./run_llm_stylometry.sh -t -fo   # function-only
-./run_llm_stylometry.sh -t -pos  # part-of-speech
-
-# Train baseline (no variant flag)
-./run_llm_stylometry.sh -t       # baseline (80 models)
-
-# To train all conditions sequentially (baseline + 3 variants = 320 models total):
-./run_llm_stylometry.sh -t                    # baseline
-./run_llm_stylometry.sh -t --content-only     # content variant
-./run_llm_stylometry.sh -t --function-only    # function variant
-./run_llm_stylometry.sh -t --part-of-speech   # POS variant
-```
-
-### Generating Variant Figures
-
-```bash
-# Generate all figures for a single variant
-./run_llm_stylometry.sh --content-only
-./run_llm_stylometry.sh --function-only
-./run_llm_stylometry.sh --part-of-speech
-
-# Generate specific figure for a variant
-./run_llm_stylometry.sh -f 1a --content-only
-./run_llm_stylometry.sh -f 1a --function-only
-
-# Generate baseline figures (no variant flag)
-./run_llm_stylometry.sh           # all baseline figures
-./run_llm_stylometry.sh -f 1a     # specific baseline figure
-
-# To generate all figures for all conditions:
-./run_llm_stylometry.sh                    # baseline
-./run_llm_stylometry.sh --content-only     # content variant
-./run_llm_stylometry.sh --function-only    # function variant
-./run_llm_stylometry.sh --part-of-speech   # POS variant
-```
-
-### Computing Variant Statistics
-
-```bash
-# Single variant statistics
-./run_stats.sh                    # baseline (default)
-./run_stats.sh --content-only     # content variant
-./run_stats.sh --function-only    # function variant
-./run_stats.sh --part-of-speech   # POS variant
-
-# All statistics (baseline + all 3 variants)
-./run_stats.sh --all
-```
-
-### Remote Training with Variants
-
-```bash
-# Train a single variant on GPU server
-./remote_train.sh --content-only
-./remote_train.sh --function-only
-./remote_train.sh --part-of-speech
-
-# Resume variant training
-./remote_train.sh --resume --content-only
-
-# Train baseline on remote server (no variant flag)
-./remote_train.sh
-
-# To train all conditions on remote server, run sequentially:
-./remote_train.sh                    # baseline
-./remote_train.sh --content-only     # content variant
-./remote_train.sh --function-only    # function variant
-./remote_train.sh --part-of-speech   # POS variant
-```
-
-### Model Naming Convention
-
-Models include variant in their directory names:
-- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
-- Content: `{author}_variant=content_tokenizer=gpt2_seed={0-9}/`
-- Function: `{author}_variant=function_tokenizer=gpt2_seed={0-9}/`
-- POS: `{author}_variant=pos_tokenizer=gpt2_seed={0-9}/`
-
-### Figure Output Paths
-
-Figures include variant suffix:
-- Baseline: `paper/figs/source/all_losses.pdf`
-- Content: `paper/figs/source/all_losses_content.pdf`
-- Function: `paper/figs/source/all_losses_function.pdf`
-- POS: `paper/figs/source/all_losses_pos.pdf`
-
-### Using Pre-computed Results
-
-The repository includes pre-computed results from training 80 baseline models (8 authors × 10 random seeds). Results for analysis variants can be generated using the same pipeline. These results are consolidated in `data/model_results.pkl`.
+**Python API:** You can also use Python directly for programmatic access:
 
 ```python
-import pandas as pd
 from llm_stylometry.visualization import generate_all_losses_figure
-
-# Load consolidated results
-df = pd.read_pickle('data/model_results.pkl')
 
 # Generate a figure
 fig = generate_all_losses_figure(
     data_path='data/model_results.pkl',
-    output_path='my_figure.pdf'
+    output_path='figure.pdf'
 )
 ```
 
-### Available Figures
+See the [Package API](#package-api) section for all available functions.
 
-- **1a**: Figure 1A - Training curves (all_losses.pdf)
-- **1b**: Figure 1B - Strip plot (stripplot.pdf)
-- **2a**: Figure 2A - Individual t-tests (t_test.pdf)
-- **2b**: Figure 2B - Average t-test (t_test_avg.pdf)
-- **3**: Figure 3 - Confusion matrix heatmap (average_loss_heatmap.pdf)
-- **4**: Figure 4 - 3D MDS plot (3d_MDS_plot.pdf)
-- **5**: Figure 5 - Oz authorship analysis (oz_losses.pdf)
+**Note**: T-test calculations (Figure 2) take 2-3 minutes due to statistical computations across all epochs and authors.
 
-### Statistical Analysis
+## Analysis Variants
 
-Generate key statistics from the paper:
+The project supports three linguistic variants to understand what stylistic features models learn:
+
+**Content-Only** (`-co`, `--content-only`): Masks function words with `<FUNC>`, preserving only content words (nouns, verbs, adjectives). Tests vocabulary and word choice.
+
+**Function-Only** (`-fo`, `--function-only`): Masks content words with `<CONTENT>`, preserving only function words (articles, prepositions, conjunctions). Tests grammatical structure.
+
+**Part-of-Speech** (`-pos`, `--part-of-speech`): Replaces words with POS tags (Universal Dependencies tagset). Tests syntactic patterns.
+
+### Using Variants
+
+All commands accept variant flags. Without a flag, the baseline model is used:
 
 ```bash
-# Compute statistical analyses
-./run_stats.sh
+# Training (each variant: 8 authors × 10 seeds = 80 models)
+./run_llm_stylometry.sh -t -co              # Content-only variant
+./run_llm_stylometry.sh -t -fo              # Function-only variant
+./run_llm_stylometry.sh -t -pos             # POS variant
+./run_llm_stylometry.sh -t                  # Baseline (no flag)
+
+# Generating figures
+./run_llm_stylometry.sh -f 1a -co           # Figure 1A, content variant
+./run_llm_stylometry.sh --function-only     # All figures, function variant
+./run_llm_stylometry.sh                     # All figures, baseline
+
+# Computing statistics
+./run_stats.sh --all                        # All variants at once
+./run_stats.sh -co                          # Single variant
+
+# Remote training
+./remote_train.sh -co                       # Train content variant remotely
+./remote_train.sh --resume -fo              # Resume function variant
 ```
 
-This produces:
-- **Twain p-threshold analysis**: Epoch where Twain model first achieves p < 0.001
-- **Average t-test**: t-test of average t-statistics across seeds, at 500th epoch
-- **Table 1**: Individual author model t-tests comparing self vs. other losses
+### Technical Details
+
+**Model directories:**
+- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
+- Variants: `{author}_variant={content|function|pos}_tokenizer=gpt2_seed={0-9}/`
+
+**Figure paths:**
+- Baseline: `paper/figs/source/figure_name.pdf`
+- Variants: `paper/figs/source/figure_name_{variant}.pdf`
 
 ## Training Models from Scratch
 
@@ -495,9 +364,7 @@ Our analysis shows that:
 
 ## Testing
 
-### Running Tests Locally
-
-The repository includes comprehensive tests that use real models and data (no mocks):
+The repository includes comprehensive tests for all functionality:
 
 ```bash
 # Install test dependencies
@@ -507,60 +374,12 @@ pip install pytest pytest-timeout
 pytest tests/
 
 # Run specific test modules
-pytest tests/test_visualization.py  # Test figure generation
-pytest tests/test_cli.py            # Test CLI functionality
-pytest tests/test_model_training.py # Test model operations
-
-# Run with verbose output
-pytest -v tests/
+pytest tests/test_visualization.py  # Figure generation
+pytest tests/test_cli.py            # CLI functionality
+pytest tests/test_model_training.py # Model operations
 ```
 
-### Test Coverage
-
-Our test suite includes:
-
-- **Visualization Tests**: Verify all figure generation functions work correctly with synthetic data
-- **CLI Tests**: Test all command-line options and error handling
-- **Model Training Tests**: Test model creation, training, and saving with tiny models
-- **Data Tests**: Verify data loading and processing functions
-
-### Continuous Integration
-
-Tests run automatically on GitHub Actions for:
-- **Platforms**: Linux, macOS, Windows
-- **Python Version**: 3.10
-- **Execution Time**: All tests complete in under 5 minutes
-
-The CI pipeline:
-1. Sets up Python environment
-2. Installs dependencies (including CPU-only PyTorch)
-3. Creates synthetic test data
-4. Runs all test modules
-5. Validates figure generation
-6. Uploads artifacts on failure for debugging
-
-### Writing New Tests
-
-When adding new functionality, ensure tests:
-- Use real data and models (no mocks)
-- Complete quickly (use small datasets/models)
-- Test actual functionality end-to-end
-- Generate real outputs (PDFs, models, etc.)
-
-Example test structure:
-```python
-def test_new_feature():
-    # Use synthetic test data
-    data = pd.read_pickle('tests/data/test_model_results.pkl')
-
-    # Generate real output
-    output_path = 'test_output.pdf'
-    result = generate_figure(data, output_path)
-
-    # Verify real file was created
-    assert Path(output_path).exists()
-    assert Path(output_path).stat().st_size > 1000
-```
+Tests run automatically on GitHub Actions (Linux, macOS, Windows, Python 3.10). See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed testing guidelines and philosophy.
 
 ## Package API
 
