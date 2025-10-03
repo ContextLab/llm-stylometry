@@ -127,6 +127,7 @@ EXPECTED_MODELS_PER_VARIANT=80  # 8 authors × 10 seeds
 
 if [ ! -d "$MODELS_DIR" ]; then
     echo "STATUS=ERROR"
+    echo "ERROR_MSG=Models directory not found: $MODELS_DIR"
     exit 0
 fi
 
@@ -195,6 +196,7 @@ FUNCTION_STATUS="INCOMPLETE"
 POS_COUNT=0
 POS_MISSING=""
 POS_STATUS="INCOMPLETE"
+ERROR_MSG=""
 
 while IFS= read -r line; do
     if [[ $line == BASELINE_COUNT=* ]]; then
@@ -221,6 +223,8 @@ while IFS= read -r line; do
         POS_MISSING="${line#*=}"
     elif [[ $line == POS_STATUS=* ]]; then
         POS_STATUS="${line#*=}"
+    elif [[ $line == ERROR_MSG=* ]]; then
+        ERROR_MSG="${line#ERROR_MSG=}"
     elif [[ $line == STATUS=* ]]; then
         OVERALL_STATUS="${line#STATUS=}"
     fi
