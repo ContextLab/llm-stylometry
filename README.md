@@ -31,8 +31,9 @@ llm-stylometry/
 │   ├── raw/            # Original texts from Project Gutenberg
 │   ├── cleaned/        # Preprocessed texts by author
 │   └── model_results.pkl # Consolidated model training results
-├── models/              # Trained models (80 total)
-│   └── {author}_tokenizer=gpt2_seed={0-9}/
+├── models/              # Trained models (80 baseline + 240 variants = 320 total)
+│   └── {author}_tokenizer=gpt2_seed={0-9}/  # Baseline models
+│   └── {author}_variant={variant}_tokenizer=gpt2_seed={0-9}/  # Variant models
 ├── paper/               # LaTeX paper and figures
 │   ├── main.tex        # Paper source
 │   ├── main.pdf        # Compiled paper
@@ -266,7 +267,7 @@ Figures include variant suffix:
 
 ### Using Pre-computed Results
 
-The repository includes pre-computed results from training 80 models (8 authors × 10 random seeds). These results are consolidated in `data/model_results.pkl`.
+The repository includes pre-computed results from training 80 baseline models (8 authors × 10 random seeds). Results for analysis variants can be generated using the same pipeline. These results are consolidated in `data/model_results.pkl`.
 
 ```python
 import pandas as pd
@@ -325,8 +326,10 @@ This produces:
 
 This command will:
 1. Clean and prepare the data if needed
-2. Train all 80 models (8 authors × 10 seeds)
+2. Train 80 models for the selected condition (8 authors × 10 seeds)
 3. Consolidate results into `data/model_results.pkl`
+
+**Note:** Training all conditions (baseline + 3 variants) requires training 320 models total.
 
 **Resume Training**: The `--resume` flag allows you to continue training from existing checkpoints:
 - Models that have already met training criteria are automatically skipped
@@ -419,28 +422,39 @@ exit
 Once training is complete, use `sync_models.sh` **from your local machine** to download the trained models and results:
 
 ```bash
-# Download trained models from server
+# Download baseline models only (default)
 ./sync_models.sh
+
+# Download specific variants
+./sync_models.sh --content-only           # Content variant only
+./sync_models.sh --baseline --content-only # Baseline + content
+./sync_models.sh --all                    # All conditions (320 models)
 
 # You'll be prompted for:
 # - Server address
 # - Username
-# - Password
 ```
 
-This script will:
-1. Verify all 80 models are complete with weights
-2. Create a compressed archive on the server
-3. Download via rsync with progress indication
-4. Extract to your local `~/llm-stylometry/models/` directory
-5. Back up any existing local models
-6. Also sync `model_results.pkl` if available
+**Variant Flags:**
+- `-b, --baseline`: Sync baseline models (80 models)
+- `-co, --content-only`: Sync content-only variant (80 models)
+- `-fo, --function-only`: Sync function-only variant (80 models)
+- `-pos, --part-of-speech`: Sync POS variant (80 models)
+- `-a, --all`: Sync all conditions (320 models total)
+- Flags are stackable: `./sync_models.sh -b -co` syncs baseline + content
 
-**Note**: The script will only download if all 80 models are complete. If training is still in progress, it will show which models are missing.
+**How it works:**
+1. Checks which requested models are complete on remote server (80 per condition)
+2. Only syncs complete model sets
+3. Uses rsync to download models with progress indication
+4. Backs up existing local models before replacing
+5. Also syncs `model_results.pkl` if available
+
+**Note**: The script verifies models are complete before downloading. If training is in progress, it will show which models are missing and skip incomplete conditions.
 
 ### Model Configuration
 
-Each model uses:
+Each model uses the same architecture and hyperparameters (applies to baseline and all variants):
 - GPT-2 architecture with custom dimensions
 - 128 embedding dimensions
 - 8 transformer layers
@@ -448,6 +462,8 @@ Each model uses:
 - 1024 maximum sequence length
 - Training on ~643,041 tokens per author
 - Early stopping at loss ≤ 3.0 (after minimum 500 epochs)
+
+**Note:** All analysis variants use identical training configurations, differing only in input text transformations. This ensures fair comparison across conditions.
 
 ## Data
 
