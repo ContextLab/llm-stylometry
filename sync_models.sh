@@ -336,14 +336,18 @@ for variant in "${VARIANTS_TO_SYNC[@]}"; do
 
     if [ "$variant" = "baseline" ]; then
         # Sync baseline models (no variant suffix)
-        rsync -avz --progress --include="*_tokenizer=gpt2_seed=*/" \
+        rsync -avz --progress \
+            --include="*_tokenizer=gpt2_seed=*/" \
+            --include="*_tokenizer=gpt2_seed=*/***" \
             --exclude="*_variant=*" \
-            --include="*/" --include="**" \
+            --exclude="*" \
             "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
     else
         # Sync variant models
-        rsync -avz --progress --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
-            --include="*/" --include="**" \
+        rsync -avz --progress \
+            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
+            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/***" \
+            --exclude="*" \
             "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
     fi
 
@@ -361,20 +365,33 @@ print_info "Verifying synced models..."
 SYNCED_COUNT=$(find "$LOCAL_MODELS_DIR" -maxdepth 1 -type d -name "*_tokenizer=gpt2_seed=*" -o -name "*_variant=*_tokenizer=gpt2_seed=*" | wc -l)
 print_success "Successfully synced $SYNCED_COUNT model directories"
 
-# Also download model_results.pkl if it exists (for any synced variant)
-print_info "Checking for consolidated results file..."
-RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" '[ -f "$HOME/llm-stylometry/data/model_results.pkl" ] && echo "yes" || echo "no"')
+# Download variant-specific model_results files
+print_info "Checking for consolidated results files..."
+mkdir -p "$PWD/data"
 
-if [ "$RESULTS_EXISTS" = "yes" ]; then
-    print_info "Downloading model_results.pkl..."
-    mkdir -p "$PWD/data"
-    rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/model_results.pkl" \
-        "$PWD/data/model_results.pkl"
-    print_success "Downloaded model_results.pkl"
-else
-    print_warning "model_results.pkl not found on remote server"
-    print_info "You may need to run consolidate_model_results.py locally"
-fi
+for variant in "${VARIANTS_TO_SYNC[@]}"; do
+    if [ "$variant" = "baseline" ]; then
+        RESULTS_FILE="model_results.pkl"
+    else
+        RESULTS_FILE="model_results_${variant}.pkl"
+    fi
+
+    RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" "[ -f \"\$HOME/llm-stylometry/data/$RESULTS_FILE\" ] && echo \"yes\" || echo \"no\"")
+
+    if [ "$RESULTS_EXISTS" = "yes" ]; then
+        print_info "Downloading $RESULTS_FILE..."
+        rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/$RESULTS_FILE" \
+            "$PWD/data/$RESULTS_FILE"
+        print_success "Downloaded $RESULTS_FILE"
+    else
+        print_warning "$RESULTS_FILE not found on remote server"
+        if [ "$variant" = "baseline" ]; then
+            print_info "You may need to run: python code/consolidate_model_results.py"
+        else
+            print_info "You may need to run: python code/consolidate_model_results.py --variant $variant"
+        fi
+    fi
+done
 
 # Print summary
 echo
