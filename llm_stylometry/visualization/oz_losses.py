@@ -13,7 +13,8 @@ def generate_oz_losses_figure(
     figsize=(12, 8),
     show_legend=False,
     font='Helvetica',
-    variant=None
+    variant=None,
+    apply_fairness=True
 ):
     """
     Generate Figure 5: Oz losses analysis.
@@ -24,8 +25,8 @@ def generate_oz_losses_figure(
         figsize: Figure size
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
-
         variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+        apply_fairness: Apply fairness-based loss thresholding for variants (default: True)
 
     Returns:
         matplotlib figure object
@@ -48,6 +49,16 @@ def generate_oz_losses_figure(
             raise ValueError(f"No variant column in data")
         df = df[df['variant'] == variant].copy()
 
+    # Apply fairness threshold for variants
+    if variant is not None and apply_fairness:
+        from llm_stylometry.analysis.fairness import (
+            compute_fairness_threshold,
+            apply_fairness_threshold
+        )
+
+        threshold = compute_fairness_threshold(df, min_epochs=500)
+        df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
+
 
     # Filter for Baum and Thompson models and relevant datasets
     oz_datasets = ["baum", "thompson", "contested", "non_oz_baum", "non_oz_thompson", "train"]
@@ -56,9 +67,6 @@ def generate_oz_losses_figure(
         (df["train_author"].isin(["baum", "thompson"])) &
         (df["loss_dataset"].isin(oz_datasets))
     ].copy()
-
-    # Sample every 10 epochs for cleaner visualization
-    oz_df = oz_df[oz_df["epochs_completed"] % 10 == 1]
 
     # Capitalize names for display
     oz_df["loss_dataset"] = oz_df["loss_dataset"].str.replace("_", " ").str.title()

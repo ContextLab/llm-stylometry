@@ -15,7 +15,8 @@ def generate_stripplot_figure(
     figsize=(8, 6),
     show_legend=False,
     font='Helvetica',
-    variant=None
+    variant=None,
+    apply_fairness=True
 ):
     """
     Generate Figure 1B: Strip plot showing loss distributions.
@@ -27,6 +28,7 @@ def generate_stripplot_figure(
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
         variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+        apply_fairness: Apply fairness-based loss thresholding for variants (default: True)
 
     Returns:
         matplotlib figure object
@@ -48,6 +50,16 @@ def generate_stripplot_figure(
         if 'variant' not in df.columns:
             raise ValueError(f"No variant column in data")
         df = df[df['variant'] == variant].copy()
+
+    # Apply fairness threshold for variants
+    if variant is not None and apply_fairness:
+        from llm_stylometry.analysis.fairness import (
+            compute_fairness_threshold,
+            apply_fairness_threshold
+        )
+
+        threshold = compute_fairness_threshold(df, min_epochs=500)
+        df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
 
 
     # Prepare data exactly as in stripplot.py
