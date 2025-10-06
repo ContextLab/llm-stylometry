@@ -5,7 +5,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm
 
 
@@ -96,7 +95,7 @@ def generate_t_test_figure(
     else:
         # Specific variant
         if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
+            raise ValueError("No variant column in data")
         df = df[df['variant'] == variant].copy()
 
     t_raws_df, _ = calculate_t_statistics(df)
@@ -131,11 +130,25 @@ def generate_t_test_figure(
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
-    # Add threshold line
+    # Calculate dynamic y-axis limits based on data
+    # This ensures all data points are visible, including negative t-statistics
+    # (e.g., when a model performs worse on its own training author)
+    y_min = t_raws_df['t_raw'].min()
+    y_max = t_raws_df['t_raw'].max()
+
+    # Add padding for better visualization
+    y_range = y_max - y_min
+    padding = 0.05 * y_range if y_range > 0 else 0.5
+
+    # Ensure threshold line (p<0.001 at t=3.291) is always visible
     threshold = 3.291
+    y_max = max(y_max, threshold) + padding
+    y_min = min(y_min, 0) - padding  # Allow negatives if they exist
+
+    # Add threshold line
     ax.axhline(y=threshold, linestyle="--", color="black", label="p<0.001 threshold" if show_legend else "")
     ax.set_xlim(0, t_raws_df["Epoch"].max())
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(y_min, y_max)
 
     if show_legend:
         handles, labels = ax.get_legend_handles_labels()
@@ -199,7 +212,7 @@ def generate_t_test_avg_figure(
     else:
         # Specific variant
         if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
+            raise ValueError("No variant column in data")
         df = df[df['variant'] == variant].copy()
 
     t_raws_df, _ = calculate_t_statistics(df)
@@ -226,11 +239,25 @@ def generate_t_test_avg_figure(
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
-    # Add threshold line
+    # Calculate dynamic y-axis limits based on data
+    # This ensures all data points are visible, including negative t-statistics
+    # (e.g., when a model performs worse on its own training author)
+    y_min = t_raws_df['t_raw'].min()
+    y_max = t_raws_df['t_raw'].max()
+
+    # Add padding for better visualization
+    y_range = y_max - y_min
+    padding = 0.05 * y_range if y_range > 0 else 0.5
+
+    # Ensure threshold line (p<0.001 at t=3.291) is always visible
     threshold = 3.291
+    y_max = max(y_max, threshold) + padding
+    y_min = min(y_min, 0) - padding  # Allow negatives if they exist
+
+    # Add threshold line
     ax.axhline(y=threshold, linestyle="--", color="black", label="p<0.001 threshold" if show_legend else "")
     ax.set_xlim(0, t_raws_df["Epoch"].max())
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(y_min, y_max)
 
     if show_legend:
         handles, labels = ax.get_legend_handles_labels()
