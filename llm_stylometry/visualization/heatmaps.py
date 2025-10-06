@@ -13,7 +13,8 @@ def generate_loss_heatmap_figure(
     output_path=None,
     figsize=(8, 6),
     font='Helvetica',
-    variant=None
+    variant=None,
+    apply_fairness=True
 ):
     """
     Generate Figure 3: Loss heatmap (confusion matrix).
@@ -23,8 +24,8 @@ def generate_loss_heatmap_figure(
         output_path: Path to save PDF (optional)
         figsize: Figure size
         font: Font family to use
-
         variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+        apply_fairness: Apply fairness-based loss thresholding for variants (default: True)
 
     Returns:
         matplotlib figure object
@@ -46,6 +47,16 @@ def generate_loss_heatmap_figure(
         if 'variant' not in df.columns:
             raise ValueError(f"No variant column in data")
         df = df[df['variant'] == variant].copy()
+
+    # Apply fairness threshold for variants
+    if variant is not None and apply_fairness:
+        from llm_stylometry.analysis.fairness import (
+            compute_fairness_threshold,
+            apply_fairness_threshold
+        )
+
+        threshold = compute_fairness_threshold(df, min_epochs=500)
+        df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
 
 
     # Define authors in requested order

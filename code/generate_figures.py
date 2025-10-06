@@ -283,6 +283,12 @@ Examples:
         help='Analysis variant for training (content-only, function-only, or POS-only)'
     )
 
+    parser.add_argument(
+        '--no-fairness',
+        action='store_true',
+        help='Disable fairness-based loss thresholding for variant figures (default: fairness enabled for variants)'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -356,14 +362,16 @@ Examples:
              data_path=args.data,
              output_path=f'{args.output}/all_losses.pdf',
              show_legend=False,
-             variant=args.variant
+             variant=args.variant,
+             apply_fairness=not args.no_fairness
          )),
         ('Figure 1B: Strip plot',
          lambda: generate_stripplot_figure(
              data_path=args.data,
              output_path=f'{args.output}/stripplot.pdf',
              show_legend=False,
-             variant=args.variant
+             variant=args.variant,
+             apply_fairness=not args.no_fairness
          )),
         ('Figure 2A: Individual t-tests',
          lambda: generate_t_test_figure(
@@ -383,20 +391,23 @@ Examples:
          lambda: generate_loss_heatmap_figure(
              data_path=args.data,
              output_path=f'{args.output}/average_loss_heatmap.pdf',
-             variant=args.variant
+             variant=args.variant,
+             apply_fairness=not args.no_fairness
          )),
         ('Figure 4: 3D MDS plot',
          lambda: generate_3d_mds_figure(
              data_path=args.data,
              output_path=f'{args.output}/3d_MDS_plot.pdf',
-             variant=args.variant
+             variant=args.variant,
+             apply_fairness=not args.no_fairness
          )),
         ('Figure 5: Oz losses',
          lambda: generate_oz_losses_figure(
              data_path=args.data,
              output_path=f'{args.output}/oz_losses.pdf',
              show_legend=False,
-             variant=args.variant
+             variant=args.variant,
+             apply_fairness=not args.no_fairness
          )),
     ]
 

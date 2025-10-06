@@ -160,6 +160,56 @@ All CLI commands accept variant flags. Without a flag, the baseline condition is
 - Baseline: `paper/figs/source/figure_name.pdf`
 - Variants: `paper/figs/source/figure_name_{variant}.pdf`
 
+### Fairness-Based Loss Thresholding
+
+Variant models converge much faster than baseline models (all cross 3.0 loss by epochs 15-16) and may converge to different final losses. To ensure fair comparison, **fairness-based loss thresholding** is automatically applied to variant figures (1A, 1B, 3, 4, 5):
+
+1. **Compute threshold**: Maximum of all models' minimum training losses within 500 epochs
+2. **Truncate data**: Keep all epochs up to and including the first epoch where training loss ≤ threshold
+3. **Fair comparison**: All models compared at the same training loss level (the fairness threshold)
+
+This ensures models are not unfairly compared when some converged to higher losses than others. The feature is enabled by default for variants and can be disabled:
+
+```bash
+# Fairness enabled (default for variants)
+./run_llm_stylometry.sh -f 1a -fo
+
+# Fairness disabled
+./run_llm_stylometry.sh -f 1a -fo --no-fairness
+```
+
+**Example results** (function-only variant):
+- Fairness threshold: 1.2720 (Austen's minimum loss)
+- Models truncated between epochs 88-500
+- Data reduced: 360,640 rows → 170,659 rows (47.3%)
+
+**Python API:**
+
+```python
+from llm_stylometry.analysis.fairness import (
+    compute_fairness_threshold,
+    apply_fairness_threshold
+)
+
+# Compute threshold for variant data
+df = pd.read_pickle('data/model_results_function.pkl')
+threshold = compute_fairness_threshold(df, min_epochs=500)
+print(f"Fairness threshold: {threshold:.4f}")
+
+# Truncate data at threshold
+df_fair = apply_fairness_threshold(df, threshold, use_first_crossing=True)
+
+# Generate figure with fairness
+from llm_stylometry.visualization import generate_all_losses_figure
+fig = generate_all_losses_figure(
+    data_path='data/model_results_function.pkl',
+    variant='function',
+    apply_fairness=True  # default for variants
+)
+```
+
+**Note**: T-test figures (2A, 2B) never apply fairness thresholding since they require all 500 epochs for statistical calculations.
+
 ## Training Models from Scratch
 
 **Note**: Training requires a CUDA-enabled GPU and takes significant time (80 models per condition, 320 total for all conditions).
@@ -383,6 +433,7 @@ Tests run automatically on GitHub Actions (Linux, macOS, Windows, Python 3.10). 
 The `llm_stylometry` package provides functions for all analyses:
 
 ```python
+# Visualization functions
 from llm_stylometry.visualization import (
     generate_all_losses_figure,      # Figure 1A: Training curves
     generate_stripplot_figure,       # Figure 1B: Loss distributions
@@ -392,7 +443,15 @@ from llm_stylometry.visualization import (
     generate_3d_mds_figure,          # Figure 4: MDS visualization
     generate_oz_losses_figure        # Figure 5: Oz analysis
 )
+
+# Fairness-based loss thresholding (for variant comparisons)
+from llm_stylometry.analysis.fairness import (
+    compute_fairness_threshold,      # Compute fairness threshold
+    apply_fairness_threshold         # Truncate data at threshold
+)
 ```
+
+All visualization functions support `variant` and `apply_fairness` parameters (except t-test figures). See the [Fairness-Based Loss Thresholding](#fairness-based-loss-thresholding) section for details.
 
 ## Citation
 

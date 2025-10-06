@@ -44,6 +44,7 @@ OPTIONS:
     -co, --content-only     Content-only variant (function words masked) - for training or figures
     -fo, --function-only    Function-only variant (content words masked) - for training or figures
     -pos, --part-of-speech  Part-of-speech variant (words → POS tags) - for training or figures
+    --no-fairness           Disable fairness-based loss thresholding for variant figures
     --setup-only            Only setup environment without generating figures
     --no-setup              Skip environment setup (assume already configured)
     --force-install         Force reinstall of all dependencies
@@ -61,6 +62,7 @@ EXAMPLES:
     $0 -t -co               # Train content-only variant models
     $0 -t -fo               # Train function-only variant models
     $0 -t -pos              # Train part-of-speech variant models
+    $0 -f 1a -fo --no-fairness  # Generate Figure 1A for function variant without fairness thresholding
     $0 -l                   # List available figures
     $0 --setup-only         # Only setup the environment
     $0 --clean              # Remove environment and reinstall from scratch
@@ -302,6 +304,7 @@ CLEAN=false
 CLEAN_CACHE=false
 NO_CONFIRM=false
 VARIANT=""
+NO_FAIRNESS=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -371,6 +374,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -pos|--part-of-speech)
             VARIANT="pos"
+            shift
+            ;;
+        --no-fairness)
+            NO_FAIRNESS=true
             shift
             ;;
         *)
@@ -478,6 +485,10 @@ fi
 
 if [ -n "$VARIANT" ]; then
     PYTHON_CMD="$PYTHON_CMD --variant $VARIANT"
+fi
+
+if [ "$NO_FAIRNESS" = true ]; then
+    PYTHON_CMD="$PYTHON_CMD --no-fairness"
 fi
 
 # Execute the Python script
