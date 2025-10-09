@@ -35,30 +35,21 @@ def generate_oz_losses_figure(
     plt.rcParams['font.family'] = font
     plt.rcParams['font.sans-serif'] = [font]
 
+    # Oz analysis is only performed for baseline models
+    if variant is not None:
+        import warnings
+        warnings.warn(
+            f"Skipping Figure 5 (Oz losses) for variant '{variant}': "
+            f"This analysis is only performed for baseline models."
+        )
+        return None
+
     # Load data
     df = pd.read_pickle(data_path)
 
-    # Filter by variant
-    if variant is None:
-        # Baseline: exclude variant models
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
-    else:
-        # Specific variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
-        df = df[df['variant'] == variant].copy()
-
-    # Apply fairness threshold for variants
-    if variant is not None and apply_fairness:
-        from llm_stylometry.analysis.fairness import (
-            compute_fairness_threshold,
-            apply_fairness_threshold
-        )
-
-        threshold = compute_fairness_threshold(df, min_epochs=500)
-        df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
-
+    # Filter by variant (baseline only - we already returned above for variants)
+    if 'variant' in df.columns:
+        df = df[df['variant'].isna()].copy()
 
     # Filter for Baum and Thompson models and relevant datasets
     oz_datasets = ["baum", "thompson", "contested", "non_oz_baum", "non_oz_thompson", "train"]

@@ -193,6 +193,11 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         safe_print(f"Available figures: {', '.join(figure_map.keys())}")
         return False
 
+    # Skip Figure 5 for variants with clear message
+    if figure_name == '5' and variant is not None:
+        safe_print(f"Skipping Figure 5 (Oz losses) for {variant} variant - requires contested/non-Oz datasets")
+        return True  # Return True to indicate intentional skip, not failure
+
     name, func, filename = figure_map[figure_name]
     output_path = Path(output_dir) / filename
 
@@ -202,6 +207,13 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         if name in ['all_losses', 'stripplot', 't_test', 't_test_avg', 'oz']:
             kwargs['show_legend'] = False
         fig = func(**kwargs)
+
+        # Handle None return (intentional skip)
+        if fig is None:
+            checkmark = "[OK]" if is_windows() else "✓"
+            safe_print(f"  {checkmark} Skipped (not applicable for this variant)")
+            return True
+
         plt.close(fig)
         checkmark = "[OK]" if is_windows() else "✓"
         safe_print(f"  {checkmark} Generated: {output_path}")
@@ -299,7 +311,7 @@ Examples:
         safe_print("  2b - Figure 2B: Average t-test (t_test_avg.pdf)")
         safe_print("  3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)")
         safe_print("  4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)")
-        safe_print("  5  - Figure 5: Oz authorship analysis (oz_losses.pdf)")
+        safe_print("  5  - Figure 5: Oz authorship analysis (oz_losses.pdf) [baseline only]")
         return 0
 
     safe_print(format_header("LLM Stylometry CLI", 60))
@@ -401,15 +413,22 @@ Examples:
              variant=args.variant,
              apply_fairness=not args.no_fairness
          )),
-        ('Figure 5: Oz losses',
-         lambda: generate_oz_losses_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/oz_losses.pdf',
-             show_legend=False,
-             variant=args.variant,
-             apply_fairness=not args.no_fairness
-         )),
     ]
+
+    # Only include Figure 5 for baseline (no variant)
+    if args.variant is None:
+        figures.append(
+            ('Figure 5: Oz losses',
+             lambda: generate_oz_losses_figure(
+                 data_path=args.data,
+                 output_path=f'{args.output}/oz_losses.pdf',
+                 show_legend=False,
+                 variant=args.variant,
+                 apply_fairness=not args.no_fairness
+             ))
+        )
+    else:
+        safe_print(f"\nNote: Skipping Figure 5 for {args.variant} variant (requires contested/non-Oz datasets)")
 
     success_count = 0
     failed_figures = []
@@ -439,8 +458,11 @@ Examples:
         (f'{args.output}/t_test_avg.pdf', 'Figure 2B'),
         (f'{args.output}/average_loss_heatmap.pdf', 'Figure 3'),
         (f'{args.output}/3d_MDS_plot.pdf', 'Figure 4'),
-        (f'{args.output}/oz_losses.pdf', 'Figure 5'),
     ]
+
+    # Only verify Figure 5 for baseline
+    if args.variant is None:
+        expected_files.append((f'{args.output}/oz_losses.pdf', 'Figure 5'))
 
     for file_path, name in expected_files:
         path = Path(file_path)
