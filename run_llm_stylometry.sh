@@ -75,7 +75,7 @@ FIGURES:
     2b - Figure 2B: Average t-test (t_test_avg.pdf)
     3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)
     4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)
-    5  - Figure 5: Oz authorship analysis (oz_losses.pdf)
+    5  - Figure 5: Oz authorship analysis (oz_losses.pdf) [baseline only]
 
 EOF
 }
