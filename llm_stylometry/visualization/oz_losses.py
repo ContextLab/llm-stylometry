@@ -4,7 +4,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from pathlib import Path
 
 
 def generate_oz_losses_figure(
@@ -138,11 +137,6 @@ def generate_oz_losses_figure(
 
     # Save if path provided
     if output_path:
-        # Add variant suffix to filename if variant specified
-        if variant:
-            from pathlib import Path
-            output_path = Path(output_path)
-            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig
