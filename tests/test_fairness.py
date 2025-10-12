@@ -324,10 +324,10 @@ class TestFairnessWithVisualization:
         print(f"✓ MDS figure with fairness generated successfully")
 
     def test_oz_losses_figure_with_fairness(self):
-        """Test Figure 5 generation with fairness enabled."""
+        """Test Figure 5 skipped for variants (Oz analysis is baseline-only)."""
         output_path = Path(self.temp_dir) / "test_oz_fair.pdf"
-        expected_path = Path(self.temp_dir) / "test_oz_fair_function.pdf"
 
+        # Figure 5 should return None for variants (Oz analysis is baseline-only)
         fig = generate_oz_losses_figure(
             data_path=str(self.data_path),
             output_path=str(output_path),
@@ -335,11 +335,10 @@ class TestFairnessWithVisualization:
             apply_fairness=True
         )
 
-        assert fig is not None, "Figure generation failed"
-        assert expected_path.exists(), f"PDF not created at {expected_path}"
+        assert fig is None, "Figure 5 should return None for variants (Oz analysis is baseline-only)"
+        assert not output_path.exists(), "PDF should not be created for variant"
 
-        plt.close(fig)
-        print(f"✓ Oz losses figure with fairness generated successfully")
+        print(f"✓ Oz losses figure correctly skipped for variant (baseline-only analysis)")
 
     def test_fairness_disabled_flag(self):
         """Test that apply_fairness=False bypasses fairness thresholding."""
