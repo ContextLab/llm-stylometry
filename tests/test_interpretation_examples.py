@@ -133,37 +133,48 @@ def test_comparison_workflow():
 
 
 def test_workflow_figure_generation():
-    """Test generating figures for all variants as in workflow examples."""
+    """Test generating Figure 5: baseline should work, variants should skip."""
 
     test_data = Path('tests/data/test_model_results.pkl')
     if not test_data.exists():
         pytest.skip("Test data not found")
 
-    # Test generating Figure 5 (Oz analysis) for variants
+    # Test generating Figure 5 (Oz analysis) - baseline only
     variants = [None, 'content', 'function', 'pos']
 
     for variant in variants:
         cmd = ['./run_llm_stylometry.sh', '-f', '5', '-d', str(test_data), '--no-setup']
         if variant:
-            cmd.append(f'--{variant}-only')
+            # Use correct flag format for each variant
+            if variant == 'content':
+                cmd.append('-co')
+            elif variant == 'function':
+                cmd.append('-fo')
+            elif variant == 'pos':
+                cmd.append('-pos')
 
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
-        # May fail if no Oz data or variant data
-        if result.returncode != 0:
-            output = result.stdout + result.stderr
-            if any(x in output for x in ['No data', 'Insufficient', 'KeyError', 'ValueError']):
-                # Expected if data missing
-                continue
-            else:
-                # Unexpected failure
-                pytest.fail(f"Figure 5 generation failed for {variant}: {result.stderr}")
+        output = result.stdout + result.stderr
 
-        # If succeeded, verify file creation
-        expected_name = 'oz_losses.pdf' if not variant else f'oz_losses_{variant}.pdf'
-        output_path = Path('paper/figs/source') / expected_name
-        if output_path.exists():
-            assert output_path.stat().st_size > 1000, f"Output file too small: {output_path}"
+        if variant:
+            # Variants should skip Figure 5 (Oz analysis is baseline-only)
+            assert result.returncode == 0, f"Figure 5 should skip gracefully for {variant}: {result.stderr}"
+            assert 'Skipping Figure 5' in output, f"Expected skip message for {variant}"
+        else:
+            # Baseline should succeed
+            if result.returncode != 0:
+                if any(x in output for x in ['No data', 'Insufficient', 'KeyError', 'ValueError']):
+                    # Expected if data missing
+                    pytest.skip("Insufficient Oz data for baseline test")
+                else:
+                    # Unexpected failure
+                    pytest.fail(f"Figure 5 generation failed for baseline: {result.stderr}")
+
+            # Verify file creation for baseline
+            output_path = Path('paper/figs/source') / 'oz_losses.pdf'
+            if output_path.exists():
+                assert output_path.stat().st_size > 1000, f"Output file too small: {output_path}"
 
 
 def test_variant_transformation_examples():
