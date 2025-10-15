@@ -27,6 +27,11 @@ tests/data/*.pkl
 
 # Temporary test files
 .test_credentials
+
+# SSH credentials (security)
+.ssh/credentials.json
+
+# Model files
 models/*/model.safetensors
 models/*/model.pth
 models/*/pytorch_model.bin
