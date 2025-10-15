@@ -91,7 +91,7 @@ fi
 echo
 
 # Execute the remote script via SSH
-ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' bash -s" << 'ENDSSH'
+ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' bash -s" << ENDSSH
 #!/bin/bash
 set -e
 
@@ -101,14 +101,14 @@ echo "=================================================="
 echo
 
 # Check if we're in kill mode
-if [ "$KILL_MODE" = "true" ]; then
+if [ "\$KILL_MODE" = "true" ]; then
     echo "Kill mode activated - terminating existing training sessions..."
 
     # Kill any existing screen sessions
     screen -ls | grep -o '[0-9]*\.llm_training' | cut -d. -f1 | while read pid; do
-        if [ ! -z "$pid" ]; then
-            echo "Killing screen session with PID: $pid"
-            screen -X -S "$pid.llm_training" quit
+        if [ ! -z "\$pid" ]; then
+            echo "Killing screen session with PID: \$pid"
+            screen -X -S "\$pid.llm_training" quit
         fi
     done
 
@@ -151,14 +151,14 @@ fi
 
 # Create log directory
 mkdir -p ~/llm-stylometry/logs
-LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
+LOG_FILE=~/llm-stylometry/logs/training_\$(date +%Y%m%d_%H%M%S).log
 
 echo ""
 echo "=================================================="
 echo "Starting training in screen session"
 echo "=================================================="
 echo "Training will run in a screen session named: llm_training"
-echo "Log file: $LOG_FILE"
+echo "Log file: \$LOG_FILE"
 echo ""
 echo "Useful commands:"
 echo "  - Detach from screen: Ctrl+A, then D"
@@ -175,6 +175,8 @@ screen -X -S llm_training quit 2>/dev/null || true
 # Create a script file first with RESUME_MODE and VARIANT_ARG variables
 echo "RESUME_MODE='$RESUME_MODE'" > /tmp/llm_train.sh
 echo "VARIANT_ARG='$VARIANT_ARG'" >> /tmp/llm_train.sh
+echo "echo '[DEBUG] RESUME_MODE value is:' '\$RESUME_MODE'" >> /tmp/llm_train.sh
+echo "echo '[DEBUG] VARIANT_ARG value is:' '\$VARIANT_ARG'" >> /tmp/llm_train.sh
 cat >> /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 set -e  # Exit on error
@@ -184,13 +186,13 @@ cd ~/llm-stylometry
 
 # Create log directory and file
 mkdir -p logs
-LOG_FILE=~/llm-stylometry/logs/training_$(date +%Y%m%d_%H%M%S).log
-echo "Training started at $(date)" | tee $LOG_FILE
+LOG_FILE=~/llm-stylometry/logs/training_\$(date +%Y%m%d_%H%M%S).log
+echo "Training started at \$(date)" | tee \$LOG_FILE
 
 # Check if the run script exists
 if [ ! -f ./run_llm_stylometry.sh ]; then
-    echo "ERROR: run_llm_stylometry.sh not found in $(pwd)!" | tee -a $LOG_FILE
-    ls -la | tee -a $LOG_FILE
+    echo "ERROR: run_llm_stylometry.sh not found in \$(pwd)!" | tee -a \$LOG_FILE
+    ls -la | tee -a \$LOG_FILE
     exit 1
 fi
 
@@ -198,18 +200,18 @@ fi
 chmod +x ./run_llm_stylometry.sh
 
 # Run the training script with non-interactive flag
-echo "Starting training with run_llm_stylometry.sh..." | tee -a $LOG_FILE
+echo "Starting training with run_llm_stylometry.sh..." | tee -a \$LOG_FILE
 
 # Check if we're in resume mode
-if [ "$RESUME_MODE" = "true" ]; then
-    echo "Running in resume mode - continuing from existing checkpoints" | tee -a $LOG_FILE
-    ./run_llm_stylometry.sh --train --resume -y $VARIANT_ARG 2>&1 | tee -a $LOG_FILE
+if [ "\$RESUME_MODE" = "true" ]; then
+    echo "Running in resume mode - continuing from existing checkpoints" | tee -a \$LOG_FILE
+    ./run_llm_stylometry.sh --train --resume -y \$VARIANT_ARG 2>&1 | tee -a \$LOG_FILE
 else
-    echo "Running full training from scratch" | tee -a $LOG_FILE
-    ./run_llm_stylometry.sh --train -y $VARIANT_ARG 2>&1 | tee -a $LOG_FILE
+    echo "Running full training from scratch" | tee -a \$LOG_FILE
+    ./run_llm_stylometry.sh --train -y \$VARIANT_ARG 2>&1 | tee -a \$LOG_FILE
 fi
 
-echo "Training completed at $(date)" | tee -a $LOG_FILE
+echo "Training completed at \$(date)" | tee -a \$LOG_FILE
 TRAINSCRIPT
 
 chmod +x /tmp/llm_train.sh
@@ -235,7 +237,7 @@ if screen -list | grep -q "llm_training"; then
     echo "  screen -r llm_training"
     echo ""
     echo "Or view the log file:"
-    echo "  tail -f $LOG_FILE"
+    echo "  tail -f \$LOG_FILE"
 
     # Attach to screen session
     echo ""
