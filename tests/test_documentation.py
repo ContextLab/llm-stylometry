@@ -215,6 +215,31 @@ def test_python_api_variant_parameter():
             pass
 
 
+def test_remote_train_variant_flags_documented():
+    """Verify all variant flags are documented in remote_train.sh usage."""
+    result = subprocess.run(
+        ['./remote_train.sh'],
+        input='\n\n',  # Empty inputs to get past prompts
+        capture_output=True,
+        text=True,
+        timeout=10
+    )
+
+    # Check long-form flags
+    assert '--content-only' in result.stdout, "Missing --content-only in remote_train.sh"
+    assert '--function-only' in result.stdout, "Missing --function-only in remote_train.sh"
+    assert '--part-of-speech' in result.stdout, "Missing --part-of-speech in remote_train.sh"
+
+    # Check short-form flags
+    assert '-co' in result.stdout, "Missing -co short flag in remote_train.sh"
+    assert '-fo' in result.stdout, "Missing -fo short flag in remote_train.sh"
+    assert '-pos' in result.stdout, "Missing -pos short flag in remote_train.sh"
+
+    # Check that usage information is shown
+    assert 'Usage:' in result.stdout or 'Options:' in result.stdout, \
+        "remote_train.sh should display usage information"
+
+
 if __name__ == '__main__':
     # Run tests
     pytest.main([__file__, '-v'])
