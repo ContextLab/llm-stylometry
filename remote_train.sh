@@ -29,6 +29,7 @@ echo "  -co, --content-only     Train content-only variant"
 echo "  -fo, --function-only    Train function-only variant"
 echo "  -pos, --part-of-speech  Train part-of-speech variant"
 echo "  -g, --max-gpus NUM      Maximum number of GPUs to use (default: 4)"
+echo "  --cluster NAME          Select cluster: tensor01 or tensor02 (default: tensor02)"
 echo
 
 # Parse command line arguments
@@ -36,6 +37,7 @@ KILL_MODE=false
 RESUME_MODE=false
 VARIANT_ARG=""
 MAX_GPUS=""
+CLUSTER="tensor02"  # Default cluster
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -69,16 +71,21 @@ while [[ $# -gt 0 ]]; do
             echo "Using maximum $MAX_GPUS GPUs"
             shift 2
             ;;
+        --cluster)
+            CLUSTER="$2"
+            echo "Using cluster: $CLUSTER"
+            shift 2
+            ;;
         *)
             shift
             ;;
     esac
 done
 
-# Get server details - try to read from credentials file first
-CRED_FILE=".ssh/credentials.json"
+# Get server details - try to read from cluster-specific credentials file first
+CRED_FILE=".ssh/credentials_${CLUSTER}.json"
 if [ -f "$CRED_FILE" ]; then
-    print_info "Found credentials file, using saved credentials..."
+    print_info "Found credentials file for $CLUSTER, using saved credentials..."
     SERVER_ADDRESS=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['server'])" 2>/dev/null)
     USERNAME=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['username'])" 2>/dev/null)
     PASSWORD=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['password'])" 2>/dev/null)
