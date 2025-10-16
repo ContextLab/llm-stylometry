@@ -14,14 +14,15 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def consolidate_model_results(models_dir='models', output_path='data/model_results.pkl', save_csv=False):
+def consolidate_model_results(models_dir='models', output_path=None, save_csv=False, variant=None):
     """
     Consolidate all model training results into a single DataFrame.
 
     Args:
         models_dir: Directory containing trained models
-        output_path: Path to save consolidated pickle file
+        output_path: Path to save consolidated pickle file (auto-determined if None)
         save_csv: Also save as CSV for debugging (default: False)
+        variant: Filter by variant ('content', 'function', 'pos') or None for baseline
 
     Returns:
         Consolidated DataFrame with all model results
@@ -31,15 +32,30 @@ def consolidate_model_results(models_dir='models', output_path='data/model_resul
     if not models_path.exists():
         raise FileNotFoundError(f"Models directory not found: {models_dir}")
 
+    # Auto-determine output path based on variant
+    if output_path is None:
+        if variant:
+            output_path = f'data/model_results_{variant}.pkl'
+        else:
+            output_path = 'data/model_results.pkl'
+
     all_results = []
 
     # Find all model directories
-    model_dirs = sorted([d for d in models_path.iterdir() if d.is_dir()])
+    all_model_dirs = sorted([d for d in models_path.iterdir() if d.is_dir()])
+
+    # Filter by variant
+    if variant:
+        model_dirs = [d for d in all_model_dirs if f'_variant={variant}_' in d.name]
+        variant_label = f"{variant} variant"
+    else:
+        model_dirs = [d for d in all_model_dirs if '_variant=' not in d.name]
+        variant_label = "baseline"
 
     if not model_dirs:
-        raise ValueError(f"No model directories found in {models_dir}")
+        raise ValueError(f"No {variant_label} model directories found in {models_dir}")
 
-    print(f"Found {len(model_dirs)} model directories to consolidate")
+    print(f"Found {len(model_dirs)} {variant_label} model directories to consolidate")
 
     for model_dir in tqdm(model_dirs, desc="Consolidating models"):
         # Parse model directory name
@@ -171,11 +187,22 @@ def main():
         action='store_true',
         help='Also save as CSV for debugging'
     )
+    parser.add_argument(
+        '--variant',
+        choices=['content', 'function', 'pos'],
+        default=None,
+        help='Filter by variant (content, function, pos) or omit for baseline'
+    )
 
     args = parser.parse_args()
 
     try:
-        df = consolidate_model_results(args.models_dir, args.output)
+        df = consolidate_model_results(
+            args.models_dir,
+            args.output,
+            args.save_csv,
+            args.variant
+        )
         return 0
     except Exception as e:
         print(f"Error: {e}")

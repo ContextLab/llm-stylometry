@@ -4,7 +4,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from pathlib import Path
 
 
 def generate_oz_losses_figure(
@@ -13,7 +12,8 @@ def generate_oz_losses_figure(
     figsize=(12, 8),
     show_legend=False,
     font='Helvetica',
-    variant=None
+    variant=None,
+    apply_fairness=True
 ):
     """
     Generate Figure 5: Oz losses analysis.
@@ -24,8 +24,8 @@ def generate_oz_losses_figure(
         figsize: Figure size
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
-
         variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+        apply_fairness: Apply fairness-based loss thresholding for variants (default: True)
 
     Returns:
         matplotlib figure object
@@ -34,20 +34,21 @@ def generate_oz_losses_figure(
     plt.rcParams['font.family'] = font
     plt.rcParams['font.sans-serif'] = [font]
 
+    # Oz analysis is only performed for baseline models
+    if variant is not None:
+        import warnings
+        warnings.warn(
+            f"Skipping Figure 5 (Oz losses) for variant '{variant}': "
+            f"This analysis is only performed for baseline models."
+        )
+        return None
+
     # Load data
     df = pd.read_pickle(data_path)
 
-    # Filter by variant
-    if variant is None:
-        # Baseline: exclude variant models
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
-    else:
-        # Specific variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
-        df = df[df['variant'] == variant].copy()
-
+    # Filter by variant (baseline only - we already returned above for variants)
+    if 'variant' in df.columns:
+        df = df[df['variant'].isna()].copy()
 
     # Filter for Baum and Thompson models and relevant datasets
     oz_datasets = ["baum", "thompson", "contested", "non_oz_baum", "non_oz_thompson", "train"]
@@ -56,9 +57,6 @@ def generate_oz_losses_figure(
         (df["train_author"].isin(["baum", "thompson"])) &
         (df["loss_dataset"].isin(oz_datasets))
     ].copy()
-
-    # Sample every 10 epochs for cleaner visualization
-    oz_df = oz_df[oz_df["epochs_completed"] % 10 == 1]
 
     # Capitalize names for display
     oz_df["loss_dataset"] = oz_df["loss_dataset"].str.replace("_", " ").str.title()
@@ -139,11 +137,6 @@ def generate_oz_losses_figure(
 
     # Save if path provided
     if output_path:
-        # Add variant suffix to filename if variant specified
-        if variant:
-            from pathlib import Path
-            output_path = Path(output_path)
-            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig

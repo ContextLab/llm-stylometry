@@ -31,8 +31,9 @@ llm-stylometry/
 │   ├── raw/            # Original texts from Project Gutenberg
 │   ├── cleaned/        # Preprocessed texts by author
 │   └── model_results.pkl # Consolidated model training results
-├── models/              # Trained models (80 total)
-│   └── {author}_tokenizer=gpt2_seed={0-9}/
+├── models/              # Trained models (80 baseline + 240 variants = 320 total)
+│   └── {author}_tokenizer=gpt2_seed={0-9}/  # Baseline models
+│   └── {author}_variant={variant}_tokenizer=gpt2_seed={0-9}/  # Variant models
 ├── paper/               # LaTeX paper and figures
 │   ├── main.tex        # Paper source
 │   ├── main.pdf        # Compiled paper
@@ -94,238 +95,152 @@ pip install -e .
 
 ## Quick Start
 
-### Using the CLI
+The easiest way to use the toolbox is via the CLI wrapper scripts:
 
 ```bash
-# Generate all figures (default)
+# Generate all figures from pre-computed results
 ./run_llm_stylometry.sh
 
 # Generate specific figure
 ./run_llm_stylometry.sh -f 1a    # Figure 1A only
-./run_llm_stylometry.sh -f 4     # Figure 4 (MDS plot) only
+./run_llm_stylometry.sh -l       # List available figures
 
-# List available figures
-./run_llm_stylometry.sh -l
-
-# Train models from scratch (requires GPU)
-./run_llm_stylometry.sh -t
-
-# Compute statistical analyses (Table 1 and key statistics)
+# Compute statistical analyses
 ./run_stats.sh
-
-# Custom data and output paths
-./run_llm_stylometry.sh -d path/to/model_results.pkl -o path/to/output
 
 # Get help
 ./run_llm_stylometry.sh -h
 ```
 
-### Using Python Directly
+For training models from scratch, see [Training Models from Scratch](#training-models-from-scratch).
 
-```bash
-conda activate llm-stylometry
-
-# Generate all figures
-python generate_figures.py
-
-# Generate specific figure
-python generate_figures.py --figure 1a
-
-# Train models from scratch
-python generate_figures.py --train
-
-# Resume training from existing checkpoints
-python generate_figures.py --train --resume
-
-# List available figures
-python generate_figures.py --list
-```
-
-**Note**: The t-test calculations (Figure 2) take approximately 2-3 minutes due to statistical computations across all epochs and authors.
-
-## Analysis Variants
-
-The project supports three linguistic analysis variants to understand what stylistic features models learn:
-
-### Content-Only Variant
-Masks function words with `<FUNC>` token, preserving only content words (nouns, verbs, adjectives, etc.)
-- **Tests:** Whether models distinguish authors based on vocabulary and word choice
-- **Example transformation:**
-  - Original: "The quick brown fox jumps over the lazy dog"
-  - Transformed: "<FUNC> quick brown fox jumps <FUNC> <FUNC> lazy dog"
-
-### Function-Only Variant
-Masks content words with `<CONTENT>` token, preserving only function words (articles, prepositions, conjunctions)
-- **Tests:** Whether models distinguish authors based on grammatical structure
-- **Example transformation:**
-  - Original: "The quick brown fox jumps over the lazy dog"
-  - Transformed: "The <CONTENT> <CONTENT> <CONTENT> <CONTENT> over the <CONTENT> <CONTENT>"
-
-### Part-of-Speech (POS) Variant
-Replaces all words with their POS tags using Universal Dependencies tagset
-- **Tests:** Whether models distinguish authors based on syntactic patterns
-- **Example transformation:**
-  - Original: "The quick brown fox jumps over the lazy dog"
-  - Transformed: "DET ADJ ADJ NOUN VERB ADP DET ADJ NOUN"
-
-### Training Variants
-
-```bash
-# Train a single variant (8 authors × 10 seeds = 80 models per variant)
-./run_llm_stylometry.sh --train --content-only
-./run_llm_stylometry.sh --train --function-only
-./run_llm_stylometry.sh --train --part-of-speech
-
-# Short flags
-./run_llm_stylometry.sh -t -co   # content-only
-./run_llm_stylometry.sh -t -fo   # function-only
-./run_llm_stylometry.sh -t -pos  # part-of-speech
-
-# Train baseline (no variant flag)
-./run_llm_stylometry.sh -t       # baseline (80 models)
-
-# To train all conditions sequentially (baseline + 3 variants = 320 models total):
-./run_llm_stylometry.sh -t                    # baseline
-./run_llm_stylometry.sh -t --content-only     # content variant
-./run_llm_stylometry.sh -t --function-only    # function variant
-./run_llm_stylometry.sh -t --part-of-speech   # POS variant
-```
-
-### Generating Variant Figures
-
-```bash
-# Generate all figures for a single variant
-./run_llm_stylometry.sh --content-only
-./run_llm_stylometry.sh --function-only
-./run_llm_stylometry.sh --part-of-speech
-
-# Generate specific figure for a variant
-./run_llm_stylometry.sh -f 1a --content-only
-./run_llm_stylometry.sh -f 1a --function-only
-
-# Generate baseline figures (no variant flag)
-./run_llm_stylometry.sh           # all baseline figures
-./run_llm_stylometry.sh -f 1a     # specific baseline figure
-
-# To generate all figures for all conditions:
-./run_llm_stylometry.sh                    # baseline
-./run_llm_stylometry.sh --content-only     # content variant
-./run_llm_stylometry.sh --function-only    # function variant
-./run_llm_stylometry.sh --part-of-speech   # POS variant
-```
-
-### Computing Variant Statistics
-
-```bash
-# Single variant statistics
-./run_stats.sh                    # baseline (default)
-./run_stats.sh --content-only     # content variant
-./run_stats.sh --function-only    # function variant
-./run_stats.sh --part-of-speech   # POS variant
-
-# All statistics (baseline + all 3 variants)
-./run_stats.sh --all
-```
-
-### Remote Training with Variants
-
-```bash
-# Train a single variant on GPU server
-./remote_train.sh --content-only
-./remote_train.sh --function-only
-./remote_train.sh --part-of-speech
-
-# Resume variant training
-./remote_train.sh --resume --content-only
-
-# Train baseline on remote server (no variant flag)
-./remote_train.sh
-
-# To train all conditions on remote server, run sequentially:
-./remote_train.sh                    # baseline
-./remote_train.sh --content-only     # content variant
-./remote_train.sh --function-only    # function variant
-./remote_train.sh --part-of-speech   # POS variant
-```
-
-### Model Naming Convention
-
-Models include variant in their directory names:
-- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
-- Content: `{author}_variant=content_tokenizer=gpt2_seed={0-9}/`
-- Function: `{author}_variant=function_tokenizer=gpt2_seed={0-9}/`
-- POS: `{author}_variant=pos_tokenizer=gpt2_seed={0-9}/`
-
-### Figure Output Paths
-
-Figures include variant suffix:
-- Baseline: `paper/figs/source/all_losses.pdf`
-- Content: `paper/figs/source/all_losses_content.pdf`
-- Function: `paper/figs/source/all_losses_function.pdf`
-- POS: `paper/figs/source/all_losses_pos.pdf`
-
-### Using Pre-computed Results
-
-The repository includes pre-computed results from training 80 models (8 authors × 10 random seeds). These results are consolidated in `data/model_results.pkl`.
+**Python API:** You can also use Python directly for programmatic access:
 
 ```python
-import pandas as pd
 from llm_stylometry.visualization import generate_all_losses_figure
-
-# Load consolidated results
-df = pd.read_pickle('data/model_results.pkl')
 
 # Generate a figure
 fig = generate_all_losses_figure(
     data_path='data/model_results.pkl',
-    output_path='my_figure.pdf'
+    output_path='figure.pdf'
 )
 ```
 
-### Available Figures
+See the [Package API](#package-api) section for all available functions.
 
-- **1a**: Figure 1A - Training curves (all_losses.pdf)
-- **1b**: Figure 1B - Strip plot (stripplot.pdf)
-- **2a**: Figure 2A - Individual t-tests (t_test.pdf)
-- **2b**: Figure 2B - Average t-test (t_test_avg.pdf)
-- **3**: Figure 3 - Confusion matrix heatmap (average_loss_heatmap.pdf)
-- **4**: Figure 4 - 3D MDS plot (3d_MDS_plot.pdf)
-- **5**: Figure 5 - Oz authorship analysis (oz_losses.pdf)
+**Note**: T-test calculations (Figure 2) take 2-3 minutes due to statistical computations across all epochs and authors.
 
-### Statistical Analysis
+## Analysis Variants
 
-Generate key statistics from the paper:
+The project supports three linguistic variants to understand what stylistic features models learn:
+
+**Content-Only** (`-co`, `--content-only`): Masks function words with `<FUNC>`, preserving only content words (nouns, verbs, adjectives). Tests vocabulary and word choice.
+
+**Function-Only** (`-fo`, `--function-only`): Masks content words with `<CONTENT>`, preserving only function words (articles, prepositions, conjunctions). Tests grammatical structure.
+
+**Part-of-Speech** (`-pos`, `--part-of-speech`): Replaces words with POS tags (Universal Dependencies tagset). Tests syntactic patterns.
+
+All CLI commands accept variant flags. Without a flag, the baseline condition is used. Each variant trains 80 models (8 authors × 10 seeds). See [Training Models from Scratch](#training-models-from-scratch) for training details.
 
 ```bash
-# Compute statistical analyses
-./run_stats.sh
+# Generate figures for variants
+./run_llm_stylometry.sh -f 1a -co           # Figure 1A, content variant
+./run_llm_stylometry.sh --function-only     # All figures, function variant
+
+# Compute statistics
+./run_stats.sh --all                        # All variants at once
+./run_stats.sh -co                          # Single variant
 ```
 
-This produces:
-- **Twain p-threshold analysis**: Epoch where Twain model first achieves p < 0.001
-- **Average t-test**: t-test of average t-statistics across seeds, at 500th epoch
-- **Table 1**: Individual author model t-tests comparing self vs. other losses
+**Model directories:**
+- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
+- Variants: `{author}_variant={content|function|pos}_tokenizer=gpt2_seed={0-9}/`
+
+**Figure paths:**
+- Baseline: `paper/figs/source/figure_name.pdf`
+- Variants: `paper/figs/source/figure_name_{variant}.pdf`
+
+### Fairness-Based Loss Thresholding
+
+Variant models converge much faster than baseline models (all cross 3.0 loss by epochs 15-16) and may converge to different final losses. To ensure fair comparison, **fairness-based loss thresholding** is automatically applied to variant figures (1A, 1B, 3, 4, 5):
+
+1. **Compute threshold**: Maximum of all models' minimum training losses within 500 epochs
+2. **Truncate data**: Keep all epochs up to and including the first epoch where training loss ≤ threshold
+3. **Fair comparison**: All models compared at the same training loss level (the fairness threshold)
+
+This ensures models are not unfairly compared when some converged to higher losses than others. The feature is enabled by default for variants and can be disabled:
+
+```bash
+# Fairness enabled (default for variants)
+./run_llm_stylometry.sh -f 1a -fo
+
+# Fairness disabled
+./run_llm_stylometry.sh -f 1a -fo --no-fairness
+```
+
+**Example results** (function-only variant):
+- Fairness threshold: 1.2720 (Austen's minimum loss)
+- Models truncated between epochs 88-500
+- Data reduced: 360,640 rows → 170,659 rows (47.3%)
+
+**Python API:**
+
+```python
+from llm_stylometry.analysis.fairness import (
+    compute_fairness_threshold,
+    apply_fairness_threshold
+)
+
+# Compute threshold for variant data
+df = pd.read_pickle('data/model_results_function.pkl')
+threshold = compute_fairness_threshold(df, min_epochs=500)
+print(f"Fairness threshold: {threshold:.4f}")
+
+# Truncate data at threshold
+df_fair = apply_fairness_threshold(df, threshold, use_first_crossing=True)
+
+# Generate figure with fairness
+from llm_stylometry.visualization import generate_all_losses_figure
+fig = generate_all_losses_figure(
+    data_path='data/model_results_function.pkl',
+    variant='function',
+    apply_fairness=True  # default for variants
+)
+```
+
+**Note**: T-test figures (2A, 2B) never apply fairness thresholding since they require all 500 epochs for statistical calculations.
 
 ## Training Models from Scratch
 
-**Note**: Training requires a CUDA-enabled GPU and takes significant time (~80 models total).
+**Note**: Training requires a CUDA-enabled GPU and takes significant time (80 models per condition, 320 total for all conditions).
 
 ### Local Training
 
 ```bash
-# Using the CLI (recommended - handles all steps automatically)
+# Train baseline models
 ./run_llm_stylometry.sh --train
+
+# Train analysis variants
+./run_llm_stylometry.sh --train --content-only     # Content variant
+./run_llm_stylometry.sh --train --function-only    # Function variant
+./run_llm_stylometry.sh --train --part-of-speech   # POS variant
+
+# Short flags
+./run_llm_stylometry.sh -t -co              # Content variant
+./run_llm_stylometry.sh -t -fo              # Function variant
+./run_llm_stylometry.sh -t -pos             # POS variant
 
 # Resume training from existing checkpoints
 ./run_llm_stylometry.sh --train --resume
+./run_llm_stylometry.sh -t -r -co           # Resume content variant
 
 # Limit GPU usage if needed
 ./run_llm_stylometry.sh --train --max-gpus 4
 ```
 
-This command will:
+Each training run will:
 1. Clean and prepare the data if needed
-2. Train all 80 models (8 authors × 10 seeds)
+2. Train 80 models (8 authors × 10 seeds)
 3. Consolidate results into `data/model_results.pkl`
 
 **Resume Training**: The `--resume` flag allows you to continue training from existing checkpoints:
@@ -373,29 +288,33 @@ git pull  # This should work without prompting for credentials
 Once Git credentials are configured on your server, run `remote_train.sh` **from your local machine** (not on the GPU server):
 
 ```bash
-# From your local machine, start training on the remote GPU server
+# Train baseline models
 ./remote_train.sh
 
+# Train analysis variants
+./remote_train.sh --content-only        # Content variant
+./remote_train.sh -fo                   # Function variant (short flag)
+./remote_train.sh --part-of-speech      # POS variant
+
 # Resume training from existing checkpoints
-./remote_train.sh --resume  # or -r
+./remote_train.sh --resume              # Resume baseline
+./remote_train.sh -r -co                # Resume content variant
 
-# Kill existing training sessions and optionally start new one
-./remote_train.sh --kill  # or -k
-
-# Kill and resume (restart interrupted training)
-./remote_train.sh --kill --resume
+# Kill existing training sessions
+./remote_train.sh --kill                # Kill and exit
+./remote_train.sh --kill --resume       # Kill and restart
 
 # You'll be prompted for:
 # - Server address (hostname or IP)
 # - Username
 ```
 
-**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (or `--train --resume -y` if resuming) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
+**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (with any variant flags you specify) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
 
 The script will:
 1. SSH into your GPU server
 2. Update the repository in `~/llm-stylometry` (or clone if it doesn't exist)
-3. Start `run_llm_stylometry.sh --train -y` in a `screen` session
+3. Start training in a `screen` session with the specified options
 4. Exit, allowing your local machine to disconnect while training continues on the server
 
 #### Monitoring training progress
@@ -414,33 +333,88 @@ screen -r llm_training
 exit
 ```
 
+#### Troubleshooting remote_train.sh
+
+**Variant flags not working?**
+
+If variant flags (`-co`, `-fo`, `-pos`) aren't being passed correctly, you can verify:
+
+```bash
+# Check the training script on the server
+ssh username@server 'cat /tmp/llm_train.sh | grep VARIANT_ARG'
+# Should show: VARIANT_ARG='-co' (or '-fo', '-pos')
+# NOT: VARIANT_ARG=''
+
+# Check the training log
+ssh username@server 'cat ~/llm-stylometry/logs/training_*.log | grep -i variant'
+# Should show: "Training variant: content" (or "function", "pos")
+# NOT: "Training baseline models"
+
+# Check debug output at start of training script
+ssh username@server 'cat /tmp/llm_train.sh | head -5'
+# Should show:
+# RESUME_MODE='false' (or 'true')
+# VARIANT_ARG='-co' (or '-fo', '-pos', or '' for baseline)
+```
+
+**Connection issues?**
+
+```bash
+# Test SSH connection manually
+ssh username@server echo "Connection works"
+
+# If you get permission denied, check your SSH keys or use password authentication
+ssh -o PreferredAuthentications=password username@server
+```
+
+**Screen session not found?**
+
+```bash
+# List all screen sessions
+ssh username@server 'screen -ls'
+
+# If training crashed, check the log
+ssh username@server 'tail -50 ~/llm-stylometry/logs/training_*.log'
+```
+
 #### Downloading results after training completes
 
 Once training is complete, use `sync_models.sh` **from your local machine** to download the trained models and results:
 
 ```bash
-# Download trained models from server
+# Download baseline models only (default)
 ./sync_models.sh
+
+# Download specific variants
+./sync_models.sh --content-only           # Content variant only
+./sync_models.sh --baseline --content-only # Baseline + content
+./sync_models.sh --all                    # All conditions (320 models)
 
 # You'll be prompted for:
 # - Server address
 # - Username
-# - Password
 ```
 
-This script will:
-1. Verify all 80 models are complete with weights
-2. Create a compressed archive on the server
-3. Download via rsync with progress indication
-4. Extract to your local `~/llm-stylometry/models/` directory
-5. Back up any existing local models
-6. Also sync `model_results.pkl` if available
+**Variant Flags:**
+- `-b, --baseline`: Sync baseline models (80 models)
+- `-co, --content-only`: Sync content-only variant (80 models)
+- `-fo, --function-only`: Sync function-only variant (80 models)
+- `-pos, --part-of-speech`: Sync POS variant (80 models)
+- `-a, --all`: Sync all conditions (320 models total)
+- Flags are stackable: `./sync_models.sh -b -co` syncs baseline + content
 
-**Note**: The script will only download if all 80 models are complete. If training is still in progress, it will show which models are missing.
+**How it works:**
+1. Checks which requested models are complete on remote server (80 per condition)
+2. Only syncs complete model sets
+3. Uses rsync to download models with progress indication
+4. Backs up existing local models before replacing
+5. Also syncs `model_results.pkl` if available
+
+**Note**: The script verifies models are complete before downloading. If training is in progress, it will show which models are missing and skip incomplete conditions.
 
 ### Model Configuration
 
-Each model uses:
+Each model uses the same architecture and hyperparameters (applies to baseline and all variants):
 - GPT-2 architecture with custom dimensions
 - 128 embedding dimensions
 - 8 transformer layers
@@ -448,6 +422,8 @@ Each model uses:
 - 1024 maximum sequence length
 - Training on ~643,041 tokens per author
 - Early stopping at loss ≤ 3.0 (after minimum 500 epochs)
+
+**Note:** All analysis variants use identical training configurations, differing only in input text transformations. This ensures fair comparison across conditions.
 
 ## Data
 
@@ -479,9 +455,7 @@ Our analysis shows that:
 
 ## Testing
 
-### Running Tests Locally
-
-The repository includes comprehensive tests that use real models and data (no mocks):
+The repository includes comprehensive tests for all functionality:
 
 ```bash
 # Install test dependencies
@@ -491,66 +465,19 @@ pip install pytest pytest-timeout
 pytest tests/
 
 # Run specific test modules
-pytest tests/test_visualization.py  # Test figure generation
-pytest tests/test_cli.py            # Test CLI functionality
-pytest tests/test_model_training.py # Test model operations
-
-# Run with verbose output
-pytest -v tests/
+pytest tests/test_visualization.py  # Figure generation
+pytest tests/test_cli.py            # CLI functionality
+pytest tests/test_model_training.py # Model operations
 ```
 
-### Test Coverage
-
-Our test suite includes:
-
-- **Visualization Tests**: Verify all figure generation functions work correctly with synthetic data
-- **CLI Tests**: Test all command-line options and error handling
-- **Model Training Tests**: Test model creation, training, and saving with tiny models
-- **Data Tests**: Verify data loading and processing functions
-
-### Continuous Integration
-
-Tests run automatically on GitHub Actions for:
-- **Platforms**: Linux, macOS, Windows
-- **Python Version**: 3.10
-- **Execution Time**: All tests complete in under 5 minutes
-
-The CI pipeline:
-1. Sets up Python environment
-2. Installs dependencies (including CPU-only PyTorch)
-3. Creates synthetic test data
-4. Runs all test modules
-5. Validates figure generation
-6. Uploads artifacts on failure for debugging
-
-### Writing New Tests
-
-When adding new functionality, ensure tests:
-- Use real data and models (no mocks)
-- Complete quickly (use small datasets/models)
-- Test actual functionality end-to-end
-- Generate real outputs (PDFs, models, etc.)
-
-Example test structure:
-```python
-def test_new_feature():
-    # Use synthetic test data
-    data = pd.read_pickle('tests/data/test_model_results.pkl')
-
-    # Generate real output
-    output_path = 'test_output.pdf'
-    result = generate_figure(data, output_path)
-
-    # Verify real file was created
-    assert Path(output_path).exists()
-    assert Path(output_path).stat().st_size > 1000
-```
+Tests run automatically on GitHub Actions (Linux, macOS, Windows, Python 3.10). See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed testing guidelines and philosophy.
 
 ## Package API
 
 The `llm_stylometry` package provides functions for all analyses:
 
 ```python
+# Visualization functions
 from llm_stylometry.visualization import (
     generate_all_losses_figure,      # Figure 1A: Training curves
     generate_stripplot_figure,       # Figure 1B: Loss distributions
@@ -560,7 +487,15 @@ from llm_stylometry.visualization import (
     generate_3d_mds_figure,          # Figure 4: MDS visualization
     generate_oz_losses_figure        # Figure 5: Oz analysis
 )
+
+# Fairness-based loss thresholding (for variant comparisons)
+from llm_stylometry.analysis.fairness import (
+    compute_fairness_threshold,      # Compute fairness threshold
+    apply_fairness_threshold         # Truncate data at threshold
+)
 ```
+
+All visualization functions support `variant` and `apply_fairness` parameters (except t-test figures). See the [Fairness-Based Loss Thresholding](#fairness-based-loss-thresholding) section for details.
 
 ## Citation
 

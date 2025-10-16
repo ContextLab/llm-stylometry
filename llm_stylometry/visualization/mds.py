@@ -76,7 +76,8 @@ def generate_3d_mds_figure(
     figsize=(9, 7),
     font='Helvetica',
     zoom_factor=0.1,
-    variant=None
+    variant=None,
+    apply_fairness=True
 ):
     """
     Generate Figure 4: 3D MDS plot from loss matrix.
@@ -87,8 +88,8 @@ def generate_3d_mds_figure(
         figsize: Figure size (adjusted for single panel)
         font: Font family to use
         zoom_factor: Zoom factor for axis limits
-
         variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+        apply_fairness: Apply fairness-based loss thresholding for variants (default: True)
 
     Returns:
         matplotlib figure object
@@ -111,6 +112,16 @@ def generate_3d_mds_figure(
             raise ValueError(f"No variant column in data")
         df = df[df['variant'] == variant].copy()
 
+    # Apply fairness threshold for variants
+    if variant is not None and apply_fairness:
+        from llm_stylometry.analysis.fairness import (
+            compute_fairness_threshold,
+            apply_fairness_threshold
+        )
+
+        threshold = compute_fairness_threshold(df, min_epochs=500)
+        df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
+
     loss_matrix, author_names = create_loss_matrix(df)
 
     # Symmetrize the matrix for MDS
@@ -120,6 +131,28 @@ def generate_3d_mds_figure(
     mds = MDS(n_components=3, dissimilarity='precomputed', random_state=1)
     coords = mds.fit_transform(symmetric_matrix)
     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
+
+    # Calculate text offset: baseline uses 0.5, variants scale proportionally
+    baseline_text_offset = 0.5
+    text_offset = baseline_text_offset
+
+    if variant is not None:
+        # For variants, compute baseline z-range to scale text offset
+        df_baseline = pd.read_pickle(data_path.replace(f'_{variant}', ''))
+        if 'variant' in df_baseline.columns:
+            df_baseline = df_baseline[df_baseline['variant'].isna()].copy()
+
+        baseline_matrix, _ = create_loss_matrix(df_baseline)
+        baseline_symmetric = (baseline_matrix + baseline_matrix.T) / 2
+        baseline_mds = MDS(n_components=3, dissimilarity='precomputed', random_state=1)
+        baseline_coords = baseline_mds.fit_transform(baseline_symmetric)
+        baseline_z = baseline_coords[:, 2]
+
+        baseline_z_range = baseline_z.max() - baseline_z.min()
+        variant_z_range = z.max() - z.min()
+
+        # Scale text offset proportionally
+        text_offset = baseline_text_offset * (variant_z_range / baseline_z_range)
 
     # Create figure
     fig = plt.figure(figsize=figsize)
@@ -136,8 +169,8 @@ def generate_3d_mds_figure(
                   depthshade=True,
                   alpha=0.9)
 
-        # Add text labels above dots with bold font, with much more spacing
-        ax.text(x[i], y[i], z[i] + 0.5,  # Move text even higher above dots
+        # Add text labels above dots with bold font, scaled offset
+        ax.text(x[i], y[i], z[i] + text_offset,
                author,
                fontsize=12,
                fontweight='bold',
