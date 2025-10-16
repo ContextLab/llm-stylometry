@@ -75,30 +75,58 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Get server details
-read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
-if [ -z "$SERVER_ADDRESS" ]; then
-    print_error "Server address cannot be empty"
-    exit 1
-fi
+# Get server details - try to read from credentials file first
+CRED_FILE=".ssh/credentials.json"
+if [ -f "$CRED_FILE" ]; then
+    print_info "Found credentials file, using saved credentials..."
+    SERVER_ADDRESS=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['server'])" 2>/dev/null)
+    USERNAME=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['username'])" 2>/dev/null)
+    PASSWORD=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['password'])" 2>/dev/null)
 
-read -p "Enter username for $SERVER_ADDRESS: " USERNAME
-if [ -z "$USERNAME" ]; then
-    print_error "Username cannot be empty"
-    exit 1
+    if [ -z "$SERVER_ADDRESS" ] || [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+        print_error "Failed to read credentials from $CRED_FILE"
+        exit 1
+    fi
+
+    USE_SSHPASS=true
+else
+    print_warning "No credentials file found at $CRED_FILE"
+    read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
+    if [ -z "$SERVER_ADDRESS" ]; then
+        print_error "Server address cannot be empty"
+        exit 1
+    fi
+
+    read -p "Enter username for $SERVER_ADDRESS: " USERNAME
+    if [ -z "$USERNAME" ]; then
+        print_error "Username cannot be empty"
+        exit 1
+    fi
+
+    USE_SSHPASS=false
 fi
 
 print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
 
-# Test SSH connection first
-if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "$USERNAME@$SERVER_ADDRESS" "echo 'Connection test successful'" 2>/dev/null; then
-    print_warning "Initial connection test failed. Trying with interactive authentication..."
+# Build SSH command based on authentication method
+if [ "$USE_SSHPASS" = true ]; then
+    # Use sshpass for password authentication
+    if ! command -v sshpass &> /dev/null; then
+        print_error "sshpass is required but not installed. Please install it: brew install hudochenkov/sshpass/sshpass"
+        exit 1
+    fi
+    SSH_CMD="sshpass -p '$PASSWORD' ssh -o StrictHostKeyChecking=no -t"
+else
+    # Test SSH connection first with interactive authentication
+    if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "$USERNAME@$SERVER_ADDRESS" "echo 'Connection test successful'" 2>/dev/null; then
+        print_warning "Initial connection test failed. Trying with interactive authentication..."
+    fi
+    echo
+    SSH_CMD="ssh -t"
 fi
 
-echo
-
 # Execute the remote script via SSH
-ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' MAX_GPUS='$MAX_GPUS' bash -s" << ENDSSH
+eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" \"KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' MAX_GPUS='$MAX_GPUS' bash -s\"" << ENDSSH
 #!/bin/bash
 set -e
 
