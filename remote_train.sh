@@ -17,6 +17,60 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Verification functions for backup/restore (to be used on remote server)
+verify_backup() {
+    local BACKUP_DIR=$1
+    local MODELS_DIR=$2
+
+    MODEL_COUNT=$(find "$BACKUP_DIR" -name "model.pth" 2>/dev/null | wc -l)
+    STATE_COUNT=$(find "$BACKUP_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
+    LOG_COUNT=$(find "$BACKUP_DIR" -name "loss_logs.csv" 2>/dev/null | wc -l)
+    CONFIG_COUNT=$(find "$BACKUP_DIR" -name "config.json" 2>/dev/null | wc -l)
+
+    echo "Backup verification:"
+    echo "  - $MODEL_COUNT model.pth files"
+    echo "  - $STATE_COUNT training_state.pt files"
+    echo "  - $LOG_COUNT loss_logs.csv files"
+    echo "  - $CONFIG_COUNT config.json files"
+
+    # Check if we expected backups but got none
+    if [ -d "$MODELS_DIR" ] && [ "$(ls -A "$MODELS_DIR" 2>/dev/null)" ]; then
+        # models/ directory exists and is not empty
+        if [ $MODEL_COUNT -eq 0 ] && [ $STATE_COUNT -eq 0 ]; then
+            echo "ERROR: models/ directory exists but backup contains no checkpoint files!"
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+verify_restore() {
+    local BACKUP_DIR=$1
+    local MODELS_DIR=$2
+
+    BACKUP_MODEL_COUNT=$(find "$BACKUP_DIR" -name "model.pth" 2>/dev/null | wc -l)
+    BACKUP_STATE_COUNT=$(find "$BACKUP_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
+    RESTORED_MODEL_COUNT=$(find "$MODELS_DIR" -name "model.pth" 2>/dev/null | wc -l)
+    RESTORED_STATE_COUNT=$(find "$MODELS_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
+
+    echo "Restore verification:"
+    echo "  - Backed up: $BACKUP_MODEL_COUNT model.pth, $BACKUP_STATE_COUNT training_state.pt"
+    echo "  - Restored: $RESTORED_MODEL_COUNT model.pth, $RESTORED_STATE_COUNT training_state.pt"
+
+    if [ $BACKUP_MODEL_COUNT -ne $RESTORED_MODEL_COUNT ]; then
+        echo "ERROR: Model count mismatch! Backup=$BACKUP_MODEL_COUNT, Restored=$RESTORED_MODEL_COUNT"
+        return 1
+    fi
+
+    if [ $BACKUP_STATE_COUNT -ne $RESTORED_STATE_COUNT ]; then
+        echo "ERROR: Training state count mismatch! Backup=$BACKUP_STATE_COUNT, Restored=$RESTORED_STATE_COUNT"
+        return 1
+    fi
+
+    return 0
+}
+
 echo "=================================================="
 echo "       LLM Stylometry Remote Training Setup"
 echo "=================================================="
@@ -169,14 +223,55 @@ fi
 if [ -d ~/llm-stylometry ]; then
     echo "Repository exists. Updating..."
     cd ~/llm-stylometry
-    # Stash any local changes (including untracked checkpoint files) to avoid conflicts
-    echo "Stashing local changes (checkpoint files, logs, etc.)..."
+
+    # BACKUP PHASE: Create filesystem backup of models directory
+    BACKUP_DIR=~/model_backups/backup_\$(date +%Y%m%d_%H%M%S)
+    if [ -d ~/llm-stylometry/models ] && [ "\$(ls -A ~/llm-stylometry/models 2>/dev/null)" ]; then
+        echo "Backing up models directory to \$BACKUP_DIR..."
+        mkdir -p "\$BACKUP_DIR"
+        rsync -a ~/llm-stylometry/models/ "\$BACKUP_DIR/"
+
+        # Verify backup
+        if ! verify_backup "\$BACKUP_DIR" "~/llm-stylometry/models"; then
+            echo "ERROR: Backup verification failed!"
+            exit 1
+        fi
+    else
+        echo "No models directory to backup (this is normal for first run)"
+        BACKUP_DIR=""
+    fi
+
+    # GIT OPERATIONS PHASE
+    echo "Stashing tracked/untracked changes (config files, logs, etc.)..."
     git stash -u
     echo "Pulling latest changes..."
     git pull
-    # Restore stashed changes (checkpoint files)
     echo "Restoring stashed changes..."
     git stash pop || echo "No stashed changes to restore (this is normal)"
+
+    # RESTORE PHASE: Restore models from backup
+    if [ -n "\$BACKUP_DIR" ]; then
+        echo "Restoring models from backup..."
+        rsync -a "\$BACKUP_DIR/" ~/llm-stylometry/models/
+
+        # Verify restoration
+        if ! verify_restore "\$BACKUP_DIR" "~/llm-stylometry/models"; then
+            echo "ERROR: Restore verification failed!"
+            exit 1
+        fi
+
+        echo "Models restored successfully"
+    fi
+
+    # CLEANUP PHASE: Keep only last 3 backups
+    if [ -d ~/model_backups ]; then
+        echo "Cleaning up old backups (keeping last 3)..."
+        cd ~/model_backups
+        ls -t | tail -n +4 | xargs -r rm -rf
+        echo "Cleanup complete. Current backups:"
+        ls -t | head -3
+    fi
+
     echo "Repository updated successfully"
 else
     echo "Repository not found. Cloning..."
