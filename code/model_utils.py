@@ -69,12 +69,27 @@ def load_checkpoint(model_class, model_name, device):
         logger.info("Restored NumPy random state")
 
     if "torch_random_state" in training_state:
-        torch.set_rng_state(training_state["torch_random_state"])
-        logger.info("Restored PyTorch random state")
+        try:
+            # torch.set_rng_state() requires CPU tensor
+            rng_state = training_state["torch_random_state"]
+            if rng_state.device.type != 'cpu':
+                rng_state = rng_state.cpu()
+            torch.set_rng_state(rng_state)
+            logger.info("Restored PyTorch random state")
+        except Exception as e:
+            logger.warning(f"Could not restore PyTorch RNG state: {e}. Continuing with random initialization.")
 
     if "cuda_random_state" in training_state and torch.cuda.is_available():
-        torch.cuda.set_rng_state_all(training_state["cuda_random_state"])
-        logger.info("Restored CUDA random state")
+        try:
+            # Ensure CUDA RNG states are on correct devices
+            cuda_states = training_state["cuda_random_state"]
+            if isinstance(cuda_states, list):
+                # Move each state to CPU if needed (set_rng_state_all handles device placement)
+                cuda_states = [s.cpu() if hasattr(s, 'cpu') and s.device.type != 'cpu' else s for s in cuda_states]
+            torch.cuda.set_rng_state_all(cuda_states)
+            logger.info("Restored CUDA random state")
+        except Exception as e:
+            logger.warning(f"Could not restore CUDA RNG state: {e}. Continuing with random initialization.")
 
     logger.info(
         f"Checkpoint loaded for {model_name} from epochs_completed={epochs_completed}"
