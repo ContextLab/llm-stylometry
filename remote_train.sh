@@ -28,12 +28,14 @@ echo "  --resume, -r            Resume training from existing checkpoints"
 echo "  -co, --content-only     Train content-only variant"
 echo "  -fo, --function-only    Train function-only variant"
 echo "  -pos, --part-of-speech  Train part-of-speech variant"
+echo "  -g, --max-gpus NUM      Maximum number of GPUs to use (default: 4)"
 echo
 
 # Parse command line arguments
 KILL_MODE=false
 RESUME_MODE=false
 VARIANT_ARG=""
+MAX_GPUS=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -61,6 +63,11 @@ while [[ $# -gt 0 ]]; do
             VARIANT_ARG="-pos"
             echo "Training part-of-speech variant"
             shift
+            ;;
+        -g|--max-gpus)
+            MAX_GPUS="$2"
+            echo "Using maximum $MAX_GPUS GPUs"
+            shift 2
             ;;
         *)
             shift
@@ -91,7 +98,7 @@ fi
 echo
 
 # Execute the remote script via SSH
-ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' bash -s" << ENDSSH
+ssh -t "$USERNAME@$SERVER_ADDRESS" "KILL_MODE='$KILL_MODE' RESUME_MODE='$RESUME_MODE' VARIANT_ARG='$VARIANT_ARG' MAX_GPUS='$MAX_GPUS' bash -s" << ENDSSH
 #!/bin/bash
 set -e
 
@@ -127,7 +134,14 @@ fi
 if [ -d ~/llm-stylometry ]; then
     echo "Repository exists. Updating..."
     cd ~/llm-stylometry
+    # Stash any local changes (including checkpoint files) to avoid conflicts
+    echo "Stashing local changes (checkpoint files, logs, etc.)..."
+    git stash
+    echo "Pulling latest changes..."
     git pull
+    # Restore stashed changes (checkpoint files)
+    echo "Restoring stashed changes..."
+    git stash pop || echo "No stashed changes to restore (this is normal)"
     echo "Repository updated successfully"
 else
     echo "Repository not found. Cloning..."
@@ -172,11 +186,13 @@ sleep 5
 screen -X -S llm_training quit 2>/dev/null || true
 
 # Start training in screen (use --no-confirm flag for non-interactive mode)
-# Create a script file first with RESUME_MODE and VARIANT_ARG variables
+# Create a script file first with RESUME_MODE, VARIANT_ARG, and MAX_GPUS variables
 echo "RESUME_MODE='$RESUME_MODE'" > /tmp/llm_train.sh
 echo "VARIANT_ARG='$VARIANT_ARG'" >> /tmp/llm_train.sh
+echo "MAX_GPUS='$MAX_GPUS'" >> /tmp/llm_train.sh
 echo "echo '[DEBUG] RESUME_MODE value is:' '\$RESUME_MODE'" >> /tmp/llm_train.sh
 echo "echo '[DEBUG] VARIANT_ARG value is:' '\$VARIANT_ARG'" >> /tmp/llm_train.sh
+echo "echo '[DEBUG] MAX_GPUS value is:' '\$MAX_GPUS'" >> /tmp/llm_train.sh
 cat >> /tmp/llm_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 set -e  # Exit on error
@@ -202,13 +218,20 @@ chmod +x ./run_llm_stylometry.sh
 # Run the training script with non-interactive flag
 echo "Starting training with run_llm_stylometry.sh..." | tee -a \$LOG_FILE
 
+# Build GPU flag if MAX_GPUS is set
+GPU_FLAG=""
+if [ -n "\$MAX_GPUS" ]; then
+    GPU_FLAG="--max-gpus \$MAX_GPUS"
+    echo "Using maximum \$MAX_GPUS GPUs" | tee -a \$LOG_FILE
+fi
+
 # Check if we're in resume mode
 if [ "\$RESUME_MODE" = "true" ]; then
     echo "Running in resume mode - continuing from existing checkpoints" | tee -a \$LOG_FILE
-    ./run_llm_stylometry.sh --train --resume -y \$VARIANT_ARG 2>&1 | tee -a \$LOG_FILE
+    ./run_llm_stylometry.sh --train --resume -y \$VARIANT_ARG \$GPU_FLAG 2>&1 | tee -a \$LOG_FILE
 else
     echo "Running full training from scratch" | tee -a \$LOG_FILE
-    ./run_llm_stylometry.sh --train -y \$VARIANT_ARG 2>&1 | tee -a \$LOG_FILE
+    ./run_llm_stylometry.sh --train -y \$VARIANT_ARG \$GPU_FLAG 2>&1 | tee -a \$LOG_FILE
 fi
 
 echo "Training completed at \$(date)" | tee -a \$LOG_FILE
