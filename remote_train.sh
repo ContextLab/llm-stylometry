@@ -162,9 +162,9 @@ fi
 if [ -d ~/llm-stylometry ]; then
     echo "Repository exists. Updating..."
     cd ~/llm-stylometry
-    # Stash any local changes (including checkpoint files) to avoid conflicts
+    # Stash any local changes (including untracked checkpoint files) to avoid conflicts
     echo "Stashing local changes (checkpoint files, logs, etc.)..."
-    git stash
+    git stash -u
     echo "Pulling latest changes..."
     git pull
     # Restore stashed changes (checkpoint files)
