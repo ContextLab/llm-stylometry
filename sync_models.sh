@@ -127,6 +127,7 @@ EXPECTED_MODELS_PER_VARIANT=80  # 8 authors × 10 seeds
 
 if [ ! -d "$MODELS_DIR" ]; then
     echo "STATUS=ERROR"
+    echo "ERROR_MSG=Models directory not found: $MODELS_DIR"
     exit 0
 fi
 
@@ -182,23 +183,48 @@ echo "STATUS=CHECKED"
 ENDSSH
 
 # Parse the remote check results
-declare -A VARIANT_COUNTS
-declare -A VARIANT_MISSING
-declare -A VARIANT_STATUS
+# Using simple variables for Bash 3.2 compatibility (macOS default)
+BASELINE_COUNT=0
+BASELINE_MISSING=""
+BASELINE_STATUS="INCOMPLETE"
+CONTENT_COUNT=0
+CONTENT_MISSING=""
+CONTENT_STATUS="INCOMPLETE"
+FUNCTION_COUNT=0
+FUNCTION_MISSING=""
+FUNCTION_STATUS="INCOMPLETE"
+POS_COUNT=0
+POS_MISSING=""
+POS_STATUS="INCOMPLETE"
+ERROR_MSG=""
 
 while IFS= read -r line; do
-    if [[ $line == *_COUNT=* ]]; then
-        variant="${line%%_COUNT=*}"
-        count="${line#*=}"
-        VARIANT_COUNTS[$variant]=$count
-    elif [[ $line == *_MISSING=* ]]; then
-        variant="${line%%_MISSING=*}"
-        missing="${line#*=}"
-        VARIANT_MISSING[$variant]=$missing
-    elif [[ $line == *_STATUS=* ]]; then
-        variant="${line%%_STATUS=*}"
-        status="${line#*=}"
-        VARIANT_STATUS[$variant]=$status
+    if [[ $line == BASELINE_COUNT=* ]]; then
+        BASELINE_COUNT="${line#*=}"
+    elif [[ $line == BASELINE_MISSING=* ]]; then
+        BASELINE_MISSING="${line#*=}"
+    elif [[ $line == BASELINE_STATUS=* ]]; then
+        BASELINE_STATUS="${line#*=}"
+    elif [[ $line == CONTENT_COUNT=* ]]; then
+        CONTENT_COUNT="${line#*=}"
+    elif [[ $line == CONTENT_MISSING=* ]]; then
+        CONTENT_MISSING="${line#*=}"
+    elif [[ $line == CONTENT_STATUS=* ]]; then
+        CONTENT_STATUS="${line#*=}"
+    elif [[ $line == FUNCTION_COUNT=* ]]; then
+        FUNCTION_COUNT="${line#*=}"
+    elif [[ $line == FUNCTION_MISSING=* ]]; then
+        FUNCTION_MISSING="${line#*=}"
+    elif [[ $line == FUNCTION_STATUS=* ]]; then
+        FUNCTION_STATUS="${line#*=}"
+    elif [[ $line == POS_COUNT=* ]]; then
+        POS_COUNT="${line#*=}"
+    elif [[ $line == POS_MISSING=* ]]; then
+        POS_MISSING="${line#*=}"
+    elif [[ $line == POS_STATUS=* ]]; then
+        POS_STATUS="${line#*=}"
+    elif [[ $line == ERROR_MSG=* ]]; then
+        ERROR_MSG="${line#ERROR_MSG=}"
     elif [[ $line == STATUS=* ]]; then
         OVERALL_STATUS="${line#STATUS=}"
     fi
@@ -220,50 +246,42 @@ echo "===================="
 VARIANTS_TO_SYNC=()
 
 if [ "$SYNC_BASELINE" = true ]; then
-    count=${VARIANT_COUNTS[BASELINE]:-0}
-    status=${VARIANT_STATUS[BASELINE]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Baseline: $count/80 models complete"
+    if [ "$BASELINE_STATUS" = "COMPLETE" ]; then
+        print_success "Baseline: $BASELINE_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("baseline")
     else
-        print_warning "Baseline: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[BASELINE]}" ] && echo "  Missing: ${VARIANT_MISSING[BASELINE]}"
+        print_warning "Baseline: $BASELINE_COUNT/80 models complete - SKIPPING"
+        [ -n "$BASELINE_MISSING" ] && echo "  Missing: $BASELINE_MISSING"
     fi
 fi
 
 if [ "$SYNC_CONTENT" = true ]; then
-    count=${VARIANT_COUNTS[CONTENT]:-0}
-    status=${VARIANT_STATUS[CONTENT]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Content-only: $count/80 models complete"
+    if [ "$CONTENT_STATUS" = "COMPLETE" ]; then
+        print_success "Content-only: $CONTENT_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("content")
     else
-        print_warning "Content-only: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[CONTENT]}" ] && echo "  Missing: ${VARIANT_MISSING[CONTENT]}"
+        print_warning "Content-only: $CONTENT_COUNT/80 models complete - SKIPPING"
+        [ -n "$CONTENT_MISSING" ] && echo "  Missing: $CONTENT_MISSING"
     fi
 fi
 
 if [ "$SYNC_FUNCTION" = true ]; then
-    count=${VARIANT_COUNTS[FUNCTION]:-0}
-    status=${VARIANT_STATUS[FUNCTION]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Function-only: $count/80 models complete"
+    if [ "$FUNCTION_STATUS" = "COMPLETE" ]; then
+        print_success "Function-only: $FUNCTION_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("function")
     else
-        print_warning "Function-only: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[FUNCTION]}" ] && echo "  Missing: ${VARIANT_MISSING[FUNCTION]}"
+        print_warning "Function-only: $FUNCTION_COUNT/80 models complete - SKIPPING"
+        [ -n "$FUNCTION_MISSING" ] && echo "  Missing: $FUNCTION_MISSING"
     fi
 fi
 
 if [ "$SYNC_POS" = true ]; then
-    count=${VARIANT_COUNTS[POS]:-0}
-    status=${VARIANT_STATUS[POS]:-INCOMPLETE}
-    if [ "$status" = "COMPLETE" ]; then
-        print_success "Part-of-speech: $count/80 models complete"
+    if [ "$POS_STATUS" = "COMPLETE" ]; then
+        print_success "Part-of-speech: $POS_COUNT/80 models complete"
         VARIANTS_TO_SYNC+=("pos")
     else
-        print_warning "Part-of-speech: $count/80 models complete - SKIPPING"
-        [ -n "${VARIANT_MISSING[POS]}" ] && echo "  Missing: ${VARIANT_MISSING[POS]}"
+        print_warning "Part-of-speech: $POS_COUNT/80 models complete - SKIPPING"
+        [ -n "$POS_MISSING" ] && echo "  Missing: $POS_MISSING"
     fi
 fi
 
@@ -287,17 +305,28 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-# Create local backup if models exist
+# Prepare local models directory
 LOCAL_MODELS_DIR="$PWD/models"
-if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
-    print_info "Backing up existing local models..."
-    BACKUP_DIR="${PWD}/models_backup_$(date +%Y%m%d_%H%M%S)"
-    mv "$LOCAL_MODELS_DIR" "$BACKUP_DIR"
-    print_success "Local models backed up to: $BACKUP_DIR"
-fi
+BACKUP_DIR=""
 
-# Create models directory
-mkdir -p "$LOCAL_MODELS_DIR"
+# Only backup if doing a full replacement (all variants selected)
+# Otherwise, merge new models into existing directory
+if [ "$SYNC_BASELINE" = true ] && [ "$SYNC_CONTENT" = true ] && [ "$SYNC_FUNCTION" = true ] && [ "$SYNC_POS" = true ]; then
+    # Full replacement - backup existing models
+    if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
+        print_info "Full sync requested - backing up ALL existing local models..."
+        BACKUP_DIR="${PWD}/models_backup_$(date +%Y%m%d_%H%M%S)"
+        mv "$LOCAL_MODELS_DIR" "$BACKUP_DIR"
+        print_success "Local models backed up to: $BACKUP_DIR"
+    fi
+    mkdir -p "$LOCAL_MODELS_DIR"
+else
+    # Partial sync - merge into existing directory
+    mkdir -p "$LOCAL_MODELS_DIR"
+    if [ -d "$LOCAL_MODELS_DIR" ] && [ "$(ls -A $LOCAL_MODELS_DIR)" ]; then
+        print_info "Merging new models into existing directory (existing models from other variants preserved)"
+    fi
+fi
 
 # Download models for each variant
 TOTAL_SYNCED=0
@@ -307,14 +336,18 @@ for variant in "${VARIANTS_TO_SYNC[@]}"; do
 
     if [ "$variant" = "baseline" ]; then
         # Sync baseline models (no variant suffix)
-        rsync -avz --progress --include="*_tokenizer=gpt2_seed=*/" \
+        rsync -avz --progress \
+            --include="*_tokenizer=gpt2_seed=*/" \
+            --include="*_tokenizer=gpt2_seed=*/***" \
             --exclude="*_variant=*" \
-            --include="*/" --include="**" \
+            --exclude="*" \
             "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
     else
         # Sync variant models
-        rsync -avz --progress --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
-            --include="*/" --include="**" \
+        rsync -avz --progress \
+            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
+            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/***" \
+            --exclude="*" \
             "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
     fi
 
@@ -332,20 +365,33 @@ print_info "Verifying synced models..."
 SYNCED_COUNT=$(find "$LOCAL_MODELS_DIR" -maxdepth 1 -type d -name "*_tokenizer=gpt2_seed=*" -o -name "*_variant=*_tokenizer=gpt2_seed=*" | wc -l)
 print_success "Successfully synced $SYNCED_COUNT model directories"
 
-# Also download model_results.pkl if it exists (for any synced variant)
-print_info "Checking for consolidated results file..."
-RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" '[ -f "$HOME/llm-stylometry/data/model_results.pkl" ] && echo "yes" || echo "no"')
+# Download variant-specific model_results files
+print_info "Checking for consolidated results files..."
+mkdir -p "$PWD/data"
 
-if [ "$RESULTS_EXISTS" = "yes" ]; then
-    print_info "Downloading model_results.pkl..."
-    mkdir -p "$PWD/data"
-    rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/model_results.pkl" \
-        "$PWD/data/model_results.pkl"
-    print_success "Downloaded model_results.pkl"
-else
-    print_warning "model_results.pkl not found on remote server"
-    print_info "You may need to run consolidate_model_results.py locally"
-fi
+for variant in "${VARIANTS_TO_SYNC[@]}"; do
+    if [ "$variant" = "baseline" ]; then
+        RESULTS_FILE="model_results.pkl"
+    else
+        RESULTS_FILE="model_results_${variant}.pkl"
+    fi
+
+    RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" "[ -f \"\$HOME/llm-stylometry/data/$RESULTS_FILE\" ] && echo \"yes\" || echo \"no\"")
+
+    if [ "$RESULTS_EXISTS" = "yes" ]; then
+        print_info "Downloading $RESULTS_FILE..."
+        rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/$RESULTS_FILE" \
+            "$PWD/data/$RESULTS_FILE"
+        print_success "Downloaded $RESULTS_FILE"
+    else
+        print_warning "$RESULTS_FILE not found on remote server"
+        if [ "$variant" = "baseline" ]; then
+            print_info "You may need to run: python code/consolidate_model_results.py"
+        else
+            print_info "You may need to run: python code/consolidate_model_results.py --variant $variant"
+        fi
+    fi
+done
 
 # Print summary
 echo

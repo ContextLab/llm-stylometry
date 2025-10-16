@@ -9,6 +9,7 @@ llm_stylometry.egg-info/dependency_links.txt
 llm_stylometry.egg-info/requires.txt
 llm_stylometry.egg-info/top_level.txt
 llm_stylometry/analysis/__init__.py
+llm_stylometry/analysis/fairness.py
 llm_stylometry/core/__init__.py
 llm_stylometry/core/constants.py
 llm_stylometry/core/experiment.py
@@ -25,5 +26,13 @@ llm_stylometry/visualization/oz_losses.py
 llm_stylometry/visualization/stripplot.py
 llm_stylometry/visualization/t_tests.py
 tests/test_cli.py
+tests/test_documentation.py
+tests/test_experiment_variants.py
+tests/test_fairness.py
+tests/test_interpretation_examples.py
 tests/test_model_training.py
+tests/test_variant_data_loading.py
+tests/test_variant_integration.py
+tests/test_variant_quick.py
+tests/test_variant_training.py
 tests/test_visualization.py

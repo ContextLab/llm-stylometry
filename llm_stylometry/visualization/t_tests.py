@@ -5,8 +5,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_t_statistics(df, max_epochs=500):
@@ -41,10 +43,22 @@ def calculate_t_statistics(df, max_epochs=500):
                 & (t_df["epochs_completed"] == epoch)
             ]["loss_value"].values
 
-            if len(true_losses) > 0 and len(other_losses) > 0:
+            # T-test requires at least 2 samples per group for meaningful results
+            if len(true_losses) >= 2 and len(other_losses) >= 2:
                 result = ttest_ind(other_losses, true_losses, equal_var=False)
+                if np.isnan(result.statistic):
+                    logger.debug(f"NaN t-statistic for {author} at epoch {epoch}: "
+                                f"n_true={len(true_losses)}, n_other={len(other_losses)}")
                 t_raws[author].append(result.statistic)
+            elif len(true_losses) > 0 or len(other_losses) > 0:
+                # Have some data but insufficient for t-test
+                logger.debug(f"Insufficient data for t-test for {author} at epoch {epoch}: "
+                            f"n_true={len(true_losses)}, n_other={len(other_losses)} "
+                            f"(need at least 2 samples per group)")
+                t_raws[author].append(np.nan)
             else:
+                # No data at all
+                logger.debug(f"No data for {author} at epoch {epoch}")
                 t_raws[author].append(np.nan)
 
     # Convert to long-form DataFrame
@@ -96,7 +110,7 @@ def generate_t_test_figure(
     else:
         # Specific variant
         if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
+            raise ValueError("No variant column in data")
         df = df[df['variant'] == variant].copy()
 
     t_raws_df, _ = calculate_t_statistics(df)
@@ -131,11 +145,39 @@ def generate_t_test_figure(
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
+    # Calculate dynamic y-axis limits based on VALID data only
+    # Filter out NaN/Inf values to avoid matplotlib errors
+    valid_t_values = t_raws_df['t_raw'].replace([np.inf, -np.inf], np.nan).dropna()
+
+    if len(valid_t_values) == 0:
+        # No valid data - use reasonable defaults around threshold
+        logger.warning("No valid t-statistics found. Using default axis limits.")
+        y_min = -1.0
+        y_max = 5.0
+    else:
+        y_min = valid_t_values.min()
+        y_max = valid_t_values.max()
+
+        # Add padding for better visualization
+        y_range = y_max - y_min
+        padding = 0.05 * y_range if y_range > 0 else 0.5
+
+        # Ensure threshold line (p<0.001 at t=3.291) is always visible
+        threshold = 3.291
+        y_max = max(y_max, threshold) + padding
+        y_min = min(y_min, 0) - padding  # Allow negatives if they exist
+
+    # Final validation to ensure limits are finite and valid
+    if not (np.isfinite(y_min) and np.isfinite(y_max) and y_min < y_max):
+        logger.error(f"Invalid axis limits computed: y_min={y_min}, y_max={y_max}. Using defaults.")
+        y_min = -1.0
+        y_max = 5.0
+
     # Add threshold line
     threshold = 3.291
     ax.axhline(y=threshold, linestyle="--", color="black", label="p<0.001 threshold" if show_legend else "")
     ax.set_xlim(0, t_raws_df["Epoch"].max())
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(y_min, y_max)
 
     if show_legend:
         handles, labels = ax.get_legend_handles_labels()
@@ -199,7 +241,7 @@ def generate_t_test_avg_figure(
     else:
         # Specific variant
         if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
+            raise ValueError("No variant column in data")
         df = df[df['variant'] == variant].copy()
 
     t_raws_df, _ = calculate_t_statistics(df)
@@ -226,11 +268,39 @@ def generate_t_test_avg_figure(
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
+    # Calculate dynamic y-axis limits based on VALID data only
+    # Filter out NaN/Inf values to avoid matplotlib errors
+    valid_t_values = t_raws_df['t_raw'].replace([np.inf, -np.inf], np.nan).dropna()
+
+    if len(valid_t_values) == 0:
+        # No valid data - use reasonable defaults around threshold
+        logger.warning("No valid t-statistics found for average figure. Using default axis limits.")
+        y_min = -1.0
+        y_max = 5.0
+    else:
+        y_min = valid_t_values.min()
+        y_max = valid_t_values.max()
+
+        # Add padding for better visualization
+        y_range = y_max - y_min
+        padding = 0.05 * y_range if y_range > 0 else 0.5
+
+        # Ensure threshold line (p<0.001 at t=3.291) is always visible
+        threshold = 3.291
+        y_max = max(y_max, threshold) + padding
+        y_min = min(y_min, 0) - padding  # Allow negatives if they exist
+
+    # Final validation to ensure limits are finite and valid
+    if not (np.isfinite(y_min) and np.isfinite(y_max) and y_min < y_max):
+        logger.error(f"Invalid axis limits computed for average figure: y_min={y_min}, y_max={y_max}. Using defaults.")
+        y_min = -1.0
+        y_max = 5.0
+
     # Add threshold line
     threshold = 3.291
     ax.axhline(y=threshold, linestyle="--", color="black", label="p<0.001 threshold" if show_legend else "")
     ax.set_xlim(0, t_raws_df["Epoch"].max())
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(y_min, y_max)
 
     if show_legend:
         handles, labels = ax.get_legend_handles_labels()

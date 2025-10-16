@@ -14,7 +14,8 @@ def generate_all_losses_figure(
     figsize=(8, 6),
     show_legend=False,
     font='Helvetica',
-    variant=None
+    variant=None,
+    apply_fairness=True
 ):
     """
     Generate Figure 1A: Training curves showing cross-entropy loss over epochs.
@@ -26,6 +27,7 @@ def generate_all_losses_figure(
         show_legend: Whether to show legend (False for paper)
         font: Font family to use
         variant: Analysis variant ('content', 'function', 'pos') or None for baseline
+        apply_fairness: Apply fairness-based loss thresholding for variants (default: True)
 
     Returns:
         matplotlib figure object
@@ -48,12 +50,21 @@ def generate_all_losses_figure(
             raise ValueError(f"No variant column in data")
         df = df[df['variant'] == variant].copy()
 
+    # Apply fairness threshold for variants
+    if variant is not None and apply_fairness:
+        from llm_stylometry.analysis.fairness import (
+            compute_fairness_threshold,
+            apply_fairness_threshold
+        )
+
+        threshold = compute_fairness_threshold(df, min_epochs=500)
+        df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
+
     # Define authors in requested order
     AUTHORS = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
 
     # Prepare data exactly as in original all_losses.py
     plot_df = df[df["loss_dataset"].isin(AUTHORS + ["train"])].copy()
-    plot_df = plot_df[plot_df["epochs_completed"] % 10 == 1]
     # Keep proper capitalization for authors
     plot_df["loss_dataset"] = plot_df["loss_dataset"].apply(lambda x: x.capitalize() if x != "train" else "Train")
     plot_df["train_author"] = plot_df["train_author"].str.capitalize()
