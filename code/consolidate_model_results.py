@@ -68,12 +68,12 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         author = parts[0]
 
         # Find variant, tokenizer, and seed
-        variant = None
+        model_variant = None
         tokenizer = None
         seed = None
         for part in parts[1:]:
             if part.startswith('variant='):
-                variant = part.split('=')[1]
+                model_variant = part.split('=')[1]
             elif part.startswith('tokenizer='):
                 tokenizer = part.split('=')[1]
             elif part.startswith('seed='):
@@ -121,7 +121,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         # Add model metadata
         df['model_name'] = dir_name
         df['author'] = author
-        df['variant'] = variant  # None for baseline, variant name for variant models
+        df['variant'] = model_variant  # None for baseline, variant name for variant models
         df['tokenizer'] = tokenizer
         df['checkpoint_path'] = str(model_dir)
 
@@ -215,8 +215,8 @@ def main():
     )
     parser.add_argument(
         '--output',
-        default='data/model_results.pkl',
-        help='Output path for consolidated pickle file (default: data/model_results.pkl)'
+        default=None,
+        help='Output path for consolidated pickle file (default: auto-determined based on variant)'
     )
     parser.add_argument(
         '--save-csv',
