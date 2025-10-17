@@ -7,7 +7,6 @@ into a single pandas DataFrame, adding model configuration information. The cons
 results are saved as data/model_results.pkl for use by visualization scripts.
 """
 
-import os
 import json
 import pandas as pd
 from pathlib import Path
@@ -173,7 +172,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     output_path.parent.mkdir(parents=True, exist_ok=True)
     consolidated_df.to_pickle(output_path)
 
-    print(f"\nConsolidation complete!")
+    print("\nConsolidation complete!")
     print(f"Total records: {len(consolidated_df)}")
     print(f"Unique models: {consolidated_df['model_name'].nunique()}")
     print(f"Saved to: {output_path}")
@@ -233,7 +232,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        df = consolidate_model_results(
+        _ = consolidate_model_results(
             args.models_dir,
             args.output,
             args.save_csv,
