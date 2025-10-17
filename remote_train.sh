@@ -286,7 +286,7 @@ if [ -d ~/llm-stylometry ]; then
         rsync -a ~/llm-stylometry/models/ "\$BACKUP_DIR/"
 
         # Verify backup
-        if ! verify_backup "\$BACKUP_DIR" "~/llm-stylometry/models"; then
+        if ! verify_backup "\$BACKUP_DIR" "\$HOME/llm-stylometry/models"; then
             echo "ERROR: Backup verification failed!"
             exit 1
         fi
@@ -309,7 +309,7 @@ if [ -d ~/llm-stylometry ]; then
         rsync -a "\$BACKUP_DIR/" ~/llm-stylometry/models/
 
         # Verify restoration
-        if ! verify_restore "\$BACKUP_DIR" "~/llm-stylometry/models"; then
+        if ! verify_restore "\$BACKUP_DIR" "\$HOME/llm-stylometry/models"; then
             echo "ERROR: Restore verification failed!"
             exit 1
         fi
