@@ -144,6 +144,16 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
 
         all_results.append(df)
 
+    # Handle case where no valid models were found
+    if not all_results:
+        print("Warning: No valid model data found to consolidate")
+        # Return empty DataFrame with expected schema
+        return pd.DataFrame(columns=[
+            'seed', 'train_author', 'epochs_completed', 'loss_dataset',
+            'loss_value', 'model_name', 'author', 'variant', 'tokenizer',
+            'model_config', 'generation_config', 'checkpoint_path'
+        ])
+
     # Combine all dataframes
     consolidated_df = pd.concat(all_results, ignore_index=True)
 
