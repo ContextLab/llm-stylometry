@@ -374,9 +374,9 @@ screen -X -S llm_training quit 2>/dev/null || true
 
 # Start training in screen (use --no-confirm flag for non-interactive mode)
 # Create a script file first with RESUME_MODE, VARIANT_ARG, and MAX_GPUS variables
-echo "RESUME_MODE='$RESUME_MODE'" > /tmp/llm_train.sh
-echo "VARIANT_ARG='$VARIANT_ARG'" >> /tmp/llm_train.sh
-echo "MAX_GPUS='$MAX_GPUS'" >> /tmp/llm_train.sh
+echo "RESUME_MODE='\$RESUME_MODE'" > /tmp/llm_train.sh
+echo "VARIANT_ARG='\$VARIANT_ARG'" >> /tmp/llm_train.sh
+echo "MAX_GPUS='\$MAX_GPUS'" >> /tmp/llm_train.sh
 echo "echo '[DEBUG] RESUME_MODE value is:' '\$RESUME_MODE'" >> /tmp/llm_train.sh
 echo "echo '[DEBUG] VARIANT_ARG value is:' '\$VARIANT_ARG'" >> /tmp/llm_train.sh
 echo "echo '[DEBUG] MAX_GPUS value is:' '\$MAX_GPUS'" >> /tmp/llm_train.sh
