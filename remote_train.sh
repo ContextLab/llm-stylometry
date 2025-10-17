@@ -195,6 +195,7 @@ set -e
 verify_backup() {
     local BACKUP_DIR=\$1
     local MODELS_DIR=\$2
+    local RESUME_MODE=\$3
 
     MODEL_COUNT=\$(find "\$BACKUP_DIR" -name "model.pth" 2>/dev/null | wc -l)
     STATE_COUNT=\$(find "\$BACKUP_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
@@ -207,12 +208,14 @@ verify_backup() {
     echo "  - \$LOG_COUNT loss_logs.csv files"
     echo "  - \$CONFIG_COUNT config.json files"
 
-    # Check if we expected backups but got none
-    if [ -d "\$MODELS_DIR" ] && [ "\$(ls -A "\$MODELS_DIR" 2>/dev/null)" ]; then
-        # models/ directory exists and is not empty
-        if [ \$MODEL_COUNT -eq 0 ] && [ \$STATE_COUNT -eq 0 ]; then
-            echo "ERROR: models/ directory exists but backup contains no checkpoint files!"
-            return 1
+    # Only enforce strict checkpoint verification in resume mode
+    if [ "\$RESUME_MODE" = "true" ]; then
+        if [ -d "\$MODELS_DIR" ] && [ "\$(ls -A "\$MODELS_DIR" 2>/dev/null)" ]; then
+            # In resume mode, we MUST have checkpoint files
+            if [ \$MODEL_COUNT -eq 0 ] && [ \$STATE_COUNT -eq 0 ]; then
+                echo "ERROR: Resume mode requires checkpoint files (model.pth/training_state.pt) but none found!"
+                return 1
+            fi
         fi
     fi
 
@@ -286,7 +289,7 @@ if [ -d ~/llm-stylometry ]; then
         rsync -a ~/llm-stylometry/models/ "\$BACKUP_DIR/"
 
         # Verify backup
-        if ! verify_backup "\$BACKUP_DIR" "\$HOME/llm-stylometry/models"; then
+        if ! verify_backup "\$BACKUP_DIR" "\$HOME/llm-stylometry/models" "\$RESUME_MODE"; then
             echo "ERROR: Backup verification failed!"
             exit 1
         fi
