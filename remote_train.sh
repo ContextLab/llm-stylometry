@@ -197,13 +197,14 @@ verify_backup() {
     local MODELS_DIR=\$2
     local RESUME_MODE=\$3
 
-    MODEL_COUNT=\$(find "\$BACKUP_DIR" -name "model.pth" 2>/dev/null | wc -l)
+    # Count model files (Hugging Face saves as model.safetensors or pytorch_model.bin)
+    MODEL_COUNT=\$(find "\$BACKUP_DIR" \( -name "model.safetensors" -o -name "pytorch_model.bin" \) 2>/dev/null | wc -l)
     STATE_COUNT=\$(find "\$BACKUP_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
     LOG_COUNT=\$(find "\$BACKUP_DIR" -name "loss_logs.csv" 2>/dev/null | wc -l)
     CONFIG_COUNT=\$(find "\$BACKUP_DIR" -name "config.json" 2>/dev/null | wc -l)
 
     echo "Backup verification:"
-    echo "  - \$MODEL_COUNT model.pth files"
+    echo "  - \$MODEL_COUNT model files (safetensors/bin)"
     echo "  - \$STATE_COUNT training_state.pt files"
     echo "  - \$LOG_COUNT loss_logs.csv files"
     echo "  - \$CONFIG_COUNT config.json files"
@@ -213,7 +214,7 @@ verify_backup() {
         if [ -d "\$MODELS_DIR" ] && [ "\$(ls -A "\$MODELS_DIR" 2>/dev/null)" ]; then
             # In resume mode, we MUST have checkpoint files
             if [ \$MODEL_COUNT -eq 0 ] && [ \$STATE_COUNT -eq 0 ]; then
-                echo "ERROR: Resume mode requires checkpoint files (model.pth/training_state.pt) but none found!"
+                echo "ERROR: Resume mode requires checkpoint files but none found!"
                 return 1
             fi
         fi
@@ -226,14 +227,15 @@ verify_restore() {
     local BACKUP_DIR=\$1
     local MODELS_DIR=\$2
 
-    BACKUP_MODEL_COUNT=\$(find "\$BACKUP_DIR" -name "model.pth" 2>/dev/null | wc -l)
+    # Count model files (Hugging Face saves as model.safetensors or pytorch_model.bin)
+    BACKUP_MODEL_COUNT=\$(find "\$BACKUP_DIR" \( -name "model.safetensors" -o -name "pytorch_model.bin" \) 2>/dev/null | wc -l)
     BACKUP_STATE_COUNT=\$(find "\$BACKUP_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
-    RESTORED_MODEL_COUNT=\$(find "\$MODELS_DIR" -name "model.pth" 2>/dev/null | wc -l)
+    RESTORED_MODEL_COUNT=\$(find "\$MODELS_DIR" \( -name "model.safetensors" -o -name "pytorch_model.bin" \) 2>/dev/null | wc -l)
     RESTORED_STATE_COUNT=\$(find "\$MODELS_DIR" -name "training_state.pt" 2>/dev/null | wc -l)
 
     echo "Restore verification:"
-    echo "  - Backed up: \$BACKUP_MODEL_COUNT model.pth, \$BACKUP_STATE_COUNT training_state.pt"
-    echo "  - Restored: \$RESTORED_MODEL_COUNT model.pth, \$RESTORED_STATE_COUNT training_state.pt"
+    echo "  - Backed up: \$BACKUP_MODEL_COUNT model files, \$BACKUP_STATE_COUNT training_state.pt"
+    echo "  - Restored: \$RESTORED_MODEL_COUNT model files, \$RESTORED_STATE_COUNT training_state.pt"
 
     if [ \$BACKUP_MODEL_COUNT -ne \$RESTORED_MODEL_COUNT ]; then
         echo "ERROR: Model count mismatch! Backup=\$BACKUP_MODEL_COUNT, Restored=\$RESTORED_MODEL_COUNT"
