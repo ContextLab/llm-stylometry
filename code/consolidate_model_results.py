@@ -91,6 +91,32 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
 
         # Read the CSV file
         df = pd.read_csv(loss_logs_path)
+        original_rows = len(df)
+
+        # Deduplication: Remove spurious epoch 0 entries and duplicate epochs
+        # Step 1: Remove spurious epoch 0 entries (keep only first occurrence per model)
+        # Legitimate epoch 0 entries appear only once at start (initial evaluation)
+        # Any subsequent epoch 0 entries are from resume operations
+        epoch_0_mask = df['epochs_completed'] == 0
+        if epoch_0_mask.any():
+            # Keep only first N rows with epoch 0 (typically 11 rows for train + eval datasets)
+            # Using 15 as safe upper bound to handle models with extra eval datasets
+            first_epoch_0_indices = df[epoch_0_mask].index[:15]
+            # Remove all other epoch 0 entries
+            df = df[(~epoch_0_mask) | (df.index.isin(first_epoch_0_indices))].copy()
+
+        # Step 2: Remove duplicate epochs (keep only last occurrence)
+        # When training resumes after interruption, last completed epoch may be re-run
+        # We keep 'last' because it represents the most recent training run
+        df = df.drop_duplicates(
+            subset=['seed', 'train_author', 'epochs_completed', 'loss_dataset'],
+            keep='last'
+        )
+
+        # Log duplicate removal statistics
+        removed_rows = original_rows - len(df)
+        if removed_rows > 0:
+            print(f"  Removed {removed_rows} duplicate/spurious rows from {dir_name}")
 
         # Add model metadata
         df['model_name'] = dir_name
