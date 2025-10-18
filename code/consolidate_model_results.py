@@ -45,7 +45,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
 
     # Filter by variant
     if variant:
-        model_dirs = [d for d in all_model_dirs if f'_variant={variant}_' in d.name]
+        model_dirs = [d for d in all_model_dirs if f'variant={variant}' in d.name]
         variant_label = f"{variant} variant"
     else:
         model_dirs = [d for d in all_model_dirs if '_variant=' not in d.name]
