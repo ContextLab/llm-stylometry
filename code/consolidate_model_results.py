@@ -7,7 +7,6 @@ into a single pandas DataFrame, adding model configuration information. The cons
 results are saved as data/model_results.pkl for use by visualization scripts.
 """
 
-import os
 import json
 import pandas as pd
 from pathlib import Path
@@ -46,7 +45,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
 
     # Filter by variant
     if variant:
-        model_dirs = [d for d in all_model_dirs if f'_variant={variant}_' in d.name]
+        model_dirs = [d for d in all_model_dirs if f'variant={variant}' in d.name]
         variant_label = f"{variant} variant"
     else:
         model_dirs = [d for d in all_model_dirs if '_variant=' not in d.name]
@@ -68,12 +67,12 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         author = parts[0]
 
         # Find variant, tokenizer, and seed
-        variant = None
+        model_variant = None
         tokenizer = None
         seed = None
         for part in parts[1:]:
             if part.startswith('variant='):
-                variant = part.split('=')[1]
+                model_variant = part.split('=')[1]
             elif part.startswith('tokenizer='):
                 tokenizer = part.split('=')[1]
             elif part.startswith('seed='):
@@ -91,11 +90,37 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
 
         # Read the CSV file
         df = pd.read_csv(loss_logs_path)
+        original_rows = len(df)
+
+        # Deduplication: Remove spurious epoch 0 entries and duplicate epochs
+        # Step 1: Remove spurious epoch 0 entries (keep only first occurrence per model)
+        # Legitimate epoch 0 entries appear only once at start (initial evaluation)
+        # Any subsequent epoch 0 entries are from resume operations
+        epoch_0_mask = df['epochs_completed'] == 0
+        if epoch_0_mask.any():
+            # Keep only first N rows with epoch 0 (typically 11 rows for train + eval datasets)
+            # Using 15 as safe upper bound to handle models with extra eval datasets
+            first_epoch_0_indices = df[epoch_0_mask].index[:15]
+            # Remove all other epoch 0 entries
+            df = df[(~epoch_0_mask) | (df.index.isin(first_epoch_0_indices))].copy()
+
+        # Step 2: Remove duplicate epochs (keep only last occurrence)
+        # When training resumes after interruption, last completed epoch may be re-run
+        # We keep 'last' because it represents the most recent training run
+        df = df.drop_duplicates(
+            subset=['seed', 'train_author', 'epochs_completed', 'loss_dataset'],
+            keep='last'
+        )
+
+        # Log duplicate removal statistics
+        removed_rows = original_rows - len(df)
+        if removed_rows > 0:
+            print(f"  Removed {removed_rows} duplicate/spurious rows from {dir_name}")
 
         # Add model metadata
         df['model_name'] = dir_name
         df['author'] = author
-        df['variant'] = variant  # None for baseline, variant name for variant models
+        df['variant'] = model_variant  # None for baseline, variant name for variant models
         df['tokenizer'] = tokenizer
         df['checkpoint_path'] = str(model_dir)
 
@@ -118,6 +143,16 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
 
         all_results.append(df)
 
+    # Handle case where no valid models were found
+    if not all_results:
+        print("Warning: No valid model data found to consolidate")
+        # Return empty DataFrame with expected schema
+        return pd.DataFrame(columns=[
+            'seed', 'train_author', 'epochs_completed', 'loss_dataset',
+            'loss_value', 'model_name', 'author', 'variant', 'tokenizer',
+            'model_config', 'generation_config', 'checkpoint_path'
+        ])
+
     # Combine all dataframes
     consolidated_df = pd.concat(all_results, ignore_index=True)
 
@@ -137,7 +172,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     output_path.parent.mkdir(parents=True, exist_ok=True)
     consolidated_df.to_pickle(output_path)
 
-    print(f"\nConsolidation complete!")
+    print("\nConsolidation complete!")
     print(f"Total records: {len(consolidated_df)}")
     print(f"Unique models: {consolidated_df['model_name'].nunique()}")
     print(f"Saved to: {output_path}")
@@ -179,8 +214,8 @@ def main():
     )
     parser.add_argument(
         '--output',
-        default='data/model_results.pkl',
-        help='Output path for consolidated pickle file (default: data/model_results.pkl)'
+        default=None,
+        help='Output path for consolidated pickle file (default: auto-determined based on variant)'
     )
     parser.add_argument(
         '--save-csv',
@@ -197,7 +232,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        df = consolidate_model_results(
+        _ = consolidate_model_results(
             args.models_dir,
             args.output,
             args.save_csv,
