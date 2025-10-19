@@ -44,6 +44,7 @@ llm-stylometry/
 │   └── check_outputs.py # Output validation script
 ├── run_llm_stylometry.sh # Shell wrapper for easy setup
 ├── remote_train.sh     # Remote GPU server training script
+├── check_remote_status.sh # Check training status on remote server
 ├── sync_models.sh      # Download models from remote server
 ├── LICENSE             # MIT License
 ├── README.md           # This file
@@ -411,6 +412,57 @@ Once training is complete, use `sync_models.sh` **from your local machine** to d
 5. Also syncs `model_results.pkl` if available
 
 **Note**: The script verifies models are complete before downloading. If training is in progress, it will show which models are missing and skip incomplete conditions.
+
+#### Checking training status
+
+Monitor training progress on your GPU server using `check_remote_status.sh` **from your local machine**:
+
+```bash
+# Check status on default cluster (tensor02)
+./check_remote_status.sh
+
+# Check status on specific cluster
+./check_remote_status.sh --cluster tensor01
+./check_remote_status.sh --cluster tensor02
+```
+
+The script provides a comprehensive status report including:
+
+**For completed models:**
+- Number of completed seeds per author (out of 10)
+- Final training loss (mean ± std across all completed seeds)
+
+**For in-progress models:**
+- Current epoch and progress percentage
+- Current training loss
+- Estimated time to completion (based on actual runtime per epoch)
+
+**Example output:**
+```
+================================================================================
+POS VARIANT MODELS
+================================================================================
+
+AUSTEN
+--------------------------------------------------------------------------------
+  Completed: 2/10 seeds
+  Final training loss: 1.1103 ± 0.0003 (mean ± std)
+  In-progress: 1 seeds
+    Seed 2: epoch 132/500 (26.4%) | loss: 1.2382 | ETA: 1d 1h 30m
+
+--------------------------------------------------------------------------------
+Summary: 16/80 complete, 8 in progress
+Estimated completion: 1d 1h 30m (longest), 1d 0h 45m (average)
+```
+
+**How it works:**
+1. Connects to your GPU server using saved credentials (`.ssh/credentials_{cluster}.json`)
+2. Analyzes all model directories and loss logs
+3. Calculates statistics for completed models
+4. Estimates remaining time based on actual training progress
+5. Reports status for baseline and all variant models
+
+**Prerequisites:** The script uses the same credentials file as `remote_train.sh`. If credentials aren't saved, you'll be prompted to enter them interactively.
 
 ### Model Configuration
 
