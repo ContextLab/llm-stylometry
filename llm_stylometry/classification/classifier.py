@@ -1,20 +1,19 @@
-"""Output-code multi-class classifier for author attribution."""
+"""Naive Bayes classifier for author attribution."""
 
 from typing import Dict, List
 import numpy as np
-from sklearn.multiclass import OutputCodeClassifier as SKLearnOutputCodeClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
 
 
 class OutputCodeClassifier:
     """
-    Wrapper around sklearn's OutputCodeClassifier for author attribution.
+    Multinomial Naive Bayes classifier for author attribution.
 
-    Uses logistic regression as the base estimator with output-code multi-class
-    strategy for robust predictions across multiple authors.
+    Designed for text classification with word count/frequency features.
+    Models P(word|author) distributions for each author.
 
     Attributes:
-        classifier: Fitted sklearn OutputCodeClassifier
+        classifier: Fitted sklearn MultinomialNB
         classes_: Array of class labels (author names)
         n_classes_: Number of classes
 
@@ -25,27 +24,14 @@ class OutputCodeClassifier:
         >>> weights = clf.get_feature_weights(feature_names)
     """
 
-    def __init__(self, max_iter: int = 5000, random_state: int = 42):
+    def __init__(self, alpha: float = 1.0):
         """
-        Initialize OutputCodeClassifier.
+        Initialize Multinomial Naive Bayes classifier.
 
         Args:
-            max_iter: Maximum iterations for logistic regression (default: 5000 for high-dimensional data)
-            random_state: Random seed for reproducibility
+            alpha: Additive smoothing parameter (default: 1.0 for Laplace smoothing)
         """
-        # Base estimator: Logistic Regression
-        base_estimator = LogisticRegression(
-            max_iter=max_iter,
-            random_state=random_state,
-            solver='lbfgs'
-        )
-
-        # Output-code multi-class classifier
-        self.classifier = SKLearnOutputCodeClassifier(
-            estimator=base_estimator,
-            random_state=random_state
-        )
-
+        self.classifier = MultinomialNB(alpha=alpha)
         self.classes_ = None
         self.n_classes_ = None
 
@@ -79,23 +65,18 @@ class OutputCodeClassifier:
 
     def get_feature_weights(self, feature_names: List[str]) -> Dict[str, Dict[str, float]]:
         """
-        Extract author-specific feature weights by back-solving from outputs.
+        Extract author-specific feature weights from Naive Bayes.
 
-        For each author, creates an indicator output vector and back-solves to find
-        the input (word count) pattern that would produce that output. This reveals
-        which words are most characteristic of each author.
-
-        Algorithm:
-        1. For each author, create target output (indicator vector)
-        2. Back-solve: input = pseudo_inverse(weights) @ (output - bias)
-        3. Map feature names to back-solved weights
+        Naive Bayes directly models P(word|author) for each author. We extract
+        these probabilities as feature weights. Higher probability means the word
+        is more characteristic of that author.
 
         Args:
             feature_names: List of feature names (vocabulary)
 
         Returns:
             Dictionary with keys:
-            - author names: {word: weight, ...} for each author (author-specific)
+            - author names: {word: weight, ...} for each author (P(word|author))
             - 'overall': {word: avg_weight, ...} averaged across all authors
 
         Raises:
@@ -104,58 +85,29 @@ class OutputCodeClassifier:
         if self.classes_ is None:
             raise ValueError("Classifier must be fitted before extracting weights")
 
-        # Get decision function scores for a dummy input to understand dimensions
-        # We'll extract the code_book and estimators to back-solve
+        # Get feature log probabilities: shape (n_classes, n_features)
+        # feature_log_prob_[i, j] = log P(word_j | class_i)
+        feature_log_probs = self.classifier.feature_log_prob_
 
-        # Extract binary classifiers and code book from OutputCodeClassifier
-        binary_classifiers = self.classifier.estimators_
-        code_book = self.classifier.code_book_
+        # Convert to actual probabilities
+        feature_probs = np.exp(feature_log_probs)
 
-        # code_book shape: (n_classes, n_binary_classifiers)
-        # Each row is the target output for one class across all binary classifiers
-
-        n_features = len(feature_names)
-        n_binary = len(binary_classifiers)
-
-        # Build weight matrix: (n_binary × n_features)
-        # Each row is the coefficient vector from one binary classifier
-        W = np.zeros((n_binary, n_features))
-        b = np.zeros(n_binary)
-
-        for i, binary_clf in enumerate(binary_classifiers):
-            if hasattr(binary_clf, 'coef_') and hasattr(binary_clf, 'intercept_'):
-                W[i, :] = binary_clf.coef_[0]
-                b[i] = binary_clf.intercept_[0]
-
-        # For each author, back-solve from their code to input features
+        # Extract per-author weights
         author_weights = {}
-
         for class_idx, author in enumerate(self.classes_):
-            # Get target output code for this author
-            target_output = code_book[class_idx, :]  # Shape: (n_binary,)
-
-            # Back-solve: X = W^+ @ (Y - b)
-            # where W^+ is the pseudo-inverse of W
-            # W is (n_binary × n_features), so W^+ is (n_features × n_binary)
-
-            W_pinv = np.linalg.pinv(W)  # Pseudo-inverse
-
-            # Solve for input that produces this output
-            input_weights = W_pinv @ (target_output - b)  # Shape: (n_features,)
+            # Get probability distribution for this author
+            author_probs = feature_probs[class_idx, :]
 
             # Map to feature names
             author_weights[author] = {
-                feature_name: float(weight)
-                for feature_name, weight in zip(feature_names, input_weights)
+                feature_name: float(prob)
+                for feature_name, prob in zip(feature_names, author_probs)
             }
 
         # Compute overall weights as average across all authors
         overall_weights = {}
-        for feature_name in feature_names:
-            avg_weight = np.mean([
-                author_weights[author][feature_name]
-                for author in self.classes_
-            ])
+        for feature_idx, feature_name in enumerate(feature_names):
+            avg_weight = np.mean(feature_probs[:, feature_idx])
             overall_weights[feature_name] = float(avg_weight)
 
         return {**author_weights, 'overall': overall_weights}

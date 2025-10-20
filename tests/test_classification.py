@@ -97,24 +97,27 @@ class TestVectorizeBooks:
             assert isinstance(book_id, str)
             assert isinstance(vector, np.ndarray)
             assert vector.shape == (len(vectorizer.vocabulary_),)
-            # Vectors should be normalized to frequencies (sum to 1.0)
-            assert np.isclose(vector.sum(), 1.0, atol=1e-6)
+            # Vectors should be scaled integer counts (sum to ~100000)
+            assert 95000 <= vector.sum() <= 105000  # Allow rounding variation
+            assert vector.dtype in [np.int32, np.int64]
 
     def test_frequency_normalization(self):
-        """Test that vectors are normalized to frequencies (sum to 1.0)."""
+        """Test that vectors are scaled frequencies (all sum to ~100000)."""
         books = load_books_by_author(data_dir=str(FIXTURE_DIR))
         vectorizer = create_count_vectorizer(books)
-        vectorized = vectorize_books(books, vectorizer)
+        vectorized = vectorize_books(books, vectorizer, scale_factor=100000)
 
         # Check all books
         for author, book_id, vector in vectorized:
-            # Each vector should sum to 1.0 (frequencies, not counts)
-            assert np.isclose(vector.sum(), 1.0, atol=1e-6), \
-                f"Vector for {author}/{book_id} sums to {vector.sum()}, expected 1.0"
+            # Each vector should sum to ~100000 (scaled frequencies, not raw counts)
+            # Allow 5% tolerance for rounding loss with many features
+            total = vector.sum()
+            assert 95000 <= total <= 105000, \
+                f"Vector for {author}/{book_id} sums to {total}, expected ~100000"
 
-            # All values should be non-negative frequencies
+            # All values should be non-negative integers
             assert (vector >= 0).all()
-            assert (vector <= 1).all()
+            assert vector.dtype in [np.int32, np.int64]
 
 
 class TestOutputCodeClassifier:
@@ -131,7 +134,7 @@ class TestOutputCodeClassifier:
         y = np.array([author for author, _, _ in vectorized])
 
         # Train classifier
-        clf = OutputCodeClassifier(random_state=42)
+        clf = OutputCodeClassifier()
         clf.fit(X, y)
 
         # Verify fitted attributes
@@ -153,7 +156,7 @@ class TestOutputCodeClassifier:
         X_train, y_train = X[train_mask], y[train_mask]
         X_test, y_test = X[~train_mask], y[~train_mask]
 
-        clf = OutputCodeClassifier(random_state=42)
+        clf = OutputCodeClassifier()
         clf.fit(X_train, y_train)
 
         # Make predictions
@@ -172,7 +175,7 @@ class TestOutputCodeClassifier:
         X = np.array([vec for _, _, vec in vectorized])
         y = np.array([author for author, _, _ in vectorized])
 
-        clf = OutputCodeClassifier(random_state=42)
+        clf = OutputCodeClassifier()
         clf.fit(X, y)
 
         # Extract weights
