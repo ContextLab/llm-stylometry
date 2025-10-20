@@ -257,14 +257,7 @@ def run_single_classification_variant(args_tuple):
                 seed=42
             )
 
-        # Accuracy bar chart
-        acc_output = f"{output_dir}/classification_accuracy_{variant_name}.pdf"
-        generate_classification_accuracy_figure(
-            data_path=result_path,
-            output_path=acc_output,
-            variant=variant
-        )
-
+        # Generate word clouds (per-variant)
         # Overall word cloud
         wc_overall = f"{output_dir}/wordcloud_overall_{variant_name}.pdf"
         generate_word_cloud_figure(
@@ -483,6 +476,13 @@ Examples:
                 if failed:
                     safe_print(f"\n✗ {len(failed)}/{len(variants_to_run)} classifications failed")
                     return 1
+
+            # Generate single grouped accuracy bar chart combining all conditions
+            safe_print("\nGenerating grouped accuracy bar chart...")
+            from llm_stylometry.visualization import generate_classification_accuracy_figure
+            acc_output = f"{args.output}/classification_accuracy.pdf"
+            generate_classification_accuracy_figure(output_path=acc_output)
+            safe_print(f"✓ Generated: {acc_output}")
 
             safe_print("\n" + "=" * 60)
             safe_print("✓ All classification experiments complete!")

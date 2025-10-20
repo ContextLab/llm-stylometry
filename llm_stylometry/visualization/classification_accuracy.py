@@ -1,4 +1,4 @@
-"""Generate classification accuracy bar chart with bootstrap CI."""
+"""Generate classification accuracy grouped bar chart with bootstrap CI."""
 
 import pandas as pd
 import seaborn as sns
@@ -6,104 +6,126 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from pathlib import Path
+import pickle
 
 from llm_stylometry.core.constants import AUTHORS
 
 
 def generate_classification_accuracy_figure(
-    data_path: str = "data/classifier_results/baseline.pkl",
-    output_path: str = None,
-    figsize: tuple = (10, 6),
-    font: str = 'Helvetica',
-    variant: str = None
+    output_path: str = "paper/figs/source/classification_accuracy.pdf",
+    figsize: tuple = (14, 6),
+    font: str = 'Helvetica'
 ):
     """
-    Generate Figure: Classification accuracy bar chart with bootstrap 95% CI.
+    Generate grouped bar chart showing classification accuracy across all conditions.
+
+    Loads results from all 4 conditions (baseline, content, function, pos) and
+    creates a single grouped bar plot with different alpha values per condition.
 
     Args:
-        data_path: Path to classifier results pkl file
-        output_path: Path to save PDF (optional)
+        output_path: Path to save PDF (default: paper/figs/source/classification_accuracy.pdf)
         figsize: Figure size
         font: Font family to use
-        variant: Analysis variant ('content', 'function', 'pos') or None for baseline
 
     Returns:
         matplotlib figure object
 
     Examples:
-        >>> fig = generate_classification_accuracy_figure(
-        ...     data_path='data/classifier_results/baseline.pkl',
-        ...     output_path='paper/figs/source/classification_accuracy_baseline.pdf'
-        ... )
+        >>> fig = generate_classification_accuracy_figure()
     """
     # Set font
     plt.rcParams['font.family'] = font
     plt.rcParams['font.sans-serif'] = [font]
 
-    # Load results
-    import pickle
-    with open(data_path, 'rb') as f:
-        data = pickle.load(f)
+    # Load results from all 4 conditions
+    variants = [
+        ('baseline', None, 1.0),
+        ('content', 'content', 0.8),
+        ('function', 'function', 0.6),
+        ('pos', 'pos', 0.4)
+    ]
 
-    results_df = data['results'].copy()
+    all_results = []
 
-    # Prepare data for seaborn
-    # Results DF is in long format: one row per held-out book
-    # Columns: split_id, author, accuracy, held_out_book_id, predicted_author, true_author, classifier
+    for condition_name, variant, alpha_val in variants:
+        pkl_path = f"data/classifier_results/{condition_name}.pkl"
+        if not Path(pkl_path).exists():
+            print(f"Warning: {pkl_path} not found, skipping {condition_name}")
+            continue
 
-    # Capitalize author names for display
-    results_df['author'] = results_df['author'].str.capitalize()
+        with open(pkl_path, 'rb') as f:
+            data = pickle.load(f)
 
-    # Add "Overall" category (all data points)
-    overall_df = results_df.copy()
-    overall_df['author'] = 'Overall'
+        results_df = data['results'].copy()
 
-    plot_df = pd.concat([results_df, overall_df], ignore_index=True)
+        # Capitalize author names
+        results_df['author'] = results_df['author'].str.capitalize()
 
-    # Define author order (same as other figures)
+        # Add condition column
+        results_df['condition'] = condition_name.capitalize()
+        results_df['alpha'] = alpha_val
+
+        # Add to combined results
+        all_results.append(results_df)
+
+        # Also add "Overall" for this condition
+        overall_df = results_df.copy()
+        overall_df['author'] = 'Overall'
+        all_results.append(overall_df)
+
+    if not all_results:
+        raise ValueError("No classification results found. Please run classification experiments first.")
+
+    # Combine all results
+    plot_df = pd.concat(all_results, ignore_index=True)
+
+    # Define author order
     author_order = [a.capitalize() for a in AUTHORS] + ['Overall']
 
-    # Define color palette (same as all_losses.py)
-    # Tab10 palette with Baum and Thompson first
+    # Define color palette (same as other figures)
     base_colors = sns.color_palette("tab10", n_colors=len(AUTHORS))
-    palette = dict(zip([a.capitalize() for a in AUTHORS], base_colors))
-    palette['Overall'] = 'black'
+    author_palette = dict(zip([a.capitalize() for a in AUTHORS], base_colors))
+    author_palette['Overall'] = 'black'
 
     # Create figure
     fig, ax = plt.subplots(figsize=figsize)
 
-    # Bar plot with bootstrap 95% CI (seaborn's default: n_boot=1000)
+    # Grouped bar plot with bootstrap 95% CI
+    # Use hue='condition' for grouping
     sns.barplot(
         data=plot_df,
         x='author',
         y='accuracy',
-        hue='author',  # Assign x to hue for color mapping
+        hue='condition',
         order=author_order,
-        palette=palette,
+        hue_order=['Baseline', 'Content', 'Function', 'Pos'],
         errorbar='ci',  # Bootstrap 95% confidence intervals
         ax=ax,
-        err_kws={'linewidth': 1.5},  # Make error bars visible
-        legend=False  # No legend needed (x-axis labels are sufficient)
+        err_kws={'linewidth': 1.0},
+        palette='Set2',  # Use neutral palette for conditions
+        legend=False  # No legend (user will create manually)
     )
 
+    # Apply custom alpha values per condition
+    for i, bar_container in enumerate(ax.containers):
+        condition_name = ['Baseline', 'Content', 'Function', 'Pos'][i]
+        alpha_map = {'Baseline': 1.0, 'Content': 0.8, 'Function': 0.6, 'Pos': 0.4}
+        alpha = alpha_map[condition_name]
+
+        for bar in bar_container:
+            bar.set_alpha(alpha)
+
     # Styling
-    ax.set_xlabel('')  # Remove x-axis label (obvious from ticks)
+    ax.set_xlabel('')  # Remove x-axis label
     ax.set_ylabel('Classification Accuracy', fontsize=12)
     ax.set_ylim(0, 1.0)
     sns.despine(ax=ax, top=True, right=True)
 
-    # Increase x-tick font size for readability
+    # Increase tick font sizes
     ax.tick_params(axis='x', rotation=45, labelsize=14)
     ax.tick_params(axis='y', labelsize=11)
 
     plt.tight_layout()
-
-    # Save if output path provided
-    if output_path is None:
-        if variant is None:
-            output_path = "paper/figs/source/classification_accuracy_baseline.pdf"
-        else:
-            output_path = f"paper/figs/source/classification_accuracy_{variant}.pdf"
 
     # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
