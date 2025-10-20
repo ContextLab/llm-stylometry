@@ -12,6 +12,15 @@
 \usepackage{lineno}
 \usepackage{booktabs}
 
+\newcommand{\crossentropyContent}{{1}}
+\newcommand{\crossentropyFunction}{{2}}
+\newcommand{\crossentropyPOS}{{3}}
+\newcommand{\ttestsContent}{{4}}
+\newcommand{\ttestsFunction}{{5}}
+\newcommand{\ttestsPOS}{{6}}
+\newcommand{\confusion}{{7}}
+\newcommand{\mds}{{8}}
+
 \doublespacing
 
 \title{A Stylometric Application of Large Language Models}
@@ -158,22 +167,40 @@ random seeds. This approach enables us to assess the robustness of our results
 and to ensure that the models are not overfitting to a specific book or random
 sample.
 
+\subsubsection{Investigating the contributions of function words, content words, and parts of speech}
+
+In order to investigate the contributions of different types of words to the
+stylometric signatures captured by our models, we carried out additional
+analyses using modified corpora. First, we created content-word-only corpora by
+replacing all function words with a special token, \texttt{<FUNC>}. Function
+words were identified using scikit-learn's list of English stop words~\citep{PedrEtal11}.
+Next, we created function-word-only corpora by replacing all content (i.e.,
+non-function) words with a \texttt{<CONTENT>} token. Finally, we created
+part-of-speech-only corpora by using the Natural Language Toolkit~\citep[NLTK; ][]{BirdLope04} to
+replace each word with its corresponding part-of-speech tag. We then re-trained
+our models on each of these modified corpora, following the same methodology as
+described above.
+
+
+
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\textwidth]{figs/loss_all_authors.pdf}
 
 
-  \caption{\textbf{Cross-entropy loss across models and
-      authors.}\textbf{A.} Average cross-entropy loss on
-    \textit{Train}ing data and held-out test data from each author,
-    plotted as a function of the number of training epochs. Each color
-    denotes a model trained on a single author's work.  Error ribbons
-    denote bootstrap-estimated 95\% confidence intervals over 10
-    random seeds. \textbf{B.} Cross-entropy loss assigned to held-out
-    test data by each author's model ($x$-axis). Held-out test data is
-    either from the \textit{same} author (black) or from
-    \textit{other} authors (gray). Each dot denotes the average loss
-    (across all 1024-token chunks) for a single random seed.}
+\caption{\textbf{Cross-entropy loss across models and authors.}\textbf{A.}
+Average cross-entropy loss on \textit{Train}ing data and held-out test data
+from each author, plotted as a function of the number of training epochs. Each
+color denotes a model trained on a single author's work. Error ribbons denote
+bootstrap-estimated 95\% confidence intervals over 10 random seeds. \textbf{B.}
+Cross-entropy loss assigned to held-out test data by each author's model
+($x$-axis). Held-out test data is either from the \textit{same} author (black)
+or from \textit{other} authors (gray). Each dot denotes the average loss
+(across all 1024-token chunks) for a single random seed. See Supplementary
+Materials for analogous plots using models trained on only content words (Supp.
+Fig.~\crossentropyContent), only function words (Supp.
+Fig.~\crossentropyFunction), and only parts of speech (Supp.
+Fig.~\crossentropyPOS).}
 \label{fig:all-losses}
 \end{figure*}
 
@@ -212,7 +239,11 @@ smallest loss.
     held-out texts from all other authors. \textbf{B.} The average
     $t$-statistic across all eight authors, as a function of the
     number of training epochs. Error ribbons denote
-    bootstrap-estimated 95\% confidence intervals across authors.}
+    bootstrap-estimated 95\% confidence intervals across authors.  See Supplementary
+Materials for analogous plots using models trained on only content words (Supp.
+Fig.~\ttestsContent), only function words (Supp.
+Fig.~\ttestsFunction), and only parts of speech (Supp.
+Fig.~\ttestsPOS).}
 \label{fig:t-stats}
 \end{figure*}
 
@@ -285,7 +316,7 @@ provide the plot solely as a provocative demonstration.
 
   \caption{\textbf{Confusion matrix.} The matrix displays the average cross-entropy loss assigned by models trained on each
  author's writing (column) to held-out texts from each author (row), after subtracting
- the native author's baseline loss.}
+ the native author's baseline loss.  See Supplementary Materials for analogous plots using models trained on only content words, function words, and parts of speech (Supp. Fig.~\confusion).}
 \label{fig:confusion-matrix}
 \end{figure*}
 
@@ -308,7 +339,7 @@ the relative ``distances" among our author set.
 
   \caption{\textbf{Multidimensional scaling plot.} Three-dimensional
     MDS projection of the (symmetrized) average cross-entropy loss matrix shown in
-    Figure~\ref{fig:confusion-matrix}.}
+    Figure~\ref{fig:confusion-matrix}. See Supplementary Materials for analogous plots using models trained on only content words, function words, and parts of speech (Supp. Fig.~\mds).}
 \label{fig:mds}
 \end{figure*}
 

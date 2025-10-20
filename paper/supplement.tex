@@ -1,0 +1,200 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{geometry}
+\usepackage{natbib}
+\usepackage{pxfonts}
+\usepackage{graphicx}
+\usepackage{newfloat}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{placeins}
+\usepackage{booktabs}
+\usepackage{longtable}
+
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}\limits}
+\newcommand{\argmin}{\mathop{\mathrm{argmin}}\limits}
+
+\title{\textit{Supplementary materials for}: A Stylometric Application of Large Language Models}
+
+\author{Harrison F. Stropkay, Jiayi Chen, Daniel N. Rockmore, and Jeremy R. Manning\\
+Dartmouth College \\
+Hanover, NH 03755, USA \\
+\texttt{\{harrison.f.stropkay.25, jiayi.chen.gr, }\\\texttt{daniel.n.rockmore, jeremy.r.manning\}@dartmouth.edu}}
+
+\date{}
+
+\begin{document}
+
+\renewcommand{\figurename}{Supplementary Figure}
+\renewcommand{\tablename}{Supplementary Table}
+
+\newcommand{\crossentropy}{{1}}
+\newcommand{\ttests}{{2}}
+\newcommand{\confusion}{{3}}
+\newcommand{\mds}{{4}}
+
+
+\setcounter{equation}{0}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\setcounter{page}{1}
+\setcounter{section}{0}
+\makeatletter
+
+
+\begin{titlepage}
+\maketitle
+\end{titlepage}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/loss_all_authors_content_only.pdf}
+
+
+  \caption{\textbf{Cross-entropy loss across models and
+      authors using only content words.} Follows the general format of Figure~\crossentropy in the main text,
+      but uses models trained on only content words. All function words are masked out using \texttt{<FUNC>}.
+      \textbf{A.} Average cross-entropy loss on
+    \textit{Train}ing data and held-out test data from each author,
+    plotted as a function of the number of training epochs. Each color
+    denotes a model trained on a single author's work.  Error ribbons
+    denote bootstrap-estimated 95\% confidence intervals over 10
+    random seeds. \textbf{B.} Cross-entropy loss assigned to held-out
+    test data by each author's model ($x$-axis). Held-out test data is
+    either from the \textit{same} author (black) or from
+    \textit{other} authors (gray). Each dot denotes the average loss
+    (across all 1024-token chunks) for a single random seed.}
+\label{fig:all-losses-content}
+\end{figure*}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/loss_all_authors_function_only.pdf}
+
+
+  \caption{\textbf{Cross-entropy loss across models and
+      authors using only function words.} Follows the general format of Figure~\crossentropy in the main text,
+      but uses models trained on only function words. All content words are masked out using \texttt{<CONTENT>}.
+      \textbf{A.} Average cross-entropy loss on
+    \textit{Train}ing data and held-out test data from each author,
+    plotted as a function of the number of training epochs. Each color
+    denotes a model trained on a single author's work.  Error ribbons
+    denote bootstrap-estimated 95\% confidence intervals over 10
+    random seeds. \textbf{B.} Cross-entropy loss assigned to held-out
+    test data by each author's model ($x$-axis). Held-out test data is
+    either from the \textit{same} author (black) or from
+    \textit{other} authors (gray). Each dot denotes the average loss
+    (across all 1024-token chunks) for a single random seed.}
+\label{fig:all-losses-function}
+\end{figure*}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/loss_all_authors_pos.pdf}
+
+
+  \caption{\textbf{Cross-entropy loss across models and
+      authors using only parts of speech.} Follows the general format of Figure~\crossentropy in the main text,
+      but uses models trained on only parts of speech. All words are replaced with their corresponding part of speech tag.
+      \textbf{A.} Average cross-entropy loss on
+    \textit{Train}ing data and held-out test data from each author,
+    plotted as a function of the number of training epochs. Each color
+    denotes a model trained on a single author's work.  Error ribbons
+    denote bootstrap-estimated 95\% confidence intervals over 10
+    random seeds. \textbf{B.} Cross-entropy loss assigned to held-out
+    test data by each author's model ($x$-axis). Held-out test data is
+    either from the \textit{same} author (black) or from
+    \textit{other} authors (gray). Each dot denotes the average loss
+    (across all 1024-token chunks) for a single random seed.}
+\label{fig:all-losses-pos}
+\end{figure*}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/t_stats_content_only.pdf}
+
+
+\caption{\textbf{Same vs. other author comparisons, by model, using only
+content words.} Follows the general format of Figure~\ttests in the main text,
+but uses models trained on only content words. All function words are masked
+out using \texttt{<FUNC>}. \textbf{A.} Each curve denotes, as a function of the
+number of training epochs, the the $t$-statistic from a $t$-test comparing the
+distribution of losses (across random seeds) assigned to held-out texts from
+the given author (color) versus held-out texts from all other authors.
+\textbf{B.} The average $t$-statistic across all eight authors, as a function
+of the number of training epochs. Error ribbons denote bootstrap-estimated 95\%
+confidence intervals across authors.}
+
+\label{fig:t-stats-content}
+\end{figure*}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/t_stats_function_only.pdf}
+
+
+\caption{\textbf{Same vs. other author comparisons, by model, using only
+function words.} Follows the general format of Figure~\ttests in the main text,
+but uses models trained on only function words. All content words are masked
+out using \texttt{<CONTENT>}. \textbf{A.} Each curve denotes, as a function of the
+number of training epochs, the the $t$-statistic from a $t$-test comparing the
+distribution of losses (across random seeds) assigned to held-out texts from
+the given author (color) versus held-out texts from all other authors.
+\textbf{B.} The average $t$-statistic across all eight authors, as a function
+of the number of training epochs. Error ribbons denote bootstrap-estimated 95\%
+confidence intervals across authors.}
+
+\label{fig:t-stats-function}
+\end{figure*}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/t_stats_content_only.pdf}
+
+
+\caption{\textbf{Same vs. other author comparisons, by model, using only parts
+of speech.} Follows the general format of Figure~\ttests in the main text, but
+uses models trained on only parts of speech. All words are replaced with their
+corresponding part of speech tag. \textbf{A.} Each curve denotes, as a function
+of the number of training epochs, the the $t$-statistic from a $t$-test
+comparing the distribution of losses (across random seeds) assigned to held-out
+texts from the given author (color) versus held-out texts from all other
+authors. \textbf{B.} The average $t$-statistic across all eight authors, as a
+function of the number of training epochs. Error ribbons denote
+bootstrap-estimated 95\% confidence intervals across authors.}
+
+\label{fig:t-stats-pos}
+\end{figure*}
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/confustion_matrices_variants.pdf}
+
+
+\caption{\textbf{Confusion matrices.} Follows the general format of
+Figure~\confusion in the main text, but shows confusion matrices for models
+trained on only content words (A), only function words (B), and only parts of
+speech (C). Within each panel, the matrix displays the average cross-entropy loss assigned by
+models trained on each author's writing (column) to held-out texts from each
+author (row), after subtracting the native author's baseline loss.}
+\label{fig:confusion-matrix-combined}
+
+\end{figure*}
+
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figs/mds_plots_variants.pdf}
+
+
+\caption{\textbf{Multidimensional scaling plot.} Follows the general format of
+Figure~\mds in the main text, but shows MDS projections of the (symmetrized)
+average cross entropy loss matrices shown in
+Figure~\ref{fig:confusion-matrix-combined}, for models trained on only content
+words (A), only function words (B), and only parts of speech (C).}
+\label{fig:mds} \end{figure*}
+
+
+\end{document}
