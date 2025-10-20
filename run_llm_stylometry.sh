@@ -45,6 +45,7 @@ OPTIONS:
     -fo, --function-only    Function-only variant (content words masked) - for training or figures
     -pos, --part-of-speech  Part-of-speech variant (words → POS tags) - for training or figures
     --no-fairness           Disable fairness-based loss thresholding for variant figures
+    -c, --classify          Run text classification experiment (word count-based)
     --setup-only            Only setup environment without generating figures
     --no-setup              Skip environment setup (assume already configured)
     --force-install         Force reinstall of all dependencies
@@ -63,6 +64,8 @@ EXAMPLES:
     $0 -t -fo               # Train function-only variant models
     $0 -t -pos              # Train part-of-speech variant models
     $0 -f 1a -fo --no-fairness  # Generate Figure 1A for function variant without fairness thresholding
+    $0 --classify           # Run baseline text classification experiment
+    $0 --classify -co       # Run classification for content-only variant
     $0 -l                   # List available figures
     $0 --setup-only         # Only setup the environment
     $0 --clean              # Remove environment and reinstall from scratch
@@ -380,6 +383,10 @@ while [[ $# -gt 0 ]]; do
             NO_FAIRNESS=true
             shift
             ;;
+        --classify|-c)
+            CLASSIFY=true
+            shift
+            ;;
         *)
             print_error "Unknown option: $1"
             show_help
@@ -489,6 +496,10 @@ fi
 
 if [ "$NO_FAIRNESS" = true ]; then
     PYTHON_CMD="$PYTHON_CMD --no-fairness"
+fi
+
+if [ "$CLASSIFY" = true ]; then
+    PYTHON_CMD="$PYTHON_CMD --classify"
 fi
 
 # Execute the Python script
