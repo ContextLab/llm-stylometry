@@ -242,7 +242,7 @@ Use the `--classify` flag to run text classification instead of GPT-2 training:
 
 2. **Cross-Validation**: Leave-one-book-out per author
    - Each split holds out exactly 1 book from each of the 8 authors (8 books total)
-   - Up to 10,000 randomly sampled combinations
+   - Up to 1,000 randomly sampled combinations
    - Ensures all books are tested and results are robust
 
 3. **Classifier**: Output-code multi-class classifier
@@ -294,7 +294,7 @@ from llm_stylometry.core.constants import AUTHORS
 # Run classification experiment
 result_path = run_classification_experiment(
     variant='content',       # 'content', 'function', 'pos', or None for baseline
-    max_splits=10000,        # Maximum CV splits
+    max_splits=1000,         # Maximum CV splits
     seed=42                  # Random seed for reproducibility
 )
 

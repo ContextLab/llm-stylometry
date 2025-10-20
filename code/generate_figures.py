@@ -350,12 +350,12 @@ Examples:
 
         variant_name = f"{args.variant}" if args.variant else "baseline"
         safe_print(f"\nVariant: {variant_name}")
-        safe_print("Max CV splits: 10,000")
+        safe_print("Max CV splits: 1,000")
 
         try:
             result_path = run_classification_experiment(
                 variant=args.variant,
-                max_splits=10000,
+                max_splits=1000,
                 seed=42
             )
 
