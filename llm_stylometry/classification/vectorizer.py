@@ -35,9 +35,6 @@ def load_books_by_author(data_dir: str = "data/cleaned", variant: str = None) ->
 
     books_by_author = {}
 
-    # Special directories to exclude
-    exclude_dirs = {'contested', 'non_oz_baum', 'non_oz_thompson'}
-
     for author in AUTHORS:
         author_dir = subdir / author
         if not author_dir.exists():

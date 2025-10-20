@@ -129,9 +129,7 @@ def run_cross_validation(
         # Split data
         X_train = vectors[train_idx]
         y_train = np.array([authors[i] for i in train_idx])
-
         X_test = vectors[test_idx]
-        y_test = np.array([authors[i] for i in test_idx])
 
         # Train classifier
         clf = OutputCodeClassifier()
