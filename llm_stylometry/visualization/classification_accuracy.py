@@ -91,7 +91,7 @@ def generate_classification_accuracy_figure(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Grouped bar plot with bootstrap 95% CI
-    # Use hue='condition' for grouping
+    # Use hue='condition' for grouping, but we'll override colors manually
     sns.barplot(
         data=plot_df,
         x='author',
@@ -102,17 +102,23 @@ def generate_classification_accuracy_figure(
         errorbar='ci',  # Bootstrap 95% confidence intervals
         ax=ax,
         err_kws={'linewidth': 1.0},
-        palette='Set2',  # Use neutral palette for conditions
         legend=False  # No legend (user will create manually)
     )
 
-    # Apply custom alpha values per condition
+    # Apply author-specific colors and condition-specific alpha values
+    # ax.containers has 4 elements (one per condition)
+    # Each container has 9 bars (8 authors + overall)
     for i, bar_container in enumerate(ax.containers):
         condition_name = ['Baseline', 'Content', 'Function', 'Pos'][i]
         alpha_map = {'Baseline': 1.0, 'Content': 0.8, 'Function': 0.6, 'Pos': 0.4}
         alpha = alpha_map[condition_name]
 
-        for bar in bar_container:
+        for j, bar in enumerate(bar_container):
+            # Get author for this bar
+            author = author_order[j]
+            # Set author-specific color with condition-specific alpha
+            color = author_palette[author]
+            bar.set_color(color)
             bar.set_alpha(alpha)
 
     # Styling
