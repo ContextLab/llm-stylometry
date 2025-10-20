@@ -224,6 +224,68 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         return False
 
 
+def run_single_classification_variant(args_tuple):
+    """
+    Run classification for a single variant (module-level for multiprocessing).
+
+    Args:
+        args_tuple: (variant, output_dir) tuple
+
+    Returns:
+        (variant_name, success, error_message) tuple
+    """
+    variant, output_dir = args_tuple
+    variant_name = variant if variant else "baseline"
+
+    try:
+        from llm_stylometry.classification import run_classification_experiment
+        from llm_stylometry.core.constants import AUTHORS
+        from llm_stylometry.visualization import (
+            generate_classification_accuracy_figure,
+            generate_word_cloud_figure
+        )
+
+        # Run experiment
+        result_path = run_classification_experiment(
+            variant=variant,
+            max_splits=1000,
+            seed=42
+        )
+
+        # Accuracy bar chart
+        acc_output = f"{output_dir}/classification_accuracy_{variant_name}.pdf"
+        generate_classification_accuracy_figure(
+            data_path=result_path,
+            output_path=acc_output,
+            variant=variant
+        )
+
+        # Overall word cloud
+        wc_overall = f"{output_dir}/wordcloud_overall_{variant_name}.pdf"
+        generate_word_cloud_figure(
+            data_path=result_path,
+            author=None,
+            output_path=wc_overall,
+            variant=variant
+        )
+
+        # Per-author word clouds
+        for author in AUTHORS:
+            wc_author = f"{output_dir}/wordcloud_{author}_{variant_name}.pdf"
+            generate_word_cloud_figure(
+                data_path=result_path,
+                author=author,
+                output_path=wc_author,
+                variant=variant
+            )
+
+        return (variant_name, True, None)
+
+    except Exception as e:
+        import traceback
+        return (variant_name, False, traceback.format_exc())
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -359,18 +421,20 @@ Examples:
         # Determine which variants to run
         variants_to_run = []
         if args.classify_variants:
-            # Multiple variants specified
+            # Variants explicitly specified via --classify-variant flags
             for v in args.classify_variants:
                 if v == 'baseline':
                     variants_to_run.append(None)
                 else:
                     variants_to_run.append(v)
-        elif args.variant:
-            # Single variant from --variant flag
-            variants_to_run = [args.variant]
         else:
-            # Default: baseline only
-            variants_to_run = [None]
+            # No --classify-variant flags: use default behavior
+            if args.variant:
+                # Single variant from --variant flag (e.g., from -co)
+                variants_to_run = [args.variant]
+            else:
+                # No variants specified at all: default to baseline only
+                variants_to_run = [None]
 
         safe_print(f"\nVariants to run: {[v if v else 'baseline' for v in variants_to_run]}")
         safe_print(f"Max CV splits per variant: 1,000")
@@ -378,60 +442,14 @@ Examples:
         if len(variants_to_run) > 1:
             safe_print(f"Running {len(variants_to_run)} variants in parallel on {cpu_count()} CPUs")
 
-        def run_single_classification(variant):
-            """Run classification for a single variant."""
-            variant_name = variant if variant else "baseline"
-            try:
-                result_path = run_classification_experiment(
-                    variant=variant,
-                    max_splits=1000,
-                    seed=42
-                )
-
-                # Generate classification figures
-                from llm_stylometry.visualization import (
-                    generate_classification_accuracy_figure,
-                    generate_word_cloud_figure
-                )
-
-                # Accuracy bar chart
-                acc_output = f"{args.output}/classification_accuracy_{variant_name}.pdf"
-                generate_classification_accuracy_figure(
-                    data_path=result_path,
-                    output_path=acc_output,
-                    variant=variant
-                )
-
-                # Overall word cloud
-                wc_overall = f"{args.output}/wordcloud_overall_{variant_name}.pdf"
-                generate_word_cloud_figure(
-                    data_path=result_path,
-                    author=None,
-                    output_path=wc_overall,
-                    variant=variant
-                )
-
-                # Per-author word clouds
-                for author in AUTHORS:
-                    wc_author = f"{args.output}/wordcloud_{author}_{variant_name}.pdf"
-                    generate_word_cloud_figure(
-                        data_path=result_path,
-                        author=author,
-                        output_path=wc_author,
-                        variant=variant
-                    )
-
-                return (variant_name, True, None)
-
-            except Exception as e:
-                import traceback
-                return (variant_name, False, traceback.format_exc())
+        # Prepare arguments for parallel execution
+        variant_args = [(v, args.output) for v in variants_to_run]
 
         # Run experiments (parallel if multiple variants)
         try:
             if len(variants_to_run) == 1:
                 # Single variant - run directly
-                variant_name, success, error = run_single_classification(variants_to_run[0])
+                variant_name, success, error = run_single_classification_variant(variant_args[0])
                 if not success:
                     safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
                     safe_print(error)
@@ -441,7 +459,7 @@ Examples:
             else:
                 # Multiple variants - run in parallel
                 with Pool(processes=min(len(variants_to_run), cpu_count())) as pool:
-                    results = pool.map(run_single_classification, variants_to_run)
+                    results = pool.map(run_single_classification_variant, variant_args)
 
                 # Check results
                 failed = []
