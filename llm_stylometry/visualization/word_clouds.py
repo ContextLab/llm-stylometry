@@ -149,39 +149,20 @@ def generate_word_cloud_figure(
         height=800,
         background_color='white',
         max_words=max_words,
+        max_font_size=100,
         relative_scaling=0.5,
         color_func=color_func,
-        prefer_horizontal=0.7
+        prefer_horizontal=0.7,
+        random_state=42
     )
 
     # Generate from frequencies
     wc.generate_from_frequencies(abs_weights)
 
-    # Extract layout and render as vectorized text using matplotlib
-    layout = wc.layout_
-
-    # Create figure
+    # Display using matplotlib (recommended approach from wordcloud documentation)
     fig, ax = plt.subplots(figsize=figsize)
-    ax.set_xlim(0, wc.width)
-    ax.set_ylim(0, wc.height)
+    ax.imshow(wc, interpolation='bilinear')
     ax.axis('off')
-
-    # Render words as matplotlib text objects (vectorized)
-    for (word, count), font_size, (x, y), orientation, wc_color in layout:
-        # Use our color function
-        text_color = color_func(word, font_size, (x, y), orientation)
-
-        ax.text(
-            x, wc.height - y,  # Flip y-axis to match image coordinates
-            word,
-            fontsize=font_size * 0.5,  # Scale down font size for better fit
-            color=text_color,
-            rotation=orientation,
-            ha='center',
-            va='center',
-            family=font
-        )
-
     plt.tight_layout(pad=0)
 
     # Save if output path provided

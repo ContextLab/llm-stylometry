@@ -77,21 +77,24 @@ def generate_classification_accuracy_figure(
         data=plot_df,
         x='author',
         y='accuracy',
+        hue='author',  # Assign x to hue for color mapping
         order=author_order,
         palette=palette,
         errorbar='ci',  # Bootstrap 95% confidence intervals
         ax=ax,
-        err_kws={'linewidth': 1.5}  # Make error bars visible
+        err_kws={'linewidth': 1.5},  # Make error bars visible
+        legend=False  # No legend needed (x-axis labels are sufficient)
     )
 
     # Styling
-    ax.set_xlabel('Author', fontsize=12)
+    ax.set_xlabel('')  # Remove x-axis label (obvious from ticks)
     ax.set_ylabel('Classification Accuracy', fontsize=12)
     ax.set_ylim(0, 1.0)
     sns.despine(ax=ax, top=True, right=True)
 
-    # Rotate x-axis labels if needed
-    ax.tick_params(axis='x', rotation=45)
+    # Increase x-tick font size for readability
+    ax.tick_params(axis='x', rotation=45, labelsize=14)
+    ax.tick_params(axis='y', labelsize=11)
 
     plt.tight_layout()
 
