@@ -126,6 +126,19 @@ if [ -z "$SERVER_ADDRESS" ] || [ -z "$USERNAME" ]; then
     exit 1
 fi
 
+# Setup SSH command with password authentication if available
+if [ -n "$PASSWORD" ]; then
+    if ! command -v sshpass &> /dev/null; then
+        print_error "sshpass is required but not installed. Please install it: brew install hudochenkov/sshpass/sshpass"
+        exit 1
+    fi
+    SSH_CMD="sshpass -p '$PASSWORD' ssh -o StrictHostKeyChecking=no"
+    RSYNC_CMD="sshpass -p '$PASSWORD' rsync -e 'ssh -o StrictHostKeyChecking=no'"
+else
+    SSH_CMD="ssh"
+    RSYNC_CMD="rsync"
+fi
+
 print_info "Connecting to: $USERNAME@$SERVER_ADDRESS"
 
 print_info "Checking model status on remote server..."
@@ -140,8 +153,8 @@ REMOTE_SYNC_FUNCTION=$SYNC_FUNCTION
 REMOTE_SYNC_POS=$SYNC_POS
 
 # Check which models are available on remote server
-ssh "$USERNAME@$SERVER_ADDRESS" \
-    "SYNC_BASELINE='$REMOTE_SYNC_BASELINE' SYNC_CONTENT='$REMOTE_SYNC_CONTENT' SYNC_FUNCTION='$REMOTE_SYNC_FUNCTION' SYNC_POS='$REMOTE_SYNC_POS' bash -s" << 'ENDSSH' > "$TEMP_FILE"
+eval $SSH_CMD "$USERNAME@$SERVER_ADDRESS" \
+    "'SYNC_BASELINE=$REMOTE_SYNC_BASELINE' 'SYNC_CONTENT=$REMOTE_SYNC_CONTENT' 'SYNC_FUNCTION=$REMOTE_SYNC_FUNCTION' 'SYNC_POS=$REMOTE_SYNC_POS' bash -s" << 'ENDSSH' > "$TEMP_FILE"
 #!/bin/bash
 
 MODELS_DIR="$HOME/llm-stylometry/models"
@@ -358,19 +371,19 @@ for variant in "${VARIANTS_TO_SYNC[@]}"; do
 
     if [ "$variant" = "baseline" ]; then
         # Sync baseline models (no variant suffix)
-        rsync -avz --progress \
-            --include="*_tokenizer=gpt2_seed=*/" \
-            --include="*_tokenizer=gpt2_seed=*/***" \
-            --exclude="*_variant=*" \
-            --exclude="*" \
-            "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
+        eval $RSYNC_CMD -avz --progress \
+            --include="'*_tokenizer=gpt2_seed=*/'" \
+            --include="'*_tokenizer=gpt2_seed=*/***'" \
+            --exclude="'*_variant=*'" \
+            --exclude="'*'" \
+            "'$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/'" "'$LOCAL_MODELS_DIR/'"
     else
         # Sync variant models
-        rsync -avz --progress \
-            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
-            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/***" \
-            --exclude="*" \
-            "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
+        eval $RSYNC_CMD -avz --progress \
+            --include="'*_variant=${variant}_tokenizer=gpt2_seed=*/'" \
+            --include="'*_variant=${variant}_tokenizer=gpt2_seed=*/***'" \
+            --exclude="'*'" \
+            "'$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/'" "'$LOCAL_MODELS_DIR/'"
     fi
 
     if [ $? -eq 0 ]; then
@@ -398,12 +411,12 @@ for variant in "${VARIANTS_TO_SYNC[@]}"; do
         RESULTS_FILE="model_results_${variant}.pkl"
     fi
 
-    RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" "[ -f \"\$HOME/llm-stylometry/data/$RESULTS_FILE\" ] && echo \"yes\" || echo \"no\"")
+    RESULTS_EXISTS=$(eval $SSH_CMD "$USERNAME@$SERVER_ADDRESS" "\"[ -f \\\"\\\$HOME/llm-stylometry/data/$RESULTS_FILE\\\" ] && echo \\\"yes\\\" || echo \\\"no\\\"\"")
 
     if [ "$RESULTS_EXISTS" = "yes" ]; then
         print_info "Downloading $RESULTS_FILE..."
-        rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/$RESULTS_FILE" \
-            "$PWD/data/$RESULTS_FILE"
+        eval $RSYNC_CMD -avz "'$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/$RESULTS_FILE'" \
+            "'$PWD/data/$RESULTS_FILE'"
         print_success "Downloaded $RESULTS_FILE"
     else
         print_warning "$RESULTS_FILE not found on remote server"
