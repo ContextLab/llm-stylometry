@@ -22,6 +22,7 @@ SYNC_BASELINE=false
 SYNC_CONTENT=false
 SYNC_FUNCTION=false
 SYNC_POS=false
+CLUSTER="tensor02"  # Default cluster
 
 # Parse command line arguments (stackable)
 while [[ $# -gt 0 ]]; do
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
             SYNC_POS=true
             shift
             ;;
+        --cluster)
+            CLUSTER="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -58,15 +63,17 @@ while [[ $# -gt 0 ]]; do
             echo "  -fo, --function-only    Sync function-only variant models"
             echo "  -pos, --part-of-speech  Sync part-of-speech variant models"
             echo "  -a, --all               Sync all models (baseline + all variants)"
+            echo "  --cluster CLUSTER       Specify cluster (tensor01 or tensor02, default: tensor02)"
             echo "  -h, --help              Show this help message"
             echo ""
             echo "Flags are stackable. Examples:"
-            echo "  $0                      # Sync baseline only (default)"
+            echo "  $0                      # Sync baseline only (default, tensor02)"
             echo "  $0 -b -co               # Sync baseline and content-only"
             echo "  $0 -fo -pos             # Sync function-only and POS"
             echo "  $0 -a                   # Sync everything"
+            echo "  $0 -a --cluster tensor01  # Sync everything from tensor01"
             echo ""
-            echo "Default: Sync baseline models only"
+            echo "Default: Sync baseline models only from tensor02"
             exit 0
             ;;
         *)
@@ -86,6 +93,8 @@ echo "=================================================="
 echo "       LLM Stylometry Model Sync"
 echo "=================================================="
 echo
+print_info "Cluster: $CLUSTER"
+echo
 echo "Sync configuration:"
 [ "$SYNC_BASELINE" = true ] && echo "  ✓ Baseline models"
 [ "$SYNC_CONTENT" = true ] && echo "  ✓ Content-only variant"
@@ -93,18 +102,31 @@ echo "Sync configuration:"
 [ "$SYNC_POS" = true ] && echo "  ✓ Part-of-speech variant"
 echo
 
-# Get server details
-read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
-if [ -z "$SERVER_ADDRESS" ]; then
-    print_error "Server address cannot be empty"
+# Load credentials from config file
+CRED_FILE=".ssh/credentials_${CLUSTER}.json"
+
+if [ ! -f "$CRED_FILE" ]; then
+    print_error "Credentials file not found: $CRED_FILE"
+    print_info "Please create credentials file with server, username, and password"
     exit 1
 fi
 
-read -p "Enter username for $SERVER_ADDRESS: " USERNAME
-if [ -z "$USERNAME" ]; then
-    print_error "Username cannot be empty"
+# Extract credentials using Python
+if ! command -v python3 &> /dev/null; then
+    print_error "python3 is required to parse credentials file"
     exit 1
 fi
+
+SERVER_ADDRESS=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['server'])")
+USERNAME=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['username'])")
+PASSWORD=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['password'])")
+
+if [ -z "$SERVER_ADDRESS" ] || [ -z "$USERNAME" ]; then
+    print_error "Failed to load credentials from $CRED_FILE"
+    exit 1
+fi
+
+print_info "Connecting to: $USERNAME@$SERVER_ADDRESS"
 
 print_info "Checking model status on remote server..."
 
