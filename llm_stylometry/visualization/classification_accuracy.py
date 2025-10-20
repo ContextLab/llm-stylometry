@@ -123,7 +123,7 @@ def generate_classification_accuracy_figure(
 
     # Styling
     ax.set_xlabel('')  # Remove x-axis label
-    ax.set_ylabel('Classification Accuracy', fontsize=12)
+    ax.set_ylabel('Classification accuracy', fontsize=14)  # Sentence case, larger font
     ax.set_ylim(0, 1.0)
     sns.despine(ax=ax, top=True, right=True)
 
