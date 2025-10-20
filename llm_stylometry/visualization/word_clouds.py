@@ -133,6 +133,19 @@ def generate_word_cloud_figure(
     # Use absolute values for word cloud (magnitude matters)
     abs_weights = {word: abs(weight) for word, weight in filtered_weights.items()}
 
+    # Adjust parameters based on vocabulary size (same canvas size for all)
+    n_words = len(abs_weights)
+    if n_words < 20:
+        # Small vocabulary (e.g., POS tags) - use larger fonts and higher density
+        max_font_size = 250
+        min_font_size = 80
+        relative_scaling = 0.8  # Higher value = more size variation = fills space better
+    else:
+        # Normal vocabulary - use standard settings
+        max_font_size = 150
+        min_font_size = 10
+        relative_scaling = 0.3
+
     # Define color based on author
     if author is None:
         color = 'black'
@@ -150,15 +163,15 @@ def generate_word_cloud_figure(
             # Convert RGB tuple to hex
             return mcolors.rgb2hex(color)
 
-    # Initialize WordCloud with denser packing
+    # Initialize WordCloud (same canvas size for all figures)
     wc = WordCloud(
         width=1600,
         height=1000,
         background_color='white',
-        max_words=max_words,
-        max_font_size=150,
-        min_font_size=10,
-        relative_scaling=0.3,  # Lower value = more uniform sizes = denser packing
+        max_words=min(max_words, n_words),  # Don't request more words than available
+        max_font_size=max_font_size,
+        min_font_size=min_font_size,
+        relative_scaling=relative_scaling,
         color_func=color_func,
         prefer_horizontal=0.6,  # More rotation variety
         random_state=42,
