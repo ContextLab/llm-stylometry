@@ -15,3 +15,5 @@ cleantext
 plotly
 scikit-learn
 torch>=2.0.0
+wordcloud
+nltk
