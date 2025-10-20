@@ -307,6 +307,13 @@ Examples:
         help='Run text classification experiment instead of GPT-2 training'
     )
 
+    parser.add_argument(
+        '--classify-variant',
+        action='append',
+        dest='classify_variants',
+        help='Variant(s) for classification (can specify multiple for parallel execution)'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -347,58 +354,111 @@ Examples:
 
         from llm_stylometry.classification import run_classification_experiment
         from llm_stylometry.core.constants import AUTHORS
+        from multiprocessing import Pool, cpu_count
 
-        variant_name = f"{args.variant}" if args.variant else "baseline"
-        safe_print(f"\nVariant: {variant_name}")
-        safe_print("Max CV splits: 1,000")
+        # Determine which variants to run
+        variants_to_run = []
+        if args.classify_variants:
+            # Multiple variants specified
+            for v in args.classify_variants:
+                if v == 'baseline':
+                    variants_to_run.append(None)
+                else:
+                    variants_to_run.append(v)
+        elif args.variant:
+            # Single variant from --variant flag
+            variants_to_run = [args.variant]
+        else:
+            # Default: baseline only
+            variants_to_run = [None]
 
-        try:
-            result_path = run_classification_experiment(
-                variant=args.variant,
-                max_splits=1000,
-                seed=42
-            )
+        safe_print(f"\nVariants to run: {[v if v else 'baseline' for v in variants_to_run]}")
+        safe_print(f"Max CV splits per variant: 1,000")
 
-            # Generate classification figures
-            safe_print("\nGenerating classification figures...")
+        if len(variants_to_run) > 1:
+            safe_print(f"Running {len(variants_to_run)} variants in parallel on {cpu_count()} CPUs")
 
-            from llm_stylometry.visualization import (
-                generate_classification_accuracy_figure,
-                generate_word_cloud_figure
-            )
+        def run_single_classification(variant):
+            """Run classification for a single variant."""
+            variant_name = variant if variant else "baseline"
+            try:
+                result_path = run_classification_experiment(
+                    variant=variant,
+                    max_splits=1000,
+                    seed=42
+                )
 
-            # Accuracy bar chart
-            acc_output = f"{args.output}/classification_accuracy_{variant_name}.pdf"
-            generate_classification_accuracy_figure(
-                data_path=result_path,
-                output_path=acc_output,
-                variant=args.variant
-            )
-            safe_print(f"✓ Generated: {acc_output}")
+                # Generate classification figures
+                from llm_stylometry.visualization import (
+                    generate_classification_accuracy_figure,
+                    generate_word_cloud_figure
+                )
 
-            # Overall word cloud
-            wc_overall = f"{args.output}/wordcloud_overall_{variant_name}.pdf"
-            generate_word_cloud_figure(
-                data_path=result_path,
-                author=None,
-                output_path=wc_overall,
-                variant=args.variant
-            )
-            safe_print(f"✓ Generated: {wc_overall}")
+                # Accuracy bar chart
+                acc_output = f"{args.output}/classification_accuracy_{variant_name}.pdf"
+                generate_classification_accuracy_figure(
+                    data_path=result_path,
+                    output_path=acc_output,
+                    variant=variant
+                )
 
-            # Per-author word clouds
-            for author in AUTHORS:
-                wc_author = f"{args.output}/wordcloud_{author}_{variant_name}.pdf"
+                # Overall word cloud
+                wc_overall = f"{args.output}/wordcloud_overall_{variant_name}.pdf"
                 generate_word_cloud_figure(
                     data_path=result_path,
-                    author=author,
-                    output_path=wc_author,
-                    variant=args.variant
+                    author=None,
+                    output_path=wc_overall,
+                    variant=variant
                 )
-                safe_print(f"✓ Generated: {wc_author}")
+
+                # Per-author word clouds
+                for author in AUTHORS:
+                    wc_author = f"{args.output}/wordcloud_{author}_{variant_name}.pdf"
+                    generate_word_cloud_figure(
+                        data_path=result_path,
+                        author=author,
+                        output_path=wc_author,
+                        variant=variant
+                    )
+
+                return (variant_name, True, None)
+
+            except Exception as e:
+                import traceback
+                return (variant_name, False, traceback.format_exc())
+
+        # Run experiments (parallel if multiple variants)
+        try:
+            if len(variants_to_run) == 1:
+                # Single variant - run directly
+                variant_name, success, error = run_single_classification(variants_to_run[0])
+                if not success:
+                    safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
+                    safe_print(error)
+                    return 1
+                else:
+                    safe_print(f"\n✓ Classification complete for {variant_name}")
+            else:
+                # Multiple variants - run in parallel
+                with Pool(processes=min(len(variants_to_run), cpu_count())) as pool:
+                    results = pool.map(run_single_classification, variants_to_run)
+
+                # Check results
+                failed = []
+                for variant_name, success, error in results:
+                    if not success:
+                        failed.append(variant_name)
+                        safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
+                        safe_print(error)
+                    else:
+                        safe_print(f"\n✓ Classification complete for {variant_name}")
+
+                if failed:
+                    safe_print(f"\n✗ {len(failed)}/{len(variants_to_run)} classifications failed")
+                    return 1
 
             safe_print("\n" + "=" * 60)
-            safe_print("✓ Classification experiment complete!")
+            safe_print("✓ All classification experiments complete!")
             safe_print("=" * 60)
             return 0
 

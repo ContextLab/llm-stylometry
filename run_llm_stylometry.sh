@@ -284,7 +284,7 @@ setup_environment() {
     # Install other dependencies
     pip install --upgrade pip
     pip install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
-    pip install cleantext plotly scikit-learn
+    pip install cleantext plotly scikit-learn wordcloud nltk
 
     # Install the package
     pip install -e .
@@ -307,6 +307,7 @@ CLEAN=false
 CLEAN_CACHE=false
 NO_CONFIRM=false
 VARIANT=""
+VARIANTS=()  # Array to hold multiple variants for parallel classification
 NO_FAIRNESS=false
 
 while [[ $# -gt 0 ]]; do
@@ -369,14 +370,21 @@ while [[ $# -gt 0 ]]; do
             ;;
         -co|--content-only)
             VARIANT="content"
+            VARIANTS+=("content")
             shift
             ;;
         -fo|--function-only)
             VARIANT="function"
+            VARIANTS+=("function")
             shift
             ;;
         -pos|--part-of-speech)
             VARIANT="pos"
+            VARIANTS+=("pos")
+            shift
+            ;;
+        --baseline)
+            VARIANTS+=("baseline")
             shift
             ;;
         --no-fairness)
@@ -492,6 +500,13 @@ fi
 
 if [ -n "$VARIANT" ]; then
     PYTHON_CMD="$PYTHON_CMD --variant $VARIANT"
+fi
+
+# For classification with multiple variants, pass all variants
+if [ "$CLASSIFY" = true ] && [ ${#VARIANTS[@]} -gt 0 ]; then
+    for v in "${VARIANTS[@]}"; do
+        PYTHON_CMD="$PYTHON_CMD --classify-variant $v"
+    done
 fi
 
 if [ "$NO_FAIRNESS" = true ]; then

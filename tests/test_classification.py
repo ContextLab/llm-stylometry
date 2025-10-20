@@ -97,26 +97,24 @@ class TestVectorizeBooks:
             assert isinstance(book_id, str)
             assert isinstance(vector, np.ndarray)
             assert vector.shape == (len(vectorizer.vocabulary_),)
-            assert vector.sum() > 0  # Non-zero word counts
+            # Vectors should be normalized to frequencies (sum to 1.0)
+            assert np.isclose(vector.sum(), 1.0, atol=1e-6)
 
-    def test_word_count_accuracy(self):
-        """Test that vector sums match approximate word counts."""
+    def test_frequency_normalization(self):
+        """Test that vectors are normalized to frequencies (sum to 1.0)."""
         books = load_books_by_author(data_dir=str(FIXTURE_DIR))
         vectorizer = create_count_vectorizer(books)
         vectorized = vectorize_books(books, vectorizer)
 
-        # Check first book
-        author, book_id, vector = vectorized[0]
-        text = [t for a, book_list in books.items()
-                for bid, t in book_list if a == author and bid == book_id][0]
+        # Check all books
+        for author, book_id, vector in vectorized:
+            # Each vector should sum to 1.0 (frequencies, not counts)
+            assert np.isclose(vector.sum(), 1.0, atol=1e-6), \
+                f"Vector for {author}/{book_id} sums to {vector.sum()}, expected 1.0"
 
-        # Vector sum should be close to word count
-        total_words = vector.sum()
-        approx_word_count = len(text.split())
-
-        # Allow some difference due to tokenization
-        assert total_words > 0
-        assert 0.5 < (total_words / approx_word_count) < 1.5
+            # All values should be non-negative frequencies
+            assert (vector >= 0).all()
+            assert (vector <= 1).all()
 
 
 class TestOutputCodeClassifier:

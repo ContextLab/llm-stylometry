@@ -25,12 +25,12 @@ class OutputCodeClassifier:
         >>> weights = clf.get_feature_weights(feature_names)
     """
 
-    def __init__(self, max_iter: int = 1000, random_state: int = 42):
+    def __init__(self, max_iter: int = 5000, random_state: int = 42):
         """
         Initialize OutputCodeClassifier.
 
         Args:
-            max_iter: Maximum iterations for logistic regression
+            max_iter: Maximum iterations for logistic regression (default: 5000 for high-dimensional data)
             random_state: Random seed for reproducibility
         """
         # Base estimator: Logistic Regression

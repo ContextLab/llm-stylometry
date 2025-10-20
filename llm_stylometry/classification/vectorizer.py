@@ -101,14 +101,19 @@ def vectorize_books(
     vectorizer: CountVectorizer
 ) -> List[Tuple[str, str, np.ndarray]]:
     """
-    Transform books into feature vectors using fitted vectorizer.
+    Transform books into normalized feature vectors (frequencies, not counts).
+
+    Each book's vector is normalized by dividing by the sum of counts to produce
+    word frequencies. This prevents classifiers from using book length as a
+    discriminative feature.
 
     Args:
         books_dict: Dictionary mapping author → [(book_id, text), ...]
         vectorizer: Fitted CountVectorizer
 
     Returns:
-        List of (author, book_id, vector) tuples
+        List of (author, book_id, normalized_vector) tuples where each vector
+        contains word frequencies that sum to 1.0
 
     Examples:
         >>> books = load_books_by_author()
@@ -116,13 +121,21 @@ def vectorize_books(
         >>> vectors = vectorize_books(books, vectorizer)
         >>> author, book_id, vec = vectors[0]
         >>> print(vec.shape)  # (vocab_size,)
+        >>> print(vec.sum())  # Should be 1.0
     """
     vectorized_books = []
 
     for author, books in books_dict.items():
         for book_id, text in books:
-            # Transform text to feature vector
+            # Transform text to feature vector (counts)
             vector = vectorizer.transform([text]).toarray()[0]
+
+            # Normalize to frequencies (divide by sum)
+            # This prevents classifiers from using book length
+            total_count = vector.sum()
+            if total_count > 0:
+                vector = vector / total_count
+
             vectorized_books.append((author, book_id, vector))
 
     return vectorized_books
