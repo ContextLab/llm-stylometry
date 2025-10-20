@@ -136,10 +136,10 @@ def generate_word_cloud_figure(
     # Adjust parameters based on vocabulary size (same canvas size for all)
     n_words = len(abs_weights)
     if n_words < 20:
-        # Small vocabulary (e.g., POS tags) - use larger fonts and higher density
-        max_font_size = 250
-        min_font_size = 80
-        relative_scaling = 0.8  # Higher value = more size variation = fills space better
+        # Small vocabulary (e.g., POS tags) - use much larger fonts and higher density
+        max_font_size = 400
+        min_font_size = 120
+        relative_scaling = 1.0  # Maximum size variation = fills space better
     else:
         # Normal vocabulary - use standard settings
         max_font_size = 150
