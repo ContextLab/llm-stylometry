@@ -301,6 +301,12 @@ Examples:
         help='Disable fairness-based loss thresholding for variant figures (default: fairness enabled for variants)'
     )
 
+    parser.add_argument(
+        '--classify',
+        action='store_true',
+        help='Run text classification experiment instead of GPT-2 training'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -331,6 +337,75 @@ Examples:
     # Train models if requested
     if args.train:
         if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume, variant=args.variant):
+            return 1
+
+    # Run classification experiment if requested
+    if args.classify:
+        safe_print("\n" + "=" * 60)
+        safe_print("Running Text Classification Experiment")
+        safe_print("=" * 60)
+
+        from llm_stylometry.classification import run_classification_experiment
+        from llm_stylometry.core.constants import AUTHORS
+
+        variant_name = f"{args.variant}" if args.variant else "baseline"
+        safe_print(f"\nVariant: {variant_name}")
+        safe_print("Max CV splits: 10,000")
+
+        try:
+            result_path = run_classification_experiment(
+                variant=args.variant,
+                max_splits=10000,
+                seed=42
+            )
+
+            # Generate classification figures
+            safe_print("\nGenerating classification figures...")
+
+            from llm_stylometry.visualization import (
+                generate_classification_accuracy_figure,
+                generate_word_cloud_figure
+            )
+
+            # Accuracy bar chart
+            acc_output = f"{args.output}/classification_accuracy_{variant_name}.pdf"
+            generate_classification_accuracy_figure(
+                data_path=result_path,
+                output_path=acc_output,
+                variant=args.variant
+            )
+            safe_print(f"✓ Generated: {acc_output}")
+
+            # Overall word cloud
+            wc_overall = f"{args.output}/wordcloud_overall_{variant_name}.pdf"
+            generate_word_cloud_figure(
+                data_path=result_path,
+                author=None,
+                output_path=wc_overall,
+                variant=args.variant
+            )
+            safe_print(f"✓ Generated: {wc_overall}")
+
+            # Per-author word clouds
+            for author in AUTHORS:
+                wc_author = f"{args.output}/wordcloud_{author}_{variant_name}.pdf"
+                generate_word_cloud_figure(
+                    data_path=result_path,
+                    author=author,
+                    output_path=wc_author,
+                    variant=args.variant
+                )
+                safe_print(f"✓ Generated: {wc_author}")
+
+            safe_print("\n" + "=" * 60)
+            safe_print("✓ Classification experiment complete!")
+            safe_print("=" * 60)
+            return 0
+
+        except Exception as e:
+            safe_print(f"\n✗ ERROR: Classification experiment failed: {e}")
+            import traceback
+            traceback.print_exc()
             return 1
 
     # Check for data file
