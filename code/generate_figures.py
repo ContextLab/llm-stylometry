@@ -229,12 +229,12 @@ def run_single_classification_variant(args_tuple):
     Run classification for a single variant (module-level for multiprocessing).
 
     Args:
-        args_tuple: (variant, output_dir) tuple
+        args_tuple: (variant, output_dir, skip_experiment) tuple
 
     Returns:
         (variant_name, success, error_message) tuple
     """
-    variant, output_dir = args_tuple
+    variant, output_dir, skip_experiment = args_tuple
     variant_name = variant if variant else "baseline"
 
     try:
@@ -244,13 +244,18 @@ def run_single_classification_variant(args_tuple):
             generate_classification_accuracy_figure,
             generate_word_cloud_figure
         )
+        from pathlib import Path
 
-        # Run experiment
-        result_path = run_classification_experiment(
-            variant=variant,
-            max_splits=1000,
-            seed=42
-        )
+        # Determine result path
+        result_path = f"data/classifier_results/{variant_name}.pkl"
+
+        # Run experiment only if results don't exist or skip_experiment is False
+        if not skip_experiment or not Path(result_path).exists():
+            result_path = run_classification_experiment(
+                variant=variant,
+                max_splits=1000,
+                seed=42
+            )
 
         # Accuracy bar chart
         acc_output = f"{output_dir}/classification_accuracy_{variant_name}.pdf"
@@ -442,8 +447,12 @@ Examples:
         if len(variants_to_run) > 1:
             safe_print(f"Running {len(variants_to_run)} variants in parallel on {cpu_count()} CPUs")
 
+        # Determine if we should skip experiment (load existing results)
+        # Skip only if --train flag is NOT set
+        skip_experiment = not args.train
+
         # Prepare arguments for parallel execution
-        variant_args = [(v, args.output) for v in variants_to_run]
+        variant_args = [(v, args.output, skip_experiment) for v in variants_to_run]
 
         # Run experiments (parallel if multiple variants)
         try:

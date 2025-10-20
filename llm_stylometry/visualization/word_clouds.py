@@ -123,8 +123,15 @@ def generate_word_cloud_figure(
     # Extract averaged weights
     weights = extract_average_weights(results_df, feature_names, author)
 
+    # Filter out placeholder tokens (CONTENT, FUNC) - no angle brackets (stripped during preprocessing)
+    # These are not real words and shouldn't appear in word clouds
+    filtered_weights = {
+        word: weight for word, weight in weights.items()
+        if word not in ['CONTENT', 'FUNC']
+    }
+
     # Use absolute values for word cloud (magnitude matters)
-    abs_weights = {word: abs(weight) for word, weight in weights.items()}
+    abs_weights = {word: abs(weight) for word, weight in filtered_weights.items()}
 
     # Define color based on author
     if author is None:
@@ -143,17 +150,19 @@ def generate_word_cloud_figure(
             # Convert RGB tuple to hex
             return mcolors.rgb2hex(color)
 
-    # Initialize WordCloud
+    # Initialize WordCloud with denser packing
     wc = WordCloud(
-        width=1200,
-        height=800,
+        width=1600,
+        height=1000,
         background_color='white',
         max_words=max_words,
-        max_font_size=100,
-        relative_scaling=0.5,
+        max_font_size=150,
+        min_font_size=10,
+        relative_scaling=0.3,  # Lower value = more uniform sizes = denser packing
         color_func=color_func,
-        prefer_horizontal=0.7,
-        random_state=42
+        prefer_horizontal=0.6,  # More rotation variety
+        random_state=42,
+        collocations=False  # Don't try to find bigrams
     )
 
     # Generate from frequencies
