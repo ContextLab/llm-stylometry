@@ -134,7 +134,7 @@ def run_cross_validation(
         y_test = np.array([authors[i] for i in test_idx])
 
         # Train classifier
-        clf = OutputCodeClassifier(random_state=random_state)
+        clf = OutputCodeClassifier()
         clf.fit(X_train, y_train)
 
         # Predict on test set

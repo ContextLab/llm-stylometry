@@ -98,22 +98,24 @@ def create_count_vectorizer(books_dict: Dict[str, List[Tuple[str, str]]]) -> Cou
 
 def vectorize_books(
     books_dict: Dict[str, List[Tuple[str, str]]],
-    vectorizer: CountVectorizer
+    vectorizer: CountVectorizer,
+    scale_factor: int = 100000
 ) -> List[Tuple[str, str, np.ndarray]]:
     """
-    Transform books into normalized feature vectors (frequencies, not counts).
+    Transform books into scaled frequency vectors.
 
-    Each book's vector is normalized by dividing by the sum of counts to produce
-    word frequencies. This prevents classifiers from using book length as a
-    discriminative feature.
+    Each book's counts are normalized to frequencies (divide by sum), then
+    scaled up by scale_factor and rounded to integers. This removes book length
+    as a feature while giving Naive Bayes the integer count data it expects.
 
     Args:
         books_dict: Dictionary mapping author → [(book_id, text), ...]
         vectorizer: Fitted CountVectorizer
+        scale_factor: Scaling factor for frequencies (default: 100000)
 
     Returns:
-        List of (author, book_id, normalized_vector) tuples where each vector
-        contains word frequencies that sum to 1.0
+        List of (author, book_id, scaled_vector) tuples where each vector
+        contains scaled integer counts that all sum to approximately scale_factor
 
     Examples:
         >>> books = load_books_by_author()
@@ -121,21 +123,28 @@ def vectorize_books(
         >>> vectors = vectorize_books(books, vectorizer)
         >>> author, book_id, vec = vectors[0]
         >>> print(vec.shape)  # (vocab_size,)
-        >>> print(vec.sum())  # Should be 1.0
+        >>> print(vec.sum())  # Should be ~100000
+        >>> print(vec.dtype)  # Should be int
     """
     vectorized_books = []
 
     for author, books in books_dict.items():
         for book_id, text in books:
             # Transform text to feature vector (counts)
-            vector = vectorizer.transform([text]).toarray()[0]
+            vector = vectorizer.transform([text]).toarray()[0].astype(float)
 
             # Normalize to frequencies (divide by sum)
             # This prevents classifiers from using book length
             total_count = vector.sum()
             if total_count > 0:
-                vector = vector / total_count
+                frequencies = vector / total_count
 
-            vectorized_books.append((author, book_id, vector))
+                # Scale up and convert to integers for Naive Bayes
+                # All books will have same total count (scale_factor)
+                scaled_vector = np.round(frequencies * scale_factor).astype(int)
+            else:
+                scaled_vector = vector.astype(int)
+
+            vectorized_books.append((author, book_id, scaled_vector))
 
     return vectorized_books
