@@ -25,6 +25,9 @@ tests/data/*.csv
 tests/data/*.pkl
 !tests/data/test_model_results.pkl
 
+# Classification results (large pkl files)
+data/classifier_results/*.pkl
+
 # Temporary test files
 .test_credentials
 
