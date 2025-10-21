@@ -21,6 +21,10 @@
 \newcommand{\confusion}{{7}}
 \newcommand{\mds}{{8}}
 
+\newcommand{\authortableContent}{{1}}
+\newcommand{\authortableFunction}{{2}}
+\newcommand{\authortablePOS}{{3}}
+
 \doublespacing
 
 \title{A Stylometric Application of Large Language Models}
@@ -37,14 +41,14 @@ Hanover, NH 03755, USA \\
 \begin{abstract}
 
 We show that large language models (LLMs) can be used to distinguish the
-writings of different authors. Specifically, an individual model, trained on
-the works of one author, will predict held-out text from that author more
-accurately than held-out text from other authors. We suggest that, in this way,
-a model trained on one author's works embodies the unique writing style of that
-author. We first demonstrate our approach on books written by eight different
-(known) authors. We also use this approach to confirm R. P. Thompson's
-authorship of the well-studied 15\textsuperscript{th} book of the \textit{Oz}
-series, originally attributed to F. L. Baum.
+writings of different authors. Specifically, an individual GPT-2 model, trained
+from scratch on the works of one author, will predict held-out text from that
+author more accurately than held-out text from other authors. We suggest that,
+in this way, a model trained on one author's works embodies the unique writing
+style of that author. We first demonstrate our approach on books written by
+eight different (known) authors. We also use this approach to confirm R. P.
+Thompson's authorship of the well-studied 15\textsuperscript{th} book of the
+\textit{Oz} series, originally attributed to F. L. Baum.
 
 \end{abstract}
 
@@ -62,13 +66,13 @@ information-theoretic methods in stylometry~\citep{JuolBaay05,ZhaoEtal06}.
 Recent work has demonstrated the effectiveness of using perplexity and
 cross-entropy loss from fine-tuned language models for authorship
 attribution~\citep{HuanEtal25}, achieving state-of-the-art performance on
-standard benchmarks. Unlike traditional stylometric approaches that rely on
-hand-crafted features such as function word frequencies~\citep{MostWall63} or
-syntactic patterns~\citep{Holm98}, lage language models can capture complex,
-hierarchical patterns in authorial style~\citep{FabiEtal20}. This shift from
-explicit feature engineering to learned representations parallels broader
-trends in computational literary analysis~\citep{More00,UndeEtal19} and digital
-humanities~\citep{HughEtal12}.
+standard benchmarks. Unlike traditional stylometric approaches that rely on the
+direct articulation of particular features such as function word
+frequencies~\citep{MostWall63} or syntactic patterns~\citep{Holm98}, lage
+language models can capture complex, hierarchical patterns in authorial
+style~\citep{FabiEtal20}. This shift from explicit feature engineering to
+learned representations parallels broader trends in computational literary
+analysis~\citep{More00,UndeEtal19} and digital humanities~\citep{HughEtal12}.
 
 In this paper we show, using a small set of authors and their works, that large
 language models capture author-specific writing patterns. Our method differs
@@ -79,12 +83,12 @@ stylometric distance derived from the cross-entropy loss assigned to held-out
 texts by models trained on known works of different authors. We believe this
 approach could be of use in considering questions of authorial influence and
 stylistic evolution~\citep{HughEtal12}. Lastly, this further suggests a
-literary authentication tool~\citep[a common use of stylometric techniques;
+literary attribution tool~\citep[a common use of stylometric techniques;
 ][]{MostWall63,MostWall84,NiloBino03,Juol08} that would assign an unknown or
 contested work to the model (and author) under which predictive comparison
 generates the smallest loss. We illustrate this on the well-known attribution
 problem of the 15\textsuperscript{th} book in the \emph{Oz} series, confirming
-what is now the accepted attribution. 
+what is now the accepted attribution.
 
 \section{Methods}
 
@@ -254,9 +258,9 @@ for held-out text from the \textit{same} author versus for held-out text from
 \textit{other} authors. Figure~\ref{fig:t-stats}A displays the $t$-values from
 $t$-tests comparing these same versus other loss distributions for each of the
 first 500 training epochs. For all authors except Twain, the $t$-tests yielded
-$p$-values below $0.001$ after just one epoch, indicating that the models
+$p$-values below $0.001$ after just one or two epochs, indicating that the models
 rapidly acquire author-specific stylometric patterns. For Twain, this threshold
-is crossed at epoch 47. Figure~\ref{fig:t-stats}B shows the average $t$-values
+is crossed at epoch 77. Figure~\ref{fig:t-stats}B shows the average $t$-values
 across all eight authors as a function of the number of training epochs (final
 epoch: $t(9) = 13.196, p = 3.41 \times 10^{-7}$). This latter plot provides an
 estimate of the performance we might expect to see in the general case (e.g.,
@@ -281,9 +285,14 @@ Wells       & 35.73 & 23.68 & $4.15 \times 10^{-22}$ \\
 \hline
 \end{tabular}
 
-\caption{Each row displays the results of a $t$-test comparing the average loss
-values assigned by each author's model (after training is complete) to the
-author's held-out text and to the other authors' randomly sampled texts.}
+\caption{\textbf{Loss differences between same-author and other-author texts.}
+Each row displays the results of a $t$-test comparing the average loss values
+assigned by each author's model (after training is complete) to the author's
+held-out text and to the other authors' randomly sampled texts. See
+Supplementary Materials for analogous tables using models trained on only
+content words (Supp. Table~\authortableContent), only function words (Supp.
+Table~\authortableFunction), and only parts of speech (Supp.
+Table~\authortablePOS).}
 
 \label{tab:t-tests}
 \end{table}
@@ -365,18 +374,88 @@ differences within the same author's writings.
   \includegraphics[width=0.8\textwidth]{figs/source/oz_losses.pdf}
 
 
-  \caption{\textbf{Cross-entropy loss across models and \textit{Oz} authors.} The
-    top sub-panels replicate the Baum (blue) and Thompson (orange)
-    results from Figure~\ref{fig:all-losses}. The bottom sub-panels show the cross-entropy
-    loss assigned to a held-out text whose authorship is contested
-    (lower left), to a held-out non-\textit{Oz} text by Baum (lower
-    center), and to a held-out non-\textit{Oz} text by Thompson (lower
-    right). Error ribbons denote bootstrap-estimated 95\% confidence
-    intervals over 10 random seeds. }
+\caption{\textbf{Cross-entropy loss across models and \textit{Oz} authors.} The
+top sub-panels replicate the Baum (blue) and Thompson (orange) results from
+Figure~\ref{fig:all-losses}---i.e., that a given Thompson is well-distinguished
+from Baum and vice-versa (the two rightmost top sub-panels; error ribbons
+denote bootstrap-estimated 95\% confidence intervals over 10 random seeds). The
+bottom sub-panels show the cross-entropy loss assigned to a held-out text whose
+authorship is contested (lower left), to a held-out non-\textit{Oz} text by
+Baum (lower center), and to a held-out non-\textit{Oz} text by Thompson (lower
+right). I.e., the contested book shows lower loss for Thompson-trained models;
+a non-Oz Baum book shows lower loss for Baum-trained models; and a non-Oz
+Thompson book shows lower loss for Thompson-trained models.}
+
 \label{fig:oz-losses}
 \end{figure*}
 
+\subsection{Ablation studies: content words, function words, and parts of speech}
 
+The above analyses show that LLMs trained on one author's works can effectively
+capture the distinctive statistical patterns of that author's writing style. We
+carried out a series of ablation studies to investigate the contributions of
+different aspects of writing style. Specifically, we constructed three modified
+corpora for each author: (1) content-word-only corpora, in which all function
+words were replaced with a special token; (2) function-word-only corpora, in
+which all content words were replaced with a special token; and (3)
+part-of-speech-only corpora, in which each word was replaced with its
+corresponding part-of-speech tag (see \textit{Investigating the contributions
+of content words, function words, and parts of speech}). We then re-trained our
+models on each of these modified corpora and repeated the predictive
+comparison analyses (Supp. Figs.~\crossentropyContent--\ttestsPOS).
+
+The models trained on the content-word-only corpora where intended to capture
+stylistic patterns related to vocabulary choice and thematic content. The
+models trained on the function-word-only corpora were intended to capture
+syntactic and grammatical patterns that transcended story-specific content.
+Finally, the models trained on the part-of-speech-only corpora were intended to
+capture higher-level syntactic patterns while abstracting away from specific
+word choices.
+
+Models trained on a single author's texts from each of these modified corpora
+all converged, achieving training losses below 3.0 well within 500 training
+epochs (Supp. Figs.~\crossentropyContent, \crossentropyFunction, and
+\crossentropyPOS). This indicates that all of these modified corpora contain
+sufficient statistical regularities for GPT-2 models to learn to reliably
+achieve next-token predictions.
+
+We found that models trained on content-word-only corpora reliably learned
+author-specific patterns for 6 of the 8 authors (Supp.
+Figs.~\crossentropyContent~and~\ttestsContent, Supp.
+Table~\authortableContent). Overall, by the final training epoch, the average
+$t$-values across all models and held-out texts were reliably greater than zero
+($t(9) = 8.438, p = 1.44 \times 10^{-5}$). However, models trained only on
+content words were significantly less effective at distinguishing authors than
+models trained on the intact texts ($t(11.77) = 3.21, p = 7.68 \times
+10^{-3}$).
+
+Models trained on function-word-only corpora reliably learned author-specific
+patterns for 5 of the 8 authors (Supp.
+Figs.~\crossentropyFunction~and~\ttestsFunction, Supp.
+Table~\authortableFunction). Overall, by the final training epoch, the average
+$t$-values across all models and held-out texts were reliably greater than zero
+($t(9) = 4.428, p = 1.65 \times 10^{-3}$). These models were also significantly
+less effective at distinguishing authors than models trained on the intact
+texts ($t(8.36) = 4.82, p = 1.15 \times 10^{-3}$), but not significantly
+different from models trained on content-word-only corpora ($t(10.29) = 1.81, p
+= 0.100$).
+
+Models trained on part-of-speech-only corpora reliably learned author-specific
+patterns for just 3 of the 8 authors (Supp.
+Figs.~\crossentropyPOS~and~\ttestsPOS, Supp. Table~\authortablePOS). Overall,
+by the final training epoch, the average $t$-values across all models and
+held-out texts were not reliably greater than zero ($t(9) = 1.616, p 0 0.141$).
+These models were also significantly less effective at distinguishing authors
+than models trained on the intact texts ($t(7.36) = 5.72, p = 6.01 \times
+10^{-4}$), models trained on content-word-only corpora ($t(7.90) = 3.10, p =
+1.49 \times 10^{-2}$), and models trained on function-word-only corpora
+($t(10.41) = 2.11, p = 6.04 \times 10^{-2}$).
+
+Taken together, these ablation results suggest that both content words and
+function words contribute to the author-unique stylometric signatures captured
+by our models. In contrast, grammatical structure alone, as reflected in
+part-of-speech sequences and captured by our methodology, appears to be
+more similar across authors.
 
 \section{Discussion}
 
@@ -394,13 +473,21 @@ dimensions. Models trained and tested on the same author consistently yielded
 lower cross-entropy losses than models trained on different authors, achieving
 perfect classification accuracy across all eight authors examined. This
 separation emerged rapidly during training: for seven of eight authors,
-statistically significant discrimination was achieved after just one training
-epoch. The resulting stylometric distances proved meaningful, clustering
+statistically significant discrimination was achieved after just two training
+epochs. The resulting stylometric distances proved meaningful, clustering
 authors with known stylistic similarities (e.g., Baum and Thompson) while
 maintaining clear separation between all author pairs. Finally, our method
 successfully resolved the well-studied attribution problem of the
 15\textsuperscript{th} \emph{Oz} book, confirming Thompson's authorship in
 agreement with traditional stylometric analyses~\citep{NiloBino03}.
+
+We also conducted ablation studies to investigate the contributions of different
+aspects of writing style. Models trained on content-word-only and function-word-only
+corpora both captured author-specific patterns, though with reduced effectiveness
+compared to models trained on intact texts. In contrast, models trained solely on
+part-of-speech sequences struggled to distinguish authors, suggesting that
+grammatical structure alone is less distinctive. These findings highlight the
+importance of both lexical choice and syntactic patterns in shaping authorial style.
 
 \subsection{Relationship to prior work}
 
@@ -534,7 +621,17 @@ technique for machine reading approaches to text-based
 disciplines~\citep{More17,More00,Holm98} and the practices of cultural
 analytics~\citep{UndeEtal13}.
 
-%\section*{Acknowledgments}
+\section*{Acknowledgments}
+
+We acknowledge helpful discussions with Jacob Bacus, Hung-Tu Chen,
+and Paxton Fitzpatrick. This research was supported in part by
+National Science Foundation Grant 2145172 to JRM.
+
+\section*{Data and code availability}
+
+All code and data needed to reproduce the results in this paper are available
+at \url{https://github.com/ContextLab/llm-stylometry}.
+
 
 % %This document has been adapted
 % by Steven Bethard, Ryan Cotterell and Rui Yan
