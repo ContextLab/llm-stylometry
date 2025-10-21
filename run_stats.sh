@@ -139,4 +139,12 @@ for variant in "${VARIANTS[@]}"; do
     echo
 done
 
+# If --all was specified, compute cross-variant comparisons
+if [ ${#VARIANTS[@]} -eq 4 ]; then
+    echo
+    print_info "Computing cross-variant comparisons..."
+    python code/compute_stats.py --cross-variant-comparison
+    echo
+fi
+
 print_success "Statistical analysis complete!"
