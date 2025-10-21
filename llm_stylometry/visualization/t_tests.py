@@ -304,24 +304,24 @@ def generate_t_test_avg_figure(
     # Create figure
     fig, ax = plt.subplots(figsize=figsize)
 
-    # Plot average t-statistic
+    # Plot average t-statistic (gray for consistency with individual figure)
     sns.lineplot(
         data=t_raws_df,
         x="Epoch",
         y="t_raw",
         ax=ax,
         legend=False,
-        color="black",  # Set line color to black
+        color="gray",  # Set line color to gray
     )
 
-    # Plot adaptive threshold with bootstrap 95% CI (solid gray line)
+    # Plot adaptive threshold with bootstrap 95% CI (solid black line, consistent with 2a)
     if not threshold_df.empty:
         sns.lineplot(
             data=threshold_df,
             x="Epoch",
             y="threshold",
             ax=ax,
-            color="gray",
+            color="black",
             linewidth=2,
             linestyle="-",  # Solid line
             errorbar='ci',  # Bootstrap 95% CI
