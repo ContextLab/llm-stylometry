@@ -83,8 +83,8 @@ def compute_average_t_test(df, epoch=500):
 
         for author in AUTHORS:
             # Get all data for this author-seed combination
-            model_name = f"{author}_tokenizer=gpt2_seed={seed}"
-            model_df = df[df['model_name'] == model_name]
+            # Filter by author and seed columns (works for both baseline and variants)
+            model_df = df[(df['train_author'] == author) & (df['seed'] == seed)]
 
             # Get data at the specified epoch (or closest if not exact)
             epoch_data = model_df[model_df['epochs_completed'] <= epoch].groupby('loss_dataset').tail(1)
@@ -126,6 +126,9 @@ def generate_author_comparison_table(df):
     """
     Generate table of t-tests comparing each author's model losses.
     This reproduces Table 1 in the paper.
+
+    Returns:
+        tuple: (pandas DataFrame, LaTeX string)
     """
     # Get final epoch data
     final_df = df.groupby(['train_author', 'loss_dataset', 'seed']).tail(1)
@@ -152,10 +155,46 @@ def generate_author_comparison_table(df):
                 'Model': author.capitalize(),
                 't-stat': f'{t_result.statistic:.2f}',
                 'df': f'{t_result.df:.2f}',
-                'p-value': f'{t_result.pvalue:.2e}'
+                'p-value': f'{t_result.pvalue:.2e}',
+                't_stat_val': t_result.statistic,
+                'df_val': t_result.df,
+                'p_val': t_result.pvalue
             })
 
-    return pd.DataFrame(results)
+    df_table = pd.DataFrame(results)
+
+    # Generate LaTeX table
+    latex_lines = [
+        "\\begin{table}[h]",
+        "\\centering",
+        "\\small",
+        "\\begin{tabular}{lccc}",
+        "\\hline",
+        "\\textbf{Model} & \\textbf{$t$-stat} & \\textbf{df} & \\textbf{$p$-value}\\\\",
+        "\\hline"
+    ]
+
+    for _, row in df_table.iterrows():
+        # Format p-value in scientific notation
+        p_val = row['p_val']
+        if p_val < 0.01:
+            exponent = int(np.floor(np.log10(p_val)))
+            mantissa = p_val / (10 ** exponent)
+            p_str = f"${mantissa:.2f} \\times 10^{{{exponent}}}$"
+        else:
+            p_str = f"${p_val:.4f}$"
+
+        latex_lines.append(
+            f"{row['Model']:<12} & {row['t_stat_val']:.2f} & {row['df_val']:.2f} & {p_str}  \\\\"
+        )
+
+    latex_lines.append("\\hline")
+    latex_lines.append("\\end{tabular}")
+    latex_lines.append("\\end{table}")
+
+    latex_table = "\n".join(latex_lines)
+
+    return df_table, latex_table
 
 
 def main():
@@ -216,8 +255,15 @@ def main():
     # 3. Author comparison table
     print("\n3. Author Model Comparison Table (Table 1)")
     print("-" * 40)
-    table = generate_author_comparison_table(df)
-    print("\n" + table.to_string(index=False))
+    table, latex_table = generate_author_comparison_table(df)
+
+    # Display DataFrame table
+    print("\n" + table[['Model', 't-stat', 'df', 'p-value']].to_string(index=False))
+
+    # Display LaTeX table
+    print("\n\nLaTeX Table Format:")
+    print("-" * 40)
+    print(latex_table)
 
     print("\n" + "=" * 60)
 

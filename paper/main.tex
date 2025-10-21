@@ -25,10 +25,11 @@
 
 \title{A Stylometric Application of Large Language Models}
 
-\author{Harrison F. Stropkay, Jiayi Chen, Daniel N. Rockmore, and Jeremy R. Manning\\
+\author{Harrison F. Stropkay, Jiayi Chen, Mohammad J. L. Jabelli,\\
+Daniel N. Rockmore, and Jeremy R. Manning\\
 Dartmouth College \\
 Hanover, NH 03755, USA \\
-\texttt{\{harrison.f.stropkay.25, jiayi.chen.gr, }\\\texttt{daniel.n.rockmore, jeremy.r.manning\}@dartmouth.edu}}
+\texttt{\{harrison.f.stropkay.25, jiayi.chen.gr, mohammad.javad.latifi.jebelli}\\\texttt{daniel.n.rockmore, jeremy.r.manning\}@dartmouth.edu}}
 
 \begin{document}
 \maketitle
@@ -167,21 +168,20 @@ random seeds. This approach enables us to assess the robustness of our results
 and to ensure that the models are not overfitting to a specific book or random
 sample.
 
-\subsubsection{Investigating the contributions of function words, content words, and parts of speech}
+\subsubsection{Investigating the contributions of function words, content
+words, and parts of speech}
 
 In order to investigate the contributions of different types of words to the
 stylometric signatures captured by our models, we carried out additional
 analyses using modified corpora. First, we created content-word-only corpora by
 replacing all function words with a special token, \texttt{<FUNC>}. Function
-words were identified using scikit-learn's list of English stop words~\citep{PedrEtal11}.
-Next, we created function-word-only corpora by replacing all content (i.e.,
-non-function) words with a \texttt{<CONTENT>} token. Finally, we created
-part-of-speech-only corpora by using the Natural Language Toolkit~\citep[NLTK; ][]{BirdLope04} to
-replace each word with its corresponding part-of-speech tag. We then re-trained
-our models on each of these modified corpora, following the same methodology as
-described above.
-
-
+words were identified using scikit-learn's list of English stop
+words~\citep{PedrEtal11}. Next, we created function-word-only corpora by
+replacing all content (i.e., non-function) words with a \texttt{<CONTENT>}
+token. Finally, we created part-of-speech-only corpora by using the Natural
+Language Toolkit~\citep[NLTK; ][]{BirdLope04} to replace each word with its
+corresponding part-of-speech tag. We then re-trained our models on each of
+these modified corpora, following the same methodology as described above.
 
 \begin{figure*}[t]
   \centering
