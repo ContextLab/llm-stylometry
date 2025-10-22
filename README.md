@@ -133,223 +133,31 @@ The paper analyzes three linguistic variants (Supplemental Figures S1-S8):
 
 ## Training Models from Scratch
 
-### Local Training
+Training 320 models (baseline + 3 variants) requires a CUDA GPU. See `models/README.md` for details.
 
+**Local training:**
 ```bash
-# Train baseline models
-./run_llm_stylometry.sh --train
-
-# Train analysis variants
-./run_llm_stylometry.sh --train --content-only     # Content variant
-./run_llm_stylometry.sh --train --function-only    # Function variant
-./run_llm_stylometry.sh --train --part-of-speech   # POS variant
-
-# Short flags
-./run_llm_stylometry.sh -t -co              # Content variant
-./run_llm_stylometry.sh -t -fo              # Function variant
-./run_llm_stylometry.sh -t -pos             # POS variant
-
-# Resume training from existing checkpoints
-./run_llm_stylometry.sh --train --resume
-./run_llm_stylometry.sh -t -r -co           # Resume content variant
-
-# Limit GPU usage if needed
-./run_llm_stylometry.sh --train --max-gpus 4
+./run_llm_stylometry.sh --train           # Baseline (80 models)
+./run_llm_stylometry.sh --train -co       # Content-only variant
+./run_llm_stylometry.sh -t -r             # Resume from checkpoints
 ```
 
-Each training run will:
-1. Clean and prepare the data if needed
-2. Train 80 models (8 authors × 10 seeds)
-3. Consolidate results into `data/model_results.pkl`
+**Remote training:**
 
-**Resume Training**: The `--resume` flag allows you to continue training from existing checkpoints:
-- Models that have already met training criteria are automatically skipped
-- Partially trained models with saved weights resume from their last checkpoint
-- Models without weights are trained from scratch (even if loss logs exist)
-- Random states are restored from checkpoints to ensure consistent training continuation
+Requires GPU cluster with SSH access. Create `.ssh/credentials_mycluster.json`:
+```json
+{"server": "hostname", "username": "user", "password": "pass"}
+```
 
-The training pipeline automatically handles data preparation, model training across available GPUs, and result consolidation. Individual model checkpoints and loss logs are saved in the `models/` directory.
-
-### Remote Training on GPU Server
-
-#### Prerequisites: Setting up Git credentials on the server
-
-Before using the remote training script, you need to set up Git credentials on your server once:
-
-1. SSH into your server:
+Then from local machine:
 ```bash
-ssh username@server
+./remote_train.sh --cluster mycluster           # Train baseline
+./remote_train.sh -co --cluster mycluster -r    # Resume content variant
+./check_remote_status.sh --cluster mycluster    # Monitor progress
+./sync_models.sh --cluster mycluster -a         # Download when complete
 ```
 
-2. Configure Git with your credentials:
-```bash
-# Set your Git user information (use your GitHub username)
-git config --global user.name "your-github-username"
-git config --global user.email "your.email@example.com"
-
-# Enable credential storage
-git config --global credential.helper store
-```
-
-3. Clone the repository with your Personal Access Token:
-```bash
-# Replace <username> and <token> with your GitHub username and Personal Access Token
-# Get a token from: https://github.com/settings/tokens (grant 'repo' scope)
-git clone https://<username>:<token>@github.com/ContextLab/llm-stylometry.git
-
-# The credentials will be stored for future use
-cd llm-stylometry
-git pull  # This should work without prompting for credentials
-```
-
-#### Using the remote training script
-
-Once Git credentials are configured on your server, run `remote_train.sh` **from your local machine** (not on the GPU server):
-
-```bash
-# Train baseline models
-./remote_train.sh
-
-# Train analysis variants
-./remote_train.sh --content-only        # Content variant
-./remote_train.sh -fo                   # Function variant (short flag)
-./remote_train.sh --part-of-speech      # POS variant
-
-# Resume training from existing checkpoints
-./remote_train.sh --resume              # Resume baseline
-./remote_train.sh -r -co                # Resume content variant
-
-# Kill existing training sessions
-./remote_train.sh --kill                # Kill and exit
-./remote_train.sh --kill --resume       # Kill and restart
-
-# You'll be prompted for:
-# - Server address (hostname or IP)
-# - Username
-```
-
-**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (with any variant flags you specify) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
-
-The script will:
-1. SSH into your GPU server
-2. Update the repository in `~/llm-stylometry` (or clone if it doesn't exist)
-3. Start training in a `screen` session with the specified options
-4. Exit, allowing your local machine to disconnect while training continues on the server
-
-#### Monitoring training progress
-
-To check on the training status, SSH into the server and reattach to the screen session:
-
-```bash
-# From your local machine
-ssh username@server
-
-# On the server, reattach to see live training output
-screen -r llm_training
-
-# To detach and leave training running, press Ctrl+A, then D
-# To exit SSH while keeping training running
-exit
-```
-
-#### Downloading results after training completes
-
-Once training is complete, use `sync_models.sh` **from your local machine** to download the trained models and results:
-
-```bash
-# Download baseline models only (default)
-./sync_models.sh
-
-# Download specific variants
-./sync_models.sh --content-only           # Content variant only
-./sync_models.sh --baseline --content-only # Baseline + content
-./sync_models.sh --all                    # All conditions (320 models)
-
-# You'll be prompted for:
-# - Server address
-# - Username
-```
-
-**Variant Flags:**
-- `-b, --baseline`: Sync baseline models (80 models)
-- `-co, --content-only`: Sync content-only variant (80 models)
-- `-fo, --function-only`: Sync function-only variant (80 models)
-- `-pos, --part-of-speech`: Sync POS variant (80 models)
-- `-a, --all`: Sync all conditions (320 models total)
-- Flags are stackable: `./sync_models.sh -b -co` syncs baseline + content
-
-**How it works:**
-1. Checks which requested models are complete on remote server (80 per condition)
-2. Only syncs complete model sets
-3. Uses rsync to download models with progress indication
-4. Backs up existing local models before replacing
-5. Also syncs `model_results.pkl` if available
-
-**Note**: The script verifies models are complete before downloading. If training is in progress, it will show which models are missing and skip incomplete conditions.
-
-#### Checking training status
-
-Monitor training progress on your GPU server using `check_remote_status.sh` **from your local machine**:
-
-```bash
-# Check status on default cluster (tensor02)
-./check_remote_status.sh
-
-# Check status on specific cluster
-./check_remote_status.sh --cluster tensor01
-./check_remote_status.sh --cluster tensor02
-```
-
-The script provides a comprehensive status report including:
-
-**For completed models:**
-- Number of completed seeds per author (out of 10)
-- Final training loss (mean ± std across all completed seeds)
-
-**For in-progress models:**
-- Current epoch and progress percentage
-- Current training loss
-- Estimated time to completion (based on actual runtime per epoch)
-
-**Example output:**
-```
-================================================================================
-POS VARIANT MODELS
-================================================================================
-
-AUSTEN
---------------------------------------------------------------------------------
-  Completed: 2/10 seeds
-  Final training loss: 1.1103 ± 0.0003 (mean ± std)
-  In-progress: 1 seeds
-    Seed 2: epoch 132/500 (26.4%) | loss: 1.2382 | ETA: 1d 1h 30m
-
---------------------------------------------------------------------------------
-Summary: 16/80 complete, 8 in progress
-Estimated completion: 1d 1h 30m (longest), 1d 0h 45m (average)
-```
-
-**How it works:**
-1. Connects to your GPU server using saved credentials (`.ssh/credentials_{cluster}.json`)
-2. Analyzes all model directories and loss logs
-3. Calculates statistics for completed models
-4. Estimates remaining time based on actual training progress
-5. Reports status for baseline and all variant models
-
-**Prerequisites:** The script uses the same credentials file as `remote_train.sh`. If credentials aren't saved, you'll be prompted to enter them interactively.
-
-### Model Configuration
-
-Each model uses the same architecture and hyperparameters (applies to baseline and all variants):
-- GPT-2 architecture with custom dimensions
-- 128 embedding dimensions
-- 8 transformer layers
-- 8 attention heads
-- 1024 maximum sequence length
-- Training on ~643,041 tokens per author
-- Early stopping at loss ≤ 3.0 (after minimum 500 epochs)
-
-**Note:** All analysis variants use identical training configurations, differing only in input text transformations. This ensures fair comparison across conditions.
+Trains in detached screen session on GPU server. See script help for full options.
 
 ## Data
 
