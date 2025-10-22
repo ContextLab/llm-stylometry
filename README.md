@@ -11,49 +11,19 @@ This repository contains the code and data for our [paper](https://insert.link.w
 
 ```
 llm-stylometry/
-├── .github/              # GitHub Actions CI/CD
-│   └── workflows/       # Test automation workflows
-├── llm_stylometry/       # Python package with analysis tools
-│   ├── analysis/        # Statistical analysis utilities
-│   ├── classification/  # Text classification module (word count-based)
-│   ├── core/           # Core experiment and configuration
-│   ├── data/           # Data loading and tokenization
-│   ├── models/         # Model utilities
-│   ├── utils/          # Helper utilities
-│   ├── visualization/  # Plotting and visualization (GPT-2 + classification)
-│   └── cli_utils.py    # CLI helper functions
-├── code/                # Training and CLI scripts
-│   ├── generate_figures.py       # Main CLI entry point
-│   ├── consolidate_model_results.py # Result consolidation
-│   ├── main.py         # Model training orchestration
-│   ├── clean.py        # Data preprocessing
-│   └── ...             # Supporting training modules
-├── data/                # Datasets and results
-│   ├── raw/            # Original texts from Project Gutenberg
-│   ├── cleaned/        # Preprocessed texts by author
-│   ├── classifier_results/  # Text classification results (pkl files)
-│   └── model_results.pkl # Consolidated model training results
-├── models/              # Trained models (80 baseline + 240 variants = 320 total)
-│   └── {author}_tokenizer=gpt2_seed={0-9}/  # Baseline models
-│   └── {author}_variant={variant}_tokenizer=gpt2_seed={0-9}/  # Variant models
-├── paper/               # LaTeX paper and figures
-│   ├── main.tex        # Paper source
-│   ├── main.pdf        # Compiled paper
-│   └── figs/           # Paper figures
-├── tests/               # Test suite
-│   ├── data/           # Test data and fixtures
-│   ├── test_*.py       # Test modules
-│   └── check_outputs.py # Output validation script
-├── run_llm_stylometry.sh # Shell wrapper for easy setup
-├── remote_train.sh     # Remote GPU server training script
-├── check_remote_status.sh # Check training status on remote server
-├── sync_models.sh      # Download models from remote server
-├── LICENSE             # MIT License
-├── README.md           # This file
-├── requirements-dev.txt # Development dependencies
-├── pyproject.toml      # Package configuration
-└── pytest.ini          # Test configuration
+├── llm_stylometry/       # Python package (analysis, visualization, data loading)
+├── code/                 # Scripts (training, figures, stats) - see code/README.md
+├── data/                 # Texts and results - see data/README.md
+├── models/               # 320 trained GPT-2 models - see models/README.md
+├── paper/                # LaTeX source and figures - see paper/README.md
+├── tests/                # Test suite
+├── run_llm_stylometry.sh # Main CLI wrapper
+├── remote_train.sh       # GPU cluster training
+├── check_remote_status.sh # Monitor remote training
+└── sync_models.sh        # Download trained models
 ```
+
+See folder-specific README files for detailed documentation.
 
 ## Installation
 
