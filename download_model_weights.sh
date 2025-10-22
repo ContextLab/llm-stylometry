@@ -17,16 +17,16 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Dropbox URLs (will be updated after archives are uploaded)
-# NOTE: These URLs include dl=1 parameter for direct download
-BASELINE_URL=""
-BASELINE_SHA_URL=""
-CONTENT_URL=""
-CONTENT_SHA_URL=""
-FUNCTION_URL=""
-FUNCTION_SHA_URL=""
-POS_URL=""
-POS_SHA_URL=""
+# Dropbox URLs (updated 2025-10-22)
+# NOTE: URLs modified with dl=1 parameter for direct download
+BASELINE_URL="https://www.dropbox.com/scl/fi/ol2et7qyz6yps0frl6kzs/model_weights_baseline.tar.gz?rlkey=t58xh437hfej4zx0w8vuj4cu0&dl=1"
+BASELINE_SHA_URL=""  # TODO: Add .sha256 checksum file URL
+CONTENT_URL="https://www.dropbox.com/scl/fi/pe78lgs617p29caisexhk/model_weights_content.tar.gz?rlkey=j6casahg68kj8u1wq203km5yd&dl=1"
+CONTENT_SHA_URL=""  # TODO: Add .sha256 checksum file URL
+FUNCTION_URL="https://www.dropbox.com/scl/fi/klncxsb41jzxpn9xfvvow/model_weights_function.tar.gz?rlkey=l5chc9g5b93ynacaxedki7j6x&dl=1"
+FUNCTION_SHA_URL=""  # TODO: Add .sha256 checksum file URL
+POS_URL="https://www.dropbox.com/scl/fi/y3vr91jt24dwb5qw2mbr7/model_weights_pos.tar.gz?rlkey=xntev319gcakmc2zjw5fv48iu&dl=1"
+POS_SHA_URL=""  # TODO: Add .sha256 checksum file URL
 
 # Default: nothing selected (will default to all if nothing specified)
 DOWNLOAD_BASELINE=false
