@@ -192,7 +192,7 @@ these modified corpora, following the same methodology as described above.
   \includegraphics[width=\textwidth]{figs/loss_all_authors.pdf}
 
 
-\caption{\textbf{Cross-entropy loss across models and authors.}\textbf{A.}
+\caption{\textbf{Cross-entropy loss across models and authors.} \textbf{A.}
 Average cross-entropy loss on \textit{Train}ing data and held-out test data
 from each author, plotted as a function of the number of training epochs. Each
 color denotes a model trained on a single author's work. Error ribbons denote
@@ -235,20 +235,20 @@ smallest loss.
   \includegraphics[width=\textwidth]{figs/t_stats.pdf}
 
 
-  \caption{\textbf{Same vs. other author comparisons, by
-      model.}\textbf{A.} Each curve denotes, as a function of the
-    number of training epochs, the the $t$-statistic from a $t$-test
-    comparing the distribution of losses (across random seeds)
-    assigned to held-out texts from the given author (color) versus
-    held-out texts from all other authors. \textbf{B.} The average
-    $t$-statistic across all eight authors, as a function of the
-    number of training epochs. Error ribbons denote
-    bootstrap-estimated 95\% confidence intervals across authors.  See Supplementary
-Materials for analogous plots using models trained on only content words (Supp.
-Fig.~\ttestsContent), only function words (Supp.
-Fig.~\ttestsFunction), and only parts of speech (Supp.
-Fig.~\ttestsPOS).}
-\label{fig:t-stats}
+\caption{\textbf{Same vs. other author comparisons, by model.} \textbf{A.} Each
+curve denotes, as a function of the number of training epochs, the the
+$t$-statistic from a $t$-test comparing the distribution of losses (across
+random seeds) assigned to held-out texts from the given author (color) versus
+held-out texts from all other authors. \textbf{B.} The average $t$-statistic
+across all eight authors, as a function of the number of training epochs. The
+black curves in both panels indicates the average $t$-value corresponding to $p
+= 0.001$, for each epoch. Error ribbons denote bootstrap-estimated 95\%
+confidence intervals across authors. See Supplementary Materials for analogous
+plots using models trained on only content words (Supp. Fig.~\ttestsContent),
+only function words (Supp. Fig.~\ttestsFunction), and only parts of speech
+(Supp. Fig.~\ttestsPOS).} 
+
+\label{fig:t-stats} 
 \end{figure*}
 
 We also wondered how many training epochs were required for the models to
@@ -623,9 +623,10 @@ analytics~\citep{UndeEtal13}.
 
 \section*{Acknowledgments}
 
-We acknowledge helpful discussions with Jacob Bacus, Hung-Tu Chen,
-and Paxton Fitzpatrick. This research was supported in part by
-National Science Foundation Grant 2145172 to JRM.
+We acknowledge helpful discussions with Jacob Bacus, Hung-Tu Chen, and Paxton
+Fitzpatrick. This research was supported in part by National Science Foundation
+Grant 2145172 to JRM and by a GPU cluster generously donated by the estate of
+Daniel J. Milstein.
 
 \section*{Data and code availability}
 
