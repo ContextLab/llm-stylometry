@@ -22,7 +22,7 @@ SYNC_BASELINE=false
 SYNC_CONTENT=false
 SYNC_FUNCTION=false
 SYNC_POS=false
-CLUSTER="tensor02"  # Default cluster
+CLUSTER=""  # Must be specified with --cluster flag
 
 # Parse command line arguments (stackable)
 while [[ $# -gt 0 ]]; do
@@ -63,17 +63,12 @@ while [[ $# -gt 0 ]]; do
             echo "  -fo, --function-only    Sync function-only variant models"
             echo "  -pos, --part-of-speech  Sync part-of-speech variant models"
             echo "  -a, --all               Sync all models (baseline + all variants)"
-            echo "  --cluster CLUSTER       Specify cluster (tensor01 or tensor02, default: tensor02)"
+            echo "  --cluster CLUSTER       Specify cluster (required)"
             echo "  -h, --help              Show this help message"
             echo ""
-            echo "Flags are stackable. Examples:"
-            echo "  $0                      # Sync baseline only (default, tensor02)"
-            echo "  $0 -b -co               # Sync baseline and content-only"
-            echo "  $0 -fo -pos             # Sync function-only and POS"
-            echo "  $0 -a                   # Sync everything"
-            echo "  $0 -a --cluster tensor01  # Sync everything from tensor01"
-            echo ""
-            echo "Default: Sync baseline models only from tensor02"
+            echo "Examples:"
+            echo "  $0 --cluster mycluster -a       # Sync everything from mycluster"
+            echo "  $0 --cluster gpucluster -b -co  # Sync baseline and content-only"
             exit 0
             ;;
         *)
@@ -87,6 +82,14 @@ done
 # If nothing was selected, default to baseline
 if [ "$SYNC_BASELINE" = false ] && [ "$SYNC_CONTENT" = false ] && [ "$SYNC_FUNCTION" = false ] && [ "$SYNC_POS" = false ]; then
     SYNC_BASELINE=true
+fi
+
+# Validate cluster is specified
+if [ -z "$CLUSTER" ]; then
+    print_error "Cluster must be specified with --cluster flag"
+    echo "Example: $0 --cluster mycluster -a"
+    echo "Create credentials file: .ssh/credentials_mycluster.json"
+    exit 1
 fi
 
 echo "=================================================="

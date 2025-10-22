@@ -11,49 +11,19 @@ This repository contains the code and data for our [paper](https://insert.link.w
 
 ```
 llm-stylometry/
-├── .github/              # GitHub Actions CI/CD
-│   └── workflows/       # Test automation workflows
-├── llm_stylometry/       # Python package with analysis tools
-│   ├── analysis/        # Statistical analysis utilities
-│   ├── classification/  # Text classification module (word count-based)
-│   ├── core/           # Core experiment and configuration
-│   ├── data/           # Data loading and tokenization
-│   ├── models/         # Model utilities
-│   ├── utils/          # Helper utilities
-│   ├── visualization/  # Plotting and visualization (GPT-2 + classification)
-│   └── cli_utils.py    # CLI helper functions
-├── code/                # Training and CLI scripts
-│   ├── generate_figures.py       # Main CLI entry point
-│   ├── consolidate_model_results.py # Result consolidation
-│   ├── main.py         # Model training orchestration
-│   ├── clean.py        # Data preprocessing
-│   └── ...             # Supporting training modules
-├── data/                # Datasets and results
-│   ├── raw/            # Original texts from Project Gutenberg
-│   ├── cleaned/        # Preprocessed texts by author
-│   ├── classifier_results/  # Text classification results (pkl files)
-│   └── model_results.pkl # Consolidated model training results
-├── models/              # Trained models (80 baseline + 240 variants = 320 total)
-│   └── {author}_tokenizer=gpt2_seed={0-9}/  # Baseline models
-│   └── {author}_variant={variant}_tokenizer=gpt2_seed={0-9}/  # Variant models
-├── paper/               # LaTeX paper and figures
-│   ├── main.tex        # Paper source
-│   ├── main.pdf        # Compiled paper
-│   └── figs/           # Paper figures
-├── tests/               # Test suite
-│   ├── data/           # Test data and fixtures
-│   ├── test_*.py       # Test modules
-│   └── check_outputs.py # Output validation script
-├── run_llm_stylometry.sh # Shell wrapper for easy setup
-├── remote_train.sh     # Remote GPU server training script
-├── check_remote_status.sh # Check training status on remote server
-├── sync_models.sh      # Download models from remote server
-├── LICENSE             # MIT License
-├── README.md           # This file
-├── requirements-dev.txt # Development dependencies
-├── pyproject.toml      # Package configuration
-└── pytest.ini          # Test configuration
+├── llm_stylometry/       # Python package (analysis, visualization, data loading)
+├── code/                 # Scripts (training, figures, stats) - see code/README.md
+├── data/                 # Texts and results - see data/README.md
+├── models/               # 320 trained GPT-2 models - see models/README.md
+├── paper/                # LaTeX source and figures - see paper/README.md
+├── tests/                # Test suite
+├── run_llm_stylometry.sh # Main CLI wrapper
+├── remote_train.sh       # GPU cluster training
+├── check_remote_status.sh # Monitor remote training
+└── sync_models.sh        # Download trained models
 ```
+
+See folder-specific README files for detailed documentation.
 
 ## Installation
 
@@ -135,528 +105,59 @@ See the [Package API](#package-api) section for all available functions.
 
 ## Analysis Variants
 
-The project supports three linguistic variants to understand what stylistic features models learn:
+The paper analyzes three linguistic variants (Supplemental Figures S1-S8):
 
-**Content-Only** (`-co`, `--content-only`): Masks function words with `<FUNC>`, preserving only content words (nouns, verbs, adjectives). Tests vocabulary and word choice.
+- **Content-only**: Function words masked → tests vocabulary/word choice (Supp. Figs. S1, S4, S7A, S8A)
+- **Function-only**: Content words masked → tests grammatical structure (Supp. Figs. S2, S5, S7B, S8B)
+- **Part-of-speech**: Words → POS tags → tests syntactic patterns (Supp. Figs. S3, S6, S7C, S8C)
 
-**Function-Only** (`-fo`, `--function-only`): Masks content words with `<CONTENT>`, preserving only function words (articles, prepositions, conjunctions). Tests grammatical structure.
-
-**Part-of-Speech** (`-pos`, `--part-of-speech`): Replaces words with POS tags (Universal Dependencies tagset). Tests syntactic patterns.
-
-All CLI commands accept variant flags. Without a flag, the baseline condition is used. Each variant trains 80 models (8 authors × 10 seeds). See [Training Models from Scratch](#training-models-from-scratch) for training details.
-
+**Generate supplemental figures:**
 ```bash
-# Generate figures for variants
-./run_llm_stylometry.sh -f 1a -co           # Figure 1A, content variant
-./run_llm_stylometry.sh --function-only     # All figures, function variant
-
-# Compute statistics
-./run_stats.sh --all                        # All variants at once
-./run_stats.sh -co                          # Single variant
+./run_llm_stylometry.sh -f s1a    # Supp. Fig. S1A (content-only, Fig 1A format)
+./run_llm_stylometry.sh -f s4b    # Supp. Fig. S4B (content-only, Fig 2B format)
+./run_llm_stylometry.sh -f s7c    # Supp. Fig. S7C (POS confusion matrix)
 ```
 
-**Model directories:**
-- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
-- Variants: `{author}_variant={content|function|pos}_tokenizer=gpt2_seed={0-9}/`
-
-**Figure paths:**
-- Baseline: `paper/figs/source/figure_name.pdf`
-- Variants: `paper/figs/source/figure_name_{variant}.pdf`
-
-### Fairness-Based Loss Thresholding
-
-Variant models converge much faster than baseline models (all cross 3.0 loss by epochs 15-16) and may converge to different final losses. To ensure fair comparison, **fairness-based loss thresholding** is automatically applied to variant figures (1A, 1B, 3, 4, 5):
-
-1. **Compute threshold**: Maximum of all models' minimum training losses within 500 epochs
-2. **Truncate data**: Keep all epochs up to and including the first epoch where training loss ≤ threshold
-3. **Fair comparison**: All models compared at the same training loss level (the fairness threshold)
-
-This ensures models are not unfairly compared when some converged to higher losses than others. The feature is enabled by default for variants and can be disabled:
-
+**Training variants:** Each trains 80 models (8 authors × 10 seeds)
 ```bash
-# Fairness enabled (default for variants)
-./run_llm_stylometry.sh -f 1a -fo
-
-# Fairness disabled
-./run_llm_stylometry.sh -f 1a -fo --no-fairness
+./run_llm_stylometry.sh --train -co    # Content-only
+./remote_train.sh -fo                  # Function-only on GPU cluster
 ```
 
-**Example results** (function-only variant):
-- Fairness threshold: 1.2720 (Austen's minimum loss)
-- Models truncated between epochs 88-500
-- Data reduced: 360,640 rows → 170,659 rows (47.3%)
-
-**Python API:**
-
-```python
-from llm_stylometry.analysis.fairness import (
-    compute_fairness_threshold,
-    apply_fairness_threshold
-)
-
-# Compute threshold for variant data
-df = pd.read_pickle('data/model_results_function.pkl')
-threshold = compute_fairness_threshold(df, min_epochs=500)
-print(f"Fairness threshold: {threshold:.4f}")
-
-# Truncate data at threshold
-df_fair = apply_fairness_threshold(df, threshold, use_first_crossing=True)
-
-# Generate figure with fairness
-from llm_stylometry.visualization import generate_all_losses_figure
-fig = generate_all_losses_figure(
-    data_path='data/model_results_function.pkl',
-    variant='function',
-    apply_fairness=True  # default for variants
-)
-```
-
-**Note**: T-test figures (2A, 2B) never apply fairness thresholding since they require all 500 epochs for statistical calculations.
-
-## Text Classification Analysis
-
-In addition to GPT-2 stylometry, the project includes word count-based text classification using scikit-learn. This provides a complementary approach to authorship attribution through traditional machine learning.
-
-### Running Classification Experiments
-
-Use the `--classify` flag to run text classification instead of GPT-2 training:
-
+**Statistical analysis:**
 ```bash
-# Run baseline classification (all unique words)
-./run_llm_stylometry.sh --classify
-
-# Run variant classifications
-./run_llm_stylometry.sh --classify --content-only      # Content words only
-./run_llm_stylometry.sh --classify --function-only     # Function words only
-./run_llm_stylometry.sh --classify --part-of-speech    # POS tags only
+./run_stats.sh            # All variants (default)
 ```
 
-### Classification Methodology
-
-1. **Feature Extraction**: `CountVectorizer` extracts word counts from all books
-   - **No stop words filtering** (`stop_words=None`) - critical for fair comparison across variants
-   - Baseline: All unique words across the corpus
-   - Content variant: Only content words (function words masked as `<FUNC>`)
-   - Function variant: Only function words (content words masked as `<CONTENT>`)
-   - POS variant: POS tag counts (words replaced with tags)
-
-2. **Cross-Validation**: Leave-one-book-out per author
-   - Each split holds out exactly 1 book from each of the 8 authors (8 books total)
-   - Up to 1,000 randomly sampled combinations
-   - Ensures all books are tested and results are robust
-
-3. **Classifier**: Output-code multi-class classifier
-   - Base estimator: Logistic regression (`max_iter=1000`, `solver='lbfgs'`)
-   - Author-specific feature weights via back-solving: `input = W_pinv @ (output - bias)`
-   - Returns different word importance weights for each author
-
-4. **Metrics**: Classification accuracy with bootstrap-estimated 95% confidence intervals
-   - Seaborn's automatic bootstrap (n_boot=1000)
-   - Computed separately for each author and overall
-
-### Classification Results
-
-**Output files:**
-- **Results**: `data/classifier_results/{variant}.pkl` (or `baseline.pkl`)
-- **Accuracy charts**: `paper/figs/source/classification_accuracy_{variant}.pdf`
-- **Word clouds**: `paper/figs/source/wordcloud_{author}_{variant}.pdf`
-  - One overall word cloud showing general feature importance
-  - One per author showing author-specific discriminative features
-  - Vectorized PDF output using wordcloud library
-
-**Results structure:**
-```python
-import pickle
-
-# Load classification results
-with open('data/classifier_results/baseline.pkl', 'rb') as f:
-    data = pickle.load(f)
-
-# Contents:
-# data['results']: pd.DataFrame with predictions and accuracies (long format)
-# data['vectorizer']: Fitted CountVectorizer
-# data['feature_names']: List of vocabulary words
-# data['variant']: Analysis variant (None for baseline)
-# data['n_splits']: Number of CV splits
-# data['seed']: Random seed used
-```
-
-### Python API
-
-```python
-from llm_stylometry.classification import run_classification_experiment
-from llm_stylometry.visualization import (
-    generate_classification_accuracy_figure,
-    generate_word_cloud_figure
-)
-from llm_stylometry.core.constants import AUTHORS
-
-# Run classification experiment
-result_path = run_classification_experiment(
-    variant='content',       # 'content', 'function', 'pos', or None for baseline
-    max_splits=1000,         # Maximum CV splits
-    seed=42                  # Random seed for reproducibility
-)
-
-# Generate accuracy bar chart
-generate_classification_accuracy_figure(
-    data_path='data/classifier_results/content.pkl',
-    output_path='paper/figs/source/classification_accuracy_content.pdf',
-    variant='content'
-)
-
-# Generate overall word cloud
-generate_word_cloud_figure(
-    data_path='data/classifier_results/content.pkl',
-    author=None,  # None for overall, or specific author name
-    output_path='paper/figs/source/wordcloud_overall_content.pdf',
-    variant='content',
-    max_words=100
-)
-
-# Generate per-author word clouds
-for author in AUTHORS:
-    generate_word_cloud_figure(
-        data_path='data/classifier_results/content.pkl',
-        author=author,
-        output_path=f'paper/figs/source/wordcloud_{author}_content.pdf',
-        variant='content'
-    )
-```
-
-### Advanced Usage
-
-**Custom data loading:**
-```python
-from llm_stylometry.classification import (
-    load_books_by_author,
-    create_count_vectorizer,
-    vectorize_books
-)
-
-# Load books
-books = load_books_by_author(data_dir='data/cleaned', variant=None)
-# Returns: Dict[author] -> [(book_id, text), ...]
-
-# Create vectorizer (stop_words=None is critical!)
-vectorizer = create_count_vectorizer(books)
-print(f"Vocabulary size: {len(vectorizer.vocabulary_)}")
-
-# Vectorize
-vectors = vectorize_books(books, vectorizer)
-# Returns: [(author, book_id, vector), ...]
-```
-
-**Custom cross-validation:**
-```python
-from llm_stylometry.classification import (
-    generate_cv_splits,
-    run_cross_validation,
-    OutputCodeClassifier
-)
-
-# Generate custom CV splits
-splits = generate_cv_splits(vectors, max_splits=100, seed=42)
-
-# Run CV
-results_df = run_cross_validation(vectors, splits, random_state=42)
-
-# Results DataFrame (long format for seaborn):
-# - split_id: int
-# - author: str (true author)
-# - accuracy: float (1.0 if correct, 0.0 if incorrect)
-# - held_out_book_id: str
-# - predicted_author: str
-# - classifier: OutputCodeClassifier object
-
-# Overall accuracy
-print(f"Accuracy: {results_df['accuracy'].mean():.4f}")
-```
-
-**Extract author-specific feature weights:**
-```python
-# Get classifier from results
-clf = results_df.iloc[0]['classifier']
-feature_names = vectorizer.get_feature_names_out().tolist()
-
-# Get author-specific weights (via back-solving)
-weights = clf.get_feature_weights(feature_names)
-
-# weights['baum']: {word: weight, ...}
-# weights['austen']: {word: weight, ...}
-# weights['overall']: {word: avg_weight, ...}
-
-# Top words for Baum
-baum_weights = weights['baum']
-top_baum = sorted(baum_weights.items(), key=lambda x: abs(x[1]), reverse=True)[:10]
-print("Top Baum features:", top_baum)
-```
+**Fairness-based loss thresholding:** Automatically ensures fair comparison when variant models converge to different final losses. Disable with `--no-fairness` if needed.
 
 ## Training Models from Scratch
 
-**Note**: Training requires a CUDA-enabled GPU and takes significant time (80 models per condition, 320 total for all conditions).
+Training 320 models (baseline + 3 variants) requires a CUDA GPU. See `models/README.md` for details.
 
-### Local Training
-
+**Local training:**
 ```bash
-# Train baseline models
-./run_llm_stylometry.sh --train
-
-# Train analysis variants
-./run_llm_stylometry.sh --train --content-only     # Content variant
-./run_llm_stylometry.sh --train --function-only    # Function variant
-./run_llm_stylometry.sh --train --part-of-speech   # POS variant
-
-# Short flags
-./run_llm_stylometry.sh -t -co              # Content variant
-./run_llm_stylometry.sh -t -fo              # Function variant
-./run_llm_stylometry.sh -t -pos             # POS variant
-
-# Resume training from existing checkpoints
-./run_llm_stylometry.sh --train --resume
-./run_llm_stylometry.sh -t -r -co           # Resume content variant
-
-# Limit GPU usage if needed
-./run_llm_stylometry.sh --train --max-gpus 4
+./run_llm_stylometry.sh --train           # Baseline (80 models)
+./run_llm_stylometry.sh --train -co       # Content-only variant
+./run_llm_stylometry.sh -t -r             # Resume from checkpoints
 ```
 
-Each training run will:
-1. Clean and prepare the data if needed
-2. Train 80 models (8 authors × 10 seeds)
-3. Consolidate results into `data/model_results.pkl`
+**Remote training:**
 
-**Resume Training**: The `--resume` flag allows you to continue training from existing checkpoints:
-- Models that have already met training criteria are automatically skipped
-- Partially trained models with saved weights resume from their last checkpoint
-- Models without weights are trained from scratch (even if loss logs exist)
-- Random states are restored from checkpoints to ensure consistent training continuation
+Requires GPU cluster with SSH access. Create `.ssh/credentials_mycluster.json`:
+```json
+{"server": "hostname", "username": "user", "password": "pass"}
+```
 
-The training pipeline automatically handles data preparation, model training across available GPUs, and result consolidation. Individual model checkpoints and loss logs are saved in the `models/` directory.
-
-### Remote Training on GPU Server
-
-#### Prerequisites: Setting up Git credentials on the server
-
-Before using the remote training script, you need to set up Git credentials on your server once:
-
-1. SSH into your server:
+Then from local machine:
 ```bash
-ssh username@server
+./remote_train.sh --cluster mycluster           # Train baseline
+./remote_train.sh -co --cluster mycluster -r    # Resume content variant
+./check_remote_status.sh --cluster mycluster    # Monitor progress
+./sync_models.sh --cluster mycluster -a         # Download when complete
 ```
 
-2. Configure Git with your credentials:
-```bash
-# Set your Git user information (use your GitHub username)
-git config --global user.name "your-github-username"
-git config --global user.email "your.email@example.com"
-
-# Enable credential storage
-git config --global credential.helper store
-```
-
-3. Clone the repository with your Personal Access Token:
-```bash
-# Replace <username> and <token> with your GitHub username and Personal Access Token
-# Get a token from: https://github.com/settings/tokens (grant 'repo' scope)
-git clone https://<username>:<token>@github.com/ContextLab/llm-stylometry.git
-
-# The credentials will be stored for future use
-cd llm-stylometry
-git pull  # This should work without prompting for credentials
-```
-
-#### Using the remote training script
-
-Once Git credentials are configured on your server, run `remote_train.sh` **from your local machine** (not on the GPU server):
-
-```bash
-# Train baseline models
-./remote_train.sh
-
-# Train analysis variants
-./remote_train.sh --content-only        # Content variant
-./remote_train.sh -fo                   # Function variant (short flag)
-./remote_train.sh --part-of-speech      # POS variant
-
-# Resume training from existing checkpoints
-./remote_train.sh --resume              # Resume baseline
-./remote_train.sh -r -co                # Resume content variant
-
-# Kill existing training sessions
-./remote_train.sh --kill                # Kill and exit
-./remote_train.sh --kill --resume       # Kill and restart
-
-# You'll be prompted for:
-# - Server address (hostname or IP)
-# - Username
-```
-
-**What this script does:** The `remote_train.sh` script connects to your GPU server via SSH and executes `run_llm_stylometry.sh --train -y` (with any variant flags you specify) in a `screen` session. This allows you to disconnect your local machine while the GPU server continues training.
-
-The script will:
-1. SSH into your GPU server
-2. Update the repository in `~/llm-stylometry` (or clone if it doesn't exist)
-3. Start training in a `screen` session with the specified options
-4. Exit, allowing your local machine to disconnect while training continues on the server
-
-#### Monitoring training progress
-
-To check on the training status, SSH into the server and reattach to the screen session:
-
-```bash
-# From your local machine
-ssh username@server
-
-# On the server, reattach to see live training output
-screen -r llm_training
-
-# To detach and leave training running, press Ctrl+A, then D
-# To exit SSH while keeping training running
-exit
-```
-
-#### Troubleshooting remote_train.sh
-
-**Variant flags not working?**
-
-If variant flags (`-co`, `-fo`, `-pos`) aren't being passed correctly, you can verify:
-
-```bash
-# Check the training script on the server
-ssh username@server 'cat /tmp/llm_train.sh | grep VARIANT_ARG'
-# Should show: VARIANT_ARG='-co' (or '-fo', '-pos')
-# NOT: VARIANT_ARG=''
-
-# Check the training log
-ssh username@server 'cat ~/llm-stylometry/logs/training_*.log | grep -i variant'
-# Should show: "Training variant: content" (or "function", "pos")
-# NOT: "Training baseline models"
-
-# Check debug output at start of training script
-ssh username@server 'cat /tmp/llm_train.sh | head -5'
-# Should show:
-# RESUME_MODE='false' (or 'true')
-# VARIANT_ARG='-co' (or '-fo', '-pos', or '' for baseline)
-```
-
-**Connection issues?**
-
-```bash
-# Test SSH connection manually
-ssh username@server echo "Connection works"
-
-# If you get permission denied, check your SSH keys or use password authentication
-ssh -o PreferredAuthentications=password username@server
-```
-
-**Screen session not found?**
-
-```bash
-# List all screen sessions
-ssh username@server 'screen -ls'
-
-# If training crashed, check the log
-ssh username@server 'tail -50 ~/llm-stylometry/logs/training_*.log'
-```
-
-#### Downloading results after training completes
-
-Once training is complete, use `sync_models.sh` **from your local machine** to download the trained models and results:
-
-```bash
-# Download baseline models only (default)
-./sync_models.sh
-
-# Download specific variants
-./sync_models.sh --content-only           # Content variant only
-./sync_models.sh --baseline --content-only # Baseline + content
-./sync_models.sh --all                    # All conditions (320 models)
-
-# You'll be prompted for:
-# - Server address
-# - Username
-```
-
-**Variant Flags:**
-- `-b, --baseline`: Sync baseline models (80 models)
-- `-co, --content-only`: Sync content-only variant (80 models)
-- `-fo, --function-only`: Sync function-only variant (80 models)
-- `-pos, --part-of-speech`: Sync POS variant (80 models)
-- `-a, --all`: Sync all conditions (320 models total)
-- Flags are stackable: `./sync_models.sh -b -co` syncs baseline + content
-
-**How it works:**
-1. Checks which requested models are complete on remote server (80 per condition)
-2. Only syncs complete model sets
-3. Uses rsync to download models with progress indication
-4. Backs up existing local models before replacing
-5. Also syncs `model_results.pkl` if available
-
-**Note**: The script verifies models are complete before downloading. If training is in progress, it will show which models are missing and skip incomplete conditions.
-
-#### Checking training status
-
-Monitor training progress on your GPU server using `check_remote_status.sh` **from your local machine**:
-
-```bash
-# Check status on default cluster (tensor02)
-./check_remote_status.sh
-
-# Check status on specific cluster
-./check_remote_status.sh --cluster tensor01
-./check_remote_status.sh --cluster tensor02
-```
-
-The script provides a comprehensive status report including:
-
-**For completed models:**
-- Number of completed seeds per author (out of 10)
-- Final training loss (mean ± std across all completed seeds)
-
-**For in-progress models:**
-- Current epoch and progress percentage
-- Current training loss
-- Estimated time to completion (based on actual runtime per epoch)
-
-**Example output:**
-```
-================================================================================
-POS VARIANT MODELS
-================================================================================
-
-AUSTEN
---------------------------------------------------------------------------------
-  Completed: 2/10 seeds
-  Final training loss: 1.1103 ± 0.0003 (mean ± std)
-  In-progress: 1 seeds
-    Seed 2: epoch 132/500 (26.4%) | loss: 1.2382 | ETA: 1d 1h 30m
-
---------------------------------------------------------------------------------
-Summary: 16/80 complete, 8 in progress
-Estimated completion: 1d 1h 30m (longest), 1d 0h 45m (average)
-```
-
-**How it works:**
-1. Connects to your GPU server using saved credentials (`.ssh/credentials_{cluster}.json`)
-2. Analyzes all model directories and loss logs
-3. Calculates statistics for completed models
-4. Estimates remaining time based on actual training progress
-5. Reports status for baseline and all variant models
-
-**Prerequisites:** The script uses the same credentials file as `remote_train.sh`. If credentials aren't saved, you'll be prompted to enter them interactively.
-
-### Model Configuration
-
-Each model uses the same architecture and hyperparameters (applies to baseline and all variants):
-- GPT-2 architecture with custom dimensions
-- 128 embedding dimensions
-- 8 transformer layers
-- 8 attention heads
-- 1024 maximum sequence length
-- Training on ~643,041 tokens per author
-- Early stopping at loss ≤ 3.0 (after minimum 500 epochs)
-
-**Note:** All analysis variants use identical training configurations, differing only in input text transformations. This ensures fair comparison across conditions.
+Trains in detached screen session on GPU server. See script help for full options.
 
 ## Data
 
@@ -737,7 +238,7 @@ If you use this code or data in your research, please cite:
 ```bibtex
 @article{StroEtal25,
   title={A Stylometric Application of Large Language Models},
-  author={Stropkay, Harrison F. and Chen, Jiayi and Rockmore, Daniel N. and Manning, Jeremy R.},
+  author={Stropkay, Harrison F. and Chen, Jiayi and Jabelli, Mohammad J. L. and Rockmore, Daniel N. and Manning, Jeremy R.},
   journal={arXiv preprint arXiv:XXXX.XXXXX},
   year={2025}
 }
