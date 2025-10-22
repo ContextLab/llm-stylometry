@@ -39,7 +39,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-cov
         pip install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
-        pip install cleantext plotly scikit-learn
+        pip install cleantext plotly scikit-learn wordcloud nltk
         pip install torch --index-url https://download.pytorch.org/whl/cpu
         pip install -e .
 
