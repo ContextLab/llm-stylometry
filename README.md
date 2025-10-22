@@ -334,50 +334,6 @@ screen -r llm_training
 exit
 ```
 
-#### Troubleshooting remote_train.sh
-
-**Variant flags not working?**
-
-If variant flags (`-co`, `-fo`, `-pos`) aren't being passed correctly, you can verify:
-
-```bash
-# Check the training script on the server
-ssh username@server 'cat /tmp/llm_train.sh | grep VARIANT_ARG'
-# Should show: VARIANT_ARG='-co' (or '-fo', '-pos')
-# NOT: VARIANT_ARG=''
-
-# Check the training log
-ssh username@server 'cat ~/llm-stylometry/logs/training_*.log | grep -i variant'
-# Should show: "Training variant: content" (or "function", "pos")
-# NOT: "Training baseline models"
-
-# Check debug output at start of training script
-ssh username@server 'cat /tmp/llm_train.sh | head -5'
-# Should show:
-# RESUME_MODE='false' (or 'true')
-# VARIANT_ARG='-co' (or '-fo', '-pos', or '' for baseline)
-```
-
-**Connection issues?**
-
-```bash
-# Test SSH connection manually
-ssh username@server echo "Connection works"
-
-# If you get permission denied, check your SSH keys or use password authentication
-ssh -o PreferredAuthentications=password username@server
-```
-
-**Screen session not found?**
-
-```bash
-# List all screen sessions
-ssh username@server 'screen -ls'
-
-# If training crashed, check the log
-ssh username@server 'tail -50 ~/llm-stylometry/logs/training_*.log'
-```
-
 #### Downloading results after training completes
 
 Once training is complete, use `sync_models.sh` **from your local machine** to download the trained models and results:
