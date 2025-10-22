@@ -42,4 +42,4 @@ models/*/training_state.pt
 
 # Model weight archives (for Dropbox distribution)
 model_weights_*.tar.gz
-model_weights_*.tar.gz.sha256
+# Note: .sha256 checksum files ARE checked into git (they're tiny)
