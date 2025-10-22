@@ -7,7 +7,7 @@
 # completed models and estimates for in-progress training.
 #
 # Usage:
-#   ./check_remote_status.sh [--cluster tensor01|tensor02]
+#   ./check_remote_status.sh --cluster CLUSTER_NAME
 #
 
 set -e
@@ -30,7 +30,7 @@ print_success() {
 }
 
 # Default cluster
-CLUSTER="tensor02"
+CLUSTER=""  # Must be specified with --cluster flag
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -45,12 +45,11 @@ while [[ $# -gt 0 ]]; do
             echo "Check training status on remote GPU server"
             echo ""
             echo "Options:"
-            echo "  --cluster NAME          Select cluster: tensor01 or tensor02 (default: tensor02)"
+            echo "  --cluster NAME          Select cluster (required)"
             echo "  -h, --help             Show this help message"
             echo ""
             echo "Examples:"
-            echo "  $0                              # Check status on tensor02 (default)"
-            echo "  $0 --cluster tensor01           # Check status on tensor01"
+            echo "  $0 --cluster mycluster          # Check status on mycluster"
             exit 0
             ;;
         *)
@@ -60,6 +59,13 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Validate cluster is specified
+if [ -z "$CLUSTER" ]; then
+    print_error "Cluster must be specified with --cluster flag"
+    echo "Example: $0 --cluster mycluster"
+    exit 1
+fi
 
 # Read credentials from config file
 CRED_FILE=".ssh/credentials_${CLUSTER}.json"

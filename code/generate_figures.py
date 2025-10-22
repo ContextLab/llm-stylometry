@@ -167,7 +167,7 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
 
 
 def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir='paper/figs/source', variant=None):
-    """Generate a specific figure."""
+    """Generate a specific figure (main or supplemental)."""
     from llm_stylometry.visualization import (
         generate_all_losses_figure,
         generate_stripplot_figure,
@@ -178,6 +178,7 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         generate_oz_losses_figure
     )
 
+    # Main figures (baseline)
     figure_map = {
         '1a': ('all_losses', generate_all_losses_figure, 'all_losses.pdf'),
         '1b': ('stripplot', generate_stripplot_figure, 'stripplot.pdf'),
@@ -188,9 +189,30 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         '5': ('oz', generate_oz_losses_figure, 'oz_losses.pdf'),
     }
 
+    # Supplemental figures (variants)
+    # S1-S3: Figure 1 variants, S4-S6: Figure 2 variants, S7-S8: Figures 3-4 variants
+    supplemental_map = {
+        's1a': ('1a', 'content'), 's1b': ('1b', 'content'),
+        's2a': ('1a', 'function'), 's2b': ('1b', 'function'),
+        's3a': ('1a', 'pos'), 's3b': ('1b', 'pos'),
+        's4a': ('2a', 'content'), 's4b': ('2b', 'content'),
+        's5a': ('2a', 'function'), 's5b': ('2b', 'function'),
+        's6a': ('2a', 'pos'), 's6b': ('2b', 'pos'),
+        's7a': ('3', 'content'), 's7b': ('3', 'function'), 's7c': ('3', 'pos'),
+        's8a': ('4', 'content'), 's8b': ('4', 'function'), 's8c': ('4', 'pos'),
+    }
+
+    # Check if it's a supplemental figure
+    if figure_name.lower() in supplemental_map:
+        main_fig, supp_variant = supplemental_map[figure_name.lower()]
+        # Override variant parameter
+        variant = supp_variant
+        figure_name = main_fig
+        safe_print(f"Supplemental Figure {figure_name.upper()}: {supp_variant} variant")
+
     if figure_name not in figure_map:
         safe_print(f"Unknown figure: {figure_name}")
-        safe_print(f"Available figures: {', '.join(figure_map.keys())}")
+        safe_print(f"Available: {', '.join(figure_map.keys())} or supplemental: {', '.join(supplemental_map.keys())}")
         return False
 
     # Skip Figure 5 for variants with clear message
@@ -377,14 +399,23 @@ Examples:
     args = parser.parse_args()
 
     if args.list:
-        safe_print("\nAvailable figures:")
-        safe_print("  1a - Figure 1A: Training curves (all_losses.pdf)")
-        safe_print("  1b - Figure 1B: Strip plot (stripplot.pdf)")
-        safe_print("  2a - Figure 2A: Individual t-tests (t_test.pdf)")
-        safe_print("  2b - Figure 2B: Average t-test (t_test_avg.pdf)")
-        safe_print("  3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)")
-        safe_print("  4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)")
-        safe_print("  5  - Figure 5: Oz authorship analysis (oz_losses.pdf) [baseline only]")
+        safe_print("\nMain Figures (baseline):")
+        safe_print("  1a - Figure 1A: Training curves")
+        safe_print("  1b - Figure 1B: Strip plot")
+        safe_print("  2a - Figure 2A: Individual t-tests")
+        safe_print("  2b - Figure 2B: Average t-test")
+        safe_print("  3  - Figure 3: Confusion matrix heatmap")
+        safe_print("  4  - Figure 4: 3D MDS plot")
+        safe_print("  5  - Figure 5: Oz authorship analysis")
+        safe_print("\nSupplemental Figures (variants):")
+        safe_print("  s1a, s1b - Supp. Fig. 1: Content-only (Figs 1A, 1B)")
+        safe_print("  s2a, s2b - Supp. Fig. 2: Function-only (Figs 1A, 1B)")
+        safe_print("  s3a, s3b - Supp. Fig. 3: POS (Figs 1A, 1B)")
+        safe_print("  s4a, s4b - Supp. Fig. 4: Content-only (Figs 2A, 2B)")
+        safe_print("  s5a, s5b - Supp. Fig. 5: Function-only (Figs 2A, 2B)")
+        safe_print("  s6a, s6b - Supp. Fig. 6: POS (Figs 2A, 2B)")
+        safe_print("  s7a-c    - Supp. Fig. 7: Confusion matrices (all variants)")
+        safe_print("  s8a-c    - Supp. Fig. 8: MDS plots (all variants)")
         return 0
 
     safe_print(format_header("LLM Stylometry CLI", 60))
