@@ -19,14 +19,11 @@ print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Dropbox URLs (updated 2025-10-22)
 # NOTE: URLs modified with dl=1 parameter for direct download
+# NOTE: .sha256 checksum files are checked into git (no separate URLs needed)
 BASELINE_URL="https://www.dropbox.com/scl/fi/ol2et7qyz6yps0frl6kzs/model_weights_baseline.tar.gz?rlkey=t58xh437hfej4zx0w8vuj4cu0&dl=1"
-BASELINE_SHA_URL=""  # TODO: Add .sha256 checksum file URL
 CONTENT_URL="https://www.dropbox.com/scl/fi/pe78lgs617p29caisexhk/model_weights_content.tar.gz?rlkey=j6casahg68kj8u1wq203km5yd&dl=1"
-CONTENT_SHA_URL=""  # TODO: Add .sha256 checksum file URL
 FUNCTION_URL="https://www.dropbox.com/scl/fi/klncxsb41jzxpn9xfvvow/model_weights_function.tar.gz?rlkey=l5chc9g5b93ynacaxedki7j6x&dl=1"
-FUNCTION_SHA_URL=""  # TODO: Add .sha256 checksum file URL
 POS_URL="https://www.dropbox.com/scl/fi/y3vr91jt24dwb5qw2mbr7/model_weights_pos.tar.gz?rlkey=xntev319gcakmc2zjw5fv48iu&dl=1"
-POS_SHA_URL=""  # TODO: Add .sha256 checksum file URL
 
 # Default: nothing selected (will default to all if nothing specified)
 DOWNLOAD_BASELINE=false
@@ -283,7 +280,6 @@ download_variant() {
     local variant_name=$1
     local variant_suffix=$2
     local archive_url=$3
-    local checksum_url=$4
 
     echo
     print_info "Processing $variant_name variant..."
@@ -307,20 +303,15 @@ download_variant() {
     # Set up file paths
     local archive_name="model_weights_${variant_name}.tar.gz"
     local archive_path="/tmp/${archive_name}"
-    local checksum_path="/tmp/${archive_name}.sha256"
+    local checksum_path="model_weights_${variant_name}.tar.gz.sha256"  # Git-tracked file in repo
 
     # Download archive
     if ! download_file "$archive_url" "$archive_path" "$variant_name archive"; then
         return 1
     fi
 
-    # Download checksum
+    # Verify checksum (using git-tracked checksum file)
     if [ "$SKIP_CHECKSUM" = false ]; then
-        if ! download_file "$checksum_url" "$checksum_path" "$variant_name checksum"; then
-            return 1
-        fi
-
-        # Verify checksum
         if ! verify_checksum "$archive_path" "$checksum_path" "$variant_name"; then
             return 1
         fi
@@ -334,13 +325,13 @@ download_variant() {
     # Verify extraction
     verify_extraction "$variant_suffix" "$variant_name"
 
-    # Clean up downloaded files unless --keep-archives flag is set
+    # Clean up downloaded archive unless --keep-archives flag is set
     if [ "$KEEP_ARCHIVES" = false ]; then
-        print_info "Cleaning up downloaded archives..."
-        rm -f "$archive_path" "$checksum_path"
+        print_info "Cleaning up downloaded archive..."
+        rm -f "$archive_path"
         print_success "Cleanup complete"
     else
-        print_info "Keeping archives in /tmp/ (--keep-archives flag)"
+        print_info "Keeping archive in /tmp/ (--keep-archives flag)"
     fi
 
     echo
@@ -374,7 +365,7 @@ DOWNLOADED_COUNT=0
 FAILED_COUNT=0
 
 if [ "$DOWNLOAD_BASELINE" = true ]; then
-    if download_variant "baseline" "" "$BASELINE_URL" "$BASELINE_SHA_URL"; then
+    if download_variant "baseline" "" "$BASELINE_URL"; then
         ((DOWNLOADED_COUNT++))
     else
         ((FAILED_COUNT++))
@@ -382,7 +373,7 @@ if [ "$DOWNLOAD_BASELINE" = true ]; then
 fi
 
 if [ "$DOWNLOAD_CONTENT" = true ]; then
-    if download_variant "content" "content" "$CONTENT_URL" "$CONTENT_SHA_URL"; then
+    if download_variant "content" "content" "$CONTENT_URL"; then
         ((DOWNLOADED_COUNT++))
     else
         ((FAILED_COUNT++))
@@ -390,7 +381,7 @@ if [ "$DOWNLOAD_CONTENT" = true ]; then
 fi
 
 if [ "$DOWNLOAD_FUNCTION" = true ]; then
-    if download_variant "function" "function" "$FUNCTION_URL" "$FUNCTION_SHA_URL"; then
+    if download_variant "function" "function" "$FUNCTION_URL"; then
         ((DOWNLOADED_COUNT++))
     else
         ((FAILED_COUNT++))
@@ -398,7 +389,7 @@ if [ "$DOWNLOAD_FUNCTION" = true ]; then
 fi
 
 if [ "$DOWNLOAD_POS" = true ]; then
-    if download_variant "pos" "pos" "$POS_URL" "$POS_SHA_URL"; then
+    if download_variant "pos" "pos" "$POS_URL"; then
         ((DOWNLOADED_COUNT++))
     else
         ((FAILED_COUNT++))
