@@ -173,7 +173,7 @@ and to ensure that the models are not overfitting to a specific book or random
 sample.
 
 \subsubsection{Investigating the contributions of function words, content
-words, and parts of speech}
+words, and parts of speech \label{subsec:ablation}}
 
 In order to investigate the contributions of different types of words to the
 stylometric signatures captured by our models, we carried out additional
@@ -301,22 +301,20 @@ Despite achieving perfect classification accuracy, not all authors are equally
 distinctive. For example, we reasoned that authors with similar writing styles
 might be more confusable (i.e., yielding relatively smaller losses for models
 trained across different authors). We computed the average loss for each author
-using the models trained on the other authors' texts (Fig.~\ref{fig:confusion-matrix}).
-Authors with similar writing styles (e.g., Baum and Thompson) yield relatively
-small losses when evaluated using models trained on the other author's texts.
-In contrast, authors with more distinct writing styles (e.g., Austen and
-Thompson) yield relatively large losses when evaluated using each other's
-models. To illustrate these patterns, we also project the losses into a 3D
-space using multidimensional scaling~\citep[MDS; ][]{Krus64} applied to the
-pairwise correlations between rows of the loss matrix, excluding the diagonal
-entries (i.e., the losses obtained using each author's model when applied to
-their own held-out text). We observed (Fig.~\ref{fig:mds}) that Baum and
-Thompson (authors of corpora largely intended to be similar) are mapped onto
-nearby locations, providing some evidence that the embeddings are
-``meaningful.'' We suggest that this approach might lend itself to further
-exploration and consideration by literature scholars, particularly if extended
-to a larger embedding space. For the purposes of our present work, however, we
-provide the plot solely as a provocative demonstration.
+using the models trained on the other authors' texts
+(Fig.~\ref{fig:confusion-matrix}). Authors with similar writing styles (e.g.,
+Baum and Thompson) yield relatively small losses when evaluated using models
+trained on the other author's texts. In contrast, authors with more distinct
+writing styles (e.g., Austen and Thompson) yield relatively large losses when
+evaluated using each other's models. To illustrate these patterns, we also
+project the losses into a 3D space using multidimensional scaling~\citep[MDS;
+][]{Krus64} applied to the pairwise correlations between rows of the loss
+matrix, excluding the diagonal entries (i.e., the losses obtained using each
+author's model when applied to their own held-out text; Fig.~\ref{fig:mds}). We
+suggest that this approach might lend itself to further exploration and
+consideration by literature scholars, particularly if extended to a larger
+embedding space. For the purposes of our present work, however, we provide the
+plot solely as a provocative demonstration.
 
 \begin{figure*}[t]
   \centering
@@ -399,10 +397,9 @@ corpora for each author: (1) content-word-only corpora, in which all function
 words were replaced with a special token; (2) function-word-only corpora, in
 which all content words were replaced with a special token; and (3)
 part-of-speech-only corpora, in which each word was replaced with its
-corresponding part-of-speech tag (see \textit{Investigating the contributions
-of content words, function words, and parts of speech}). We then re-trained our
-models on each of these modified corpora and repeated the predictive
-comparison analyses (Supp. Figs.~\crossentropyContent--\ttestsPOS).
+corresponding part-of-speech tag (see \nameref{subsec:ablation}). We then
+re-trained our models on each of these modified corpora and repeated the
+predictive comparison analyses (Supp. Figs.~\crossentropyContent--\ttestsPOS).
 
 The models trained on the content-word-only corpora where intended to capture
 stylistic patterns related to vocabulary choice and thematic content. The
@@ -410,14 +407,10 @@ models trained on the function-word-only corpora were intended to capture
 syntactic and grammatical patterns that transcended story-specific content.
 Finally, the models trained on the part-of-speech-only corpora were intended to
 capture higher-level syntactic patterns while abstracting away from specific
-word choices.
-
-Models trained on a single author's texts from each of these modified corpora
-all converged, achieving training losses below 3.0 well within 500 training
-epochs (Supp. Figs.~\crossentropyContent, \crossentropyFunction, and
-\crossentropyPOS). This indicates that all of these modified corpora contain
-sufficient statistical regularities for GPT-2 models to learn to reliably
-achieve next-token predictions.
+word choices. Models trained on a single author's texts from each of these
+modified corpora all converged, achieving training losses below 3.0 well within
+500 training epochs (Supp. Figs.~\crossentropyContent, \crossentropyFunction,
+and \crossentropyPOS).
 
 We found that models trained on content-word-only corpora reliably learned
 author-specific patterns for 6 of the 8 authors (Supp.
@@ -454,8 +447,13 @@ than models trained on the intact texts ($t(7.36) = 5.72, p = 6.01 \times
 Taken together, these ablation results suggest that both content words and
 function words contribute to the author-unique stylometric signatures captured
 by our models. In contrast, grammatical structure alone, as reflected in
-part-of-speech sequences and captured by our methodology, appears to be
-more similar across authors.
+part-of-speech sequences and captured by our methodology, appears to be more
+similar across authors. Distinctiveness notwithstanding, however, models
+trained on \textit{all} of the corpora (intact texts, content-word-only,
+function-word-only, and part-of-speech-only) all rapidly converged to low
+training and evaluation losses. This indicates that all four corpora contain
+sufficient statistical regularities for GPT-2 models to learn to reliably
+and accurately make next-token predictions.
 
 \section{Discussion}
 
@@ -616,7 +614,13 @@ stylometric distances---suggest that language models capture robust stylistic
 signatures, even when trained on relatively limited data. The convergence of
 our approach with concurrent work~\citep{HuanEtal25,Reza25} indicates that the
 field may be moving toward predictive modeling as a unifying framework for
-computational stylometry. We suggest that our approach holds promise as a new
+computational stylometry. Our finding that models trained only on content words
+or function words can still capture author-specific patterns highlights the
+multifaceted nature of writing style. Both lexical choice and syntactic
+patterns appear to contribute to unique authorial signatures. In contrast,
+models trained solely on part-of-speech sequences struggled to differentiate
+between most authors, suggesting that grammatical structure alone is less
+distinctive. Overall, we suggest that our approach holds promise as a new
 technique for machine reading approaches to text-based
 disciplines~\citep{More17,More00,Holm98} and the practices of cultural
 analytics~\citep{UndeEtal13}.
