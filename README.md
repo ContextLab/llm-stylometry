@@ -103,6 +103,15 @@ See the [Package API](#package-api) section for all available functions.
 
 **Note**: T-test calculations (Figure 2) take 2-3 minutes due to statistical computations across all epochs and authors.
 
+**Downloading pre-trained weights (optional):** Model weight files are gitignored due to size. Download pre-trained weights to explore or use trained models:
+
+```bash
+./download_model_weights.sh --all    # Download all variants (~26.6GB)
+./download_model_weights.sh -b       # Baseline only (~6.7GB)
+```
+
+See `models/README.md` for details. Pre-trained weights are not required for generating figures.
+
 ## Analysis Variants
 
 The paper analyzes three linguistic variants (Supplemental Figures S1-S8):
