@@ -83,7 +83,7 @@ echo "  -co, --content-only     Train content-only variant"
 echo "  -fo, --function-only    Train function-only variant"
 echo "  -pos, --part-of-speech  Train part-of-speech variant"
 echo "  -g, --max-gpus NUM      Maximum number of GPUs to use (default: 4)"
-echo "  --cluster NAME          Select cluster: tensor01 or tensor02 (default: tensor02)"
+echo "  --cluster NAME          Select cluster (required: specify your cluster name)"
 echo
 
 # Parse command line arguments
@@ -91,7 +91,7 @@ KILL_MODE=false
 RESUME_MODE=false
 VARIANT_ARG=""
 MAX_GPUS=""
-CLUSTER="tensor02"  # Default cluster
+CLUSTER=""  # Must be specified with --cluster flag
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -135,6 +135,14 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Validate cluster is specified
+if [ -z "$CLUSTER" ]; then
+    print_error "Cluster must be specified with --cluster flag"
+    echo "Example: $0 --cluster mycluster"
+    echo "Create credentials file: .ssh/credentials_mycluster.json"
+    exit 1
+fi
 
 # Get server details - try to read from cluster-specific credentials file first
 CRED_FILE=".ssh/credentials_${CLUSTER}.json"
