@@ -39,3 +39,7 @@ models/*/model.safetensors
 models/*/model.pth
 models/*/pytorch_model.bin
 models/*/training_state.pt
+
+# Model weight archives (for Dropbox distribution)
+model_weights_*.tar.gz
+model_weights_*.tar.gz.sha256
