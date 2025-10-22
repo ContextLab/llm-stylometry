@@ -15,11 +15,12 @@ llm-stylometry/
 │   └── workflows/       # Test automation workflows
 ├── llm_stylometry/       # Python package with analysis tools
 │   ├── analysis/        # Statistical analysis utilities
+│   ├── classification/  # Text classification module (word count-based)
 │   ├── core/           # Core experiment and configuration
 │   ├── data/           # Data loading and tokenization
 │   ├── models/         # Model utilities
 │   ├── utils/          # Helper utilities
-│   ├── visualization/  # Plotting and visualization
+│   ├── visualization/  # Plotting and visualization (GPT-2 + classification)
 │   └── cli_utils.py    # CLI helper functions
 ├── code/                # Training and CLI scripts
 │   ├── generate_figures.py       # Main CLI entry point
@@ -30,6 +31,7 @@ llm-stylometry/
 ├── data/                # Datasets and results
 │   ├── raw/            # Original texts from Project Gutenberg
 │   ├── cleaned/        # Preprocessed texts by author
+│   ├── classifier_results/  # Text classification results (pkl files)
 │   └── model_results.pkl # Consolidated model training results
 ├── models/              # Trained models (80 baseline + 240 variants = 320 total)
 │   └── {author}_tokenizer=gpt2_seed={0-9}/  # Baseline models
@@ -210,6 +212,185 @@ fig = generate_all_losses_figure(
 ```
 
 **Note**: T-test figures (2A, 2B) never apply fairness thresholding since they require all 500 epochs for statistical calculations.
+
+## Text Classification Analysis
+
+In addition to GPT-2 stylometry, the project includes word count-based text classification using scikit-learn. This provides a complementary approach to authorship attribution through traditional machine learning.
+
+### Running Classification Experiments
+
+Use the `--classify` flag to run text classification instead of GPT-2 training:
+
+```bash
+# Run baseline classification (all unique words)
+./run_llm_stylometry.sh --classify
+
+# Run variant classifications
+./run_llm_stylometry.sh --classify --content-only      # Content words only
+./run_llm_stylometry.sh --classify --function-only     # Function words only
+./run_llm_stylometry.sh --classify --part-of-speech    # POS tags only
+```
+
+### Classification Methodology
+
+1. **Feature Extraction**: `CountVectorizer` extracts word counts from all books
+   - **No stop words filtering** (`stop_words=None`) - critical for fair comparison across variants
+   - Baseline: All unique words across the corpus
+   - Content variant: Only content words (function words masked as `<FUNC>`)
+   - Function variant: Only function words (content words masked as `<CONTENT>`)
+   - POS variant: POS tag counts (words replaced with tags)
+
+2. **Cross-Validation**: Leave-one-book-out per author
+   - Each split holds out exactly 1 book from each of the 8 authors (8 books total)
+   - Up to 1,000 randomly sampled combinations
+   - Ensures all books are tested and results are robust
+
+3. **Classifier**: Output-code multi-class classifier
+   - Base estimator: Logistic regression (`max_iter=1000`, `solver='lbfgs'`)
+   - Author-specific feature weights via back-solving: `input = W_pinv @ (output - bias)`
+   - Returns different word importance weights for each author
+
+4. **Metrics**: Classification accuracy with bootstrap-estimated 95% confidence intervals
+   - Seaborn's automatic bootstrap (n_boot=1000)
+   - Computed separately for each author and overall
+
+### Classification Results
+
+**Output files:**
+- **Results**: `data/classifier_results/{variant}.pkl` (or `baseline.pkl`)
+- **Accuracy charts**: `paper/figs/source/classification_accuracy_{variant}.pdf`
+- **Word clouds**: `paper/figs/source/wordcloud_{author}_{variant}.pdf`
+  - One overall word cloud showing general feature importance
+  - One per author showing author-specific discriminative features
+  - Vectorized PDF output using wordcloud library
+
+**Results structure:**
+```python
+import pickle
+
+# Load classification results
+with open('data/classifier_results/baseline.pkl', 'rb') as f:
+    data = pickle.load(f)
+
+# Contents:
+# data['results']: pd.DataFrame with predictions and accuracies (long format)
+# data['vectorizer']: Fitted CountVectorizer
+# data['feature_names']: List of vocabulary words
+# data['variant']: Analysis variant (None for baseline)
+# data['n_splits']: Number of CV splits
+# data['seed']: Random seed used
+```
+
+### Python API
+
+```python
+from llm_stylometry.classification import run_classification_experiment
+from llm_stylometry.visualization import (
+    generate_classification_accuracy_figure,
+    generate_word_cloud_figure
+)
+from llm_stylometry.core.constants import AUTHORS
+
+# Run classification experiment
+result_path = run_classification_experiment(
+    variant='content',       # 'content', 'function', 'pos', or None for baseline
+    max_splits=1000,         # Maximum CV splits
+    seed=42                  # Random seed for reproducibility
+)
+
+# Generate accuracy bar chart
+generate_classification_accuracy_figure(
+    data_path='data/classifier_results/content.pkl',
+    output_path='paper/figs/source/classification_accuracy_content.pdf',
+    variant='content'
+)
+
+# Generate overall word cloud
+generate_word_cloud_figure(
+    data_path='data/classifier_results/content.pkl',
+    author=None,  # None for overall, or specific author name
+    output_path='paper/figs/source/wordcloud_overall_content.pdf',
+    variant='content',
+    max_words=100
+)
+
+# Generate per-author word clouds
+for author in AUTHORS:
+    generate_word_cloud_figure(
+        data_path='data/classifier_results/content.pkl',
+        author=author,
+        output_path=f'paper/figs/source/wordcloud_{author}_content.pdf',
+        variant='content'
+    )
+```
+
+### Advanced Usage
+
+**Custom data loading:**
+```python
+from llm_stylometry.classification import (
+    load_books_by_author,
+    create_count_vectorizer,
+    vectorize_books
+)
+
+# Load books
+books = load_books_by_author(data_dir='data/cleaned', variant=None)
+# Returns: Dict[author] -> [(book_id, text), ...]
+
+# Create vectorizer (stop_words=None is critical!)
+vectorizer = create_count_vectorizer(books)
+print(f"Vocabulary size: {len(vectorizer.vocabulary_)}")
+
+# Vectorize
+vectors = vectorize_books(books, vectorizer)
+# Returns: [(author, book_id, vector), ...]
+```
+
+**Custom cross-validation:**
+```python
+from llm_stylometry.classification import (
+    generate_cv_splits,
+    run_cross_validation,
+    OutputCodeClassifier
+)
+
+# Generate custom CV splits
+splits = generate_cv_splits(vectors, max_splits=100, seed=42)
+
+# Run CV
+results_df = run_cross_validation(vectors, splits, random_state=42)
+
+# Results DataFrame (long format for seaborn):
+# - split_id: int
+# - author: str (true author)
+# - accuracy: float (1.0 if correct, 0.0 if incorrect)
+# - held_out_book_id: str
+# - predicted_author: str
+# - classifier: OutputCodeClassifier object
+
+# Overall accuracy
+print(f"Accuracy: {results_df['accuracy'].mean():.4f}")
+```
+
+**Extract author-specific feature weights:**
+```python
+# Get classifier from results
+clf = results_df.iloc[0]['classifier']
+feature_names = vectorizer.get_feature_names_out().tolist()
+
+# Get author-specific weights (via back-solving)
+weights = clf.get_feature_weights(feature_names)
+
+# weights['baum']: {word: weight, ...}
+# weights['austen']: {word: weight, ...}
+# weights['overall']: {word: avg_weight, ...}
+
+# Top words for Baum
+baum_weights = weights['baum']
+top_baum = sorted(baum_weights.items(), key=lambda x: abs(x[1]), reverse=True)[:10]
+print("Top Baum features:", top_baum)
+```
 
 ## Training Models from Scratch
 

@@ -121,12 +121,30 @@ for variant in "${VARIANTS[@]}"; do
     echo
     if [ "$variant" == "baseline" ]; then
         print_info "Computing baseline statistics..."
-        python code/compute_stats.py --data "$DATA_PATH"
+        VARIANT_DATA_PATH="data/model_results.pkl"
+        if [ ! -f "$VARIANT_DATA_PATH" ]; then
+            print_error "Baseline data not found: $VARIANT_DATA_PATH"
+            continue
+        fi
+        python code/compute_stats.py --data "$VARIANT_DATA_PATH"
     else
         print_info "Computing statistics for $variant variant..."
-        python code/compute_stats.py --data "$DATA_PATH" --variant "$variant"
+        VARIANT_DATA_PATH="data/model_results_${variant}.pkl"
+        if [ ! -f "$VARIANT_DATA_PATH" ]; then
+            print_error "$variant data not found: $VARIANT_DATA_PATH"
+            continue
+        fi
+        python code/compute_stats.py --data "$VARIANT_DATA_PATH" --variant "$variant"
     fi
     echo
 done
+
+# If --all was specified, compute cross-variant comparisons
+if [ ${#VARIANTS[@]} -eq 4 ]; then
+    echo
+    print_info "Computing cross-variant comparisons..."
+    python code/compute_stats.py --cross-variant-comparison
+    echo
+fi
 
 print_success "Statistical analysis complete!"

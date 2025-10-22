@@ -3,7 +3,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, t as t_dist
 import numpy as np
 from tqdm import tqdm
 import logging
@@ -12,7 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_t_statistics(df, max_epochs=500):
-    """Calculate t-statistics comparing same vs other author losses."""
+    """
+    Calculate t-statistics and df comparing same vs other author losses.
+
+    Returns:
+        tuple: (t_raws_df, t_raws, df_values, thresholds)
+            - t_raws_df: Long-form DataFrame with columns [Epoch, Author, t_raw]
+            - t_raws: Dict mapping author to list of t-values
+            - df_values: Dict mapping author to list of degrees of freedom
+            - thresholds: Dict mapping author to list of t-thresholds for p=0.001
+    """
 
     # Define authors
     AUTHORS = ["baum", "thompson", "dickens", "melville", "wells", "austen", "fitzgerald", "twain"]
@@ -27,6 +36,8 @@ def calculate_t_statistics(df, max_epochs=500):
     authors = sorted(t_df["train_author"].unique())
     epochs = sorted(t_df["epochs_completed"].unique())
     t_raws = {author: [] for author in authors}
+    df_values = {author: [] for author in authors}
+    thresholds = {author: [] for author in authors}
 
     # Compute Welch's t-statistic for each author/epoch
     for author in tqdm(authors, desc="Processing authors"):
@@ -50,16 +61,25 @@ def calculate_t_statistics(df, max_epochs=500):
                     logger.debug(f"NaN t-statistic for {author} at epoch {epoch}: "
                                 f"n_true={len(true_losses)}, n_other={len(other_losses)}")
                 t_raws[author].append(result.statistic)
+                df_values[author].append(result.df)
+
+                # Compute t-threshold for p=0.001 (one-tailed) given this df
+                t_threshold = t_dist.ppf(1 - 0.001, result.df)
+                thresholds[author].append(t_threshold)
             elif len(true_losses) > 0 or len(other_losses) > 0:
                 # Have some data but insufficient for t-test
                 logger.debug(f"Insufficient data for t-test for {author} at epoch {epoch}: "
                             f"n_true={len(true_losses)}, n_other={len(other_losses)} "
                             f"(need at least 2 samples per group)")
                 t_raws[author].append(np.nan)
+                df_values[author].append(np.nan)
+                thresholds[author].append(np.nan)
             else:
                 # No data at all
                 logger.debug(f"No data for {author} at epoch {epoch}")
                 t_raws[author].append(np.nan)
+                df_values[author].append(np.nan)
+                thresholds[author].append(np.nan)
 
     # Convert to long-form DataFrame
     t_raws_df = (
@@ -69,7 +89,7 @@ def calculate_t_statistics(df, max_epochs=500):
         .rename(columns={"index": "Epoch"})
     )
 
-    return t_raws_df, t_raws
+    return t_raws_df, t_raws, df_values, thresholds
 
 
 def generate_t_test_figure(
@@ -113,7 +133,25 @@ def generate_t_test_figure(
             raise ValueError("No variant column in data")
         df = df[df['variant'] == variant].copy()
 
-    t_raws_df, _ = calculate_t_statistics(df)
+    t_raws_df, _, df_values, thresholds = calculate_t_statistics(df)
+
+    # Compute average threshold across authors at each epoch (for plotting)
+    epochs = sorted(t_raws_df["Epoch"].unique())
+    threshold_data = []
+    for epoch in epochs:
+        epoch_thresholds = []
+        for author in thresholds.keys():
+            epoch_idx = list(epochs).index(epoch)
+            if epoch_idx < len(thresholds[author]):
+                thresh = thresholds[author][epoch_idx]
+                if not np.isnan(thresh):
+                    epoch_thresholds.append(thresh)
+
+        # For each epoch, add one row per author's threshold (for bootstrap CI calculation)
+        for thresh in epoch_thresholds:
+            threshold_data.append({'Epoch': epoch, 'threshold': thresh})
+
+    threshold_df = pd.DataFrame(threshold_data)
 
     # Define color palette
     unique_authors = sorted(t_raws_df["Author"].unique())
@@ -124,6 +162,7 @@ def generate_t_test_figure(
     # Create figure
     fig, ax = plt.subplots(figsize=figsize)
 
+    # Plot author t-statistics
     sns.lineplot(
         data=t_raws_df,
         x="Epoch",
@@ -135,22 +174,28 @@ def generate_t_test_figure(
         legend=show_legend,
     )
 
+    # Plot adaptive threshold with bootstrap 95% CI (solid black line)
+    if not threshold_df.empty:
+        sns.lineplot(
+            data=threshold_df,
+            x="Epoch",
+            y="threshold",
+            ax=ax,
+            color="black",
+            linewidth=2,
+            linestyle="-",  # Solid line
+            errorbar='ci',  # Bootstrap 95% CI
+            label="p<0.001 threshold" if show_legend else ""
+        )
+
     sns.despine(ax=ax, top=True, right=True)
-    # Remove title as requested
-    # ax.set_title(
-    #     "$t$-values: training author vs. other authors",
-    #     fontsize=12,
-    #     pad=10,
-    # )
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
     # Calculate dynamic y-axis limits based on VALID data only
-    # Filter out NaN/Inf values to avoid matplotlib errors
     valid_t_values = t_raws_df['t_raw'].replace([np.inf, -np.inf], np.nan).dropna()
 
     if len(valid_t_values) == 0:
-        # No valid data - use reasonable defaults around threshold
         logger.warning("No valid t-statistics found. Using default axis limits.")
         y_min = -1.0
         y_max = 5.0
@@ -158,24 +203,17 @@ def generate_t_test_figure(
         y_min = valid_t_values.min()
         y_max = valid_t_values.max()
 
-        # Add padding for better visualization
+        # Add padding
         y_range = y_max - y_min
         padding = 0.05 * y_range if y_range > 0 else 0.5
+        y_min = min(y_min, 0) - padding
+        y_max = y_max + padding
 
-        # Ensure threshold line (p<0.001 at t=3.291) is always visible
-        threshold = 3.291
-        y_max = max(y_max, threshold) + padding
-        y_min = min(y_min, 0) - padding  # Allow negatives if they exist
-
-    # Final validation to ensure limits are finite and valid
+    # Final validation
     if not (np.isfinite(y_min) and np.isfinite(y_max) and y_min < y_max):
         logger.error(f"Invalid axis limits computed: y_min={y_min}, y_max={y_max}. Using defaults.")
         y_min = -1.0
         y_max = 5.0
-
-    # Add threshold line
-    threshold = 3.291
-    ax.axhline(y=threshold, linestyle="--", color="black", label="p<0.001 threshold" if show_legend else "")
     ax.set_xlim(0, t_raws_df["Epoch"].max())
     ax.set_ylim(y_min, y_max)
 
@@ -244,36 +282,60 @@ def generate_t_test_avg_figure(
             raise ValueError("No variant column in data")
         df = df[df['variant'] == variant].copy()
 
-    t_raws_df, _ = calculate_t_statistics(df)
+    t_raws_df, _, df_values, thresholds = calculate_t_statistics(df)
+
+    # Compute average threshold across authors at each epoch
+    epochs = sorted(t_raws_df["Epoch"].unique())
+    threshold_data = []
+    for epoch in epochs:
+        epoch_thresholds = []
+        for author in thresholds.keys():
+            epoch_idx = list(epochs).index(epoch)
+            if epoch_idx < len(thresholds[author]):
+                thresh = thresholds[author][epoch_idx]
+                if not np.isnan(thresh):
+                    epoch_thresholds.append(thresh)
+
+        for thresh in epoch_thresholds:
+            threshold_data.append({'Epoch': epoch, 'threshold': thresh})
+
+    threshold_df = pd.DataFrame(threshold_data)
 
     # Create figure
     fig, ax = plt.subplots(figsize=figsize)
 
+    # Plot average t-statistic (gray for consistency with individual figure)
     sns.lineplot(
         data=t_raws_df,
         x="Epoch",
         y="t_raw",
         ax=ax,
         legend=False,
-        color="black",  # Set line color to black
+        color="gray",  # Set line color to gray
     )
 
+    # Plot adaptive threshold with bootstrap 95% CI (solid black line, consistent with 2a)
+    if not threshold_df.empty:
+        sns.lineplot(
+            data=threshold_df,
+            x="Epoch",
+            y="threshold",
+            ax=ax,
+            color="black",
+            linewidth=2,
+            linestyle="-",  # Solid line
+            errorbar='ci',  # Bootstrap 95% CI
+            label="p<0.001 threshold" if show_legend else ""
+        )
+
     sns.despine(ax=ax, top=True, right=True)
-    # Remove title as requested
-    # ax.set_title(
-    #     "Average $t$-values: training author vs. other authors",
-    #     fontsize=12,
-    #     pad=10,
-    # )
     ax.set_xlabel("Epochs completed", fontsize=12)
     ax.set_ylabel("$t$-value", fontsize=12)
 
-    # Calculate dynamic y-axis limits based on VALID data only
-    # Filter out NaN/Inf values to avoid matplotlib errors
+    # Calculate dynamic y-axis limits
     valid_t_values = t_raws_df['t_raw'].replace([np.inf, -np.inf], np.nan).dropna()
 
     if len(valid_t_values) == 0:
-        # No valid data - use reasonable defaults around threshold
         logger.warning("No valid t-statistics found for average figure. Using default axis limits.")
         y_min = -1.0
         y_max = 5.0
@@ -281,24 +343,18 @@ def generate_t_test_avg_figure(
         y_min = valid_t_values.min()
         y_max = valid_t_values.max()
 
-        # Add padding for better visualization
+        # Add padding
         y_range = y_max - y_min
         padding = 0.05 * y_range if y_range > 0 else 0.5
+        y_min = min(y_min, 0) - padding
+        y_max = y_max + padding
 
-        # Ensure threshold line (p<0.001 at t=3.291) is always visible
-        threshold = 3.291
-        y_max = max(y_max, threshold) + padding
-        y_min = min(y_min, 0) - padding  # Allow negatives if they exist
-
-    # Final validation to ensure limits are finite and valid
+    # Final validation
     if not (np.isfinite(y_min) and np.isfinite(y_max) and y_min < y_max):
         logger.error(f"Invalid axis limits computed for average figure: y_min={y_min}, y_max={y_max}. Using defaults.")
         y_min = -1.0
         y_max = 5.0
 
-    # Add threshold line
-    threshold = 3.291
-    ax.axhline(y=threshold, linestyle="--", color="black", label="p<0.001 threshold" if show_legend else "")
     ax.set_xlim(0, t_raws_df["Epoch"].max())
     ax.set_ylim(y_min, y_max)
 

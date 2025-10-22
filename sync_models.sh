@@ -22,6 +22,7 @@ SYNC_BASELINE=false
 SYNC_CONTENT=false
 SYNC_FUNCTION=false
 SYNC_POS=false
+CLUSTER="tensor02"  # Default cluster
 
 # Parse command line arguments (stackable)
 while [[ $# -gt 0 ]]; do
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
             SYNC_POS=true
             shift
             ;;
+        --cluster)
+            CLUSTER="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -58,15 +63,17 @@ while [[ $# -gt 0 ]]; do
             echo "  -fo, --function-only    Sync function-only variant models"
             echo "  -pos, --part-of-speech  Sync part-of-speech variant models"
             echo "  -a, --all               Sync all models (baseline + all variants)"
+            echo "  --cluster CLUSTER       Specify cluster (tensor01 or tensor02, default: tensor02)"
             echo "  -h, --help              Show this help message"
             echo ""
             echo "Flags are stackable. Examples:"
-            echo "  $0                      # Sync baseline only (default)"
+            echo "  $0                      # Sync baseline only (default, tensor02)"
             echo "  $0 -b -co               # Sync baseline and content-only"
             echo "  $0 -fo -pos             # Sync function-only and POS"
             echo "  $0 -a                   # Sync everything"
+            echo "  $0 -a --cluster tensor01  # Sync everything from tensor01"
             echo ""
-            echo "Default: Sync baseline models only"
+            echo "Default: Sync baseline models only from tensor02"
             exit 0
             ;;
         *)
@@ -86,6 +93,8 @@ echo "=================================================="
 echo "       LLM Stylometry Model Sync"
 echo "=================================================="
 echo
+print_info "Cluster: $CLUSTER"
+echo
 echo "Sync configuration:"
 [ "$SYNC_BASELINE" = true ] && echo "  ✓ Baseline models"
 [ "$SYNC_CONTENT" = true ] && echo "  ✓ Content-only variant"
@@ -93,18 +102,44 @@ echo "Sync configuration:"
 [ "$SYNC_POS" = true ] && echo "  ✓ Part-of-speech variant"
 echo
 
-# Get server details
-read -p "Enter GPU server address (hostname or IP): " SERVER_ADDRESS
-if [ -z "$SERVER_ADDRESS" ]; then
-    print_error "Server address cannot be empty"
+# Load credentials from config file
+CRED_FILE=".ssh/credentials_${CLUSTER}.json"
+
+if [ ! -f "$CRED_FILE" ]; then
+    print_error "Credentials file not found: $CRED_FILE"
+    print_info "Please create credentials file with server, username, and password"
     exit 1
 fi
 
-read -p "Enter username for $SERVER_ADDRESS: " USERNAME
-if [ -z "$USERNAME" ]; then
-    print_error "Username cannot be empty"
+# Extract credentials using Python
+if ! command -v python3 &> /dev/null; then
+    print_error "python3 is required to parse credentials file"
     exit 1
 fi
+
+SERVER_ADDRESS=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['server'])")
+USERNAME=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['username'])")
+PASSWORD=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['password'])")
+
+if [ -z "$SERVER_ADDRESS" ] || [ -z "$USERNAME" ]; then
+    print_error "Failed to load credentials from $CRED_FILE"
+    exit 1
+fi
+
+# Setup SSH command with password authentication if available
+if [ -n "$PASSWORD" ]; then
+    if ! command -v sshpass &> /dev/null; then
+        print_error "sshpass is required but not installed. Please install it: brew install hudochenkov/sshpass/sshpass"
+        exit 1
+    fi
+    SSH_CMD="sshpass -p '$PASSWORD' ssh -o StrictHostKeyChecking=no"
+    RSYNC_CMD="sshpass -p '$PASSWORD' rsync -e 'ssh -o StrictHostKeyChecking=no'"
+else
+    SSH_CMD="ssh"
+    RSYNC_CMD="rsync"
+fi
+
+print_info "Connecting to: $USERNAME@$SERVER_ADDRESS"
 
 print_info "Checking model status on remote server..."
 
@@ -118,8 +153,8 @@ REMOTE_SYNC_FUNCTION=$SYNC_FUNCTION
 REMOTE_SYNC_POS=$SYNC_POS
 
 # Check which models are available on remote server
-ssh "$USERNAME@$SERVER_ADDRESS" \
-    "SYNC_BASELINE='$REMOTE_SYNC_BASELINE' SYNC_CONTENT='$REMOTE_SYNC_CONTENT' SYNC_FUNCTION='$REMOTE_SYNC_FUNCTION' SYNC_POS='$REMOTE_SYNC_POS' bash -s" << 'ENDSSH' > "$TEMP_FILE"
+eval $SSH_CMD "$USERNAME@$SERVER_ADDRESS" \
+    "'SYNC_BASELINE=$REMOTE_SYNC_BASELINE' 'SYNC_CONTENT=$REMOTE_SYNC_CONTENT' 'SYNC_FUNCTION=$REMOTE_SYNC_FUNCTION' 'SYNC_POS=$REMOTE_SYNC_POS' bash -s" << 'ENDSSH' > "$TEMP_FILE"
 #!/bin/bash
 
 MODELS_DIR="$HOME/llm-stylometry/models"
@@ -336,19 +371,19 @@ for variant in "${VARIANTS_TO_SYNC[@]}"; do
 
     if [ "$variant" = "baseline" ]; then
         # Sync baseline models (no variant suffix)
-        rsync -avz --progress \
-            --include="*_tokenizer=gpt2_seed=*/" \
-            --include="*_tokenizer=gpt2_seed=*/***" \
-            --exclude="*_variant=*" \
-            --exclude="*" \
-            "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
+        eval $RSYNC_CMD -avz --progress \
+            --include="'*_tokenizer=gpt2_seed=*/'" \
+            --include="'*_tokenizer=gpt2_seed=*/***'" \
+            --exclude="'*_variant=*'" \
+            --exclude="'*'" \
+            "'$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/'" "'$LOCAL_MODELS_DIR/'"
     else
         # Sync variant models
-        rsync -avz --progress \
-            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/" \
-            --include="*_variant=${variant}_tokenizer=gpt2_seed=*/***" \
-            --exclude="*" \
-            "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/" "$LOCAL_MODELS_DIR/"
+        eval $RSYNC_CMD -avz --progress \
+            --include="'*_variant=${variant}_tokenizer=gpt2_seed=*/'" \
+            --include="'*_variant=${variant}_tokenizer=gpt2_seed=*/***'" \
+            --exclude="'*'" \
+            "'$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/models/'" "'$LOCAL_MODELS_DIR/'"
     fi
 
     if [ $? -eq 0 ]; then
@@ -376,12 +411,12 @@ for variant in "${VARIANTS_TO_SYNC[@]}"; do
         RESULTS_FILE="model_results_${variant}.pkl"
     fi
 
-    RESULTS_EXISTS=$(ssh "$USERNAME@$SERVER_ADDRESS" "[ -f \"\$HOME/llm-stylometry/data/$RESULTS_FILE\" ] && echo \"yes\" || echo \"no\"")
+    RESULTS_EXISTS=$(eval $SSH_CMD "$USERNAME@$SERVER_ADDRESS" "\"[ -f \\\"\\\$HOME/llm-stylometry/data/$RESULTS_FILE\\\" ] && echo \\\"yes\\\" || echo \\\"no\\\"\"")
 
     if [ "$RESULTS_EXISTS" = "yes" ]; then
         print_info "Downloading $RESULTS_FILE..."
-        rsync -avz "$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/$RESULTS_FILE" \
-            "$PWD/data/$RESULTS_FILE"
+        eval $RSYNC_CMD -avz "'$USERNAME@$SERVER_ADDRESS:~/llm-stylometry/data/$RESULTS_FILE'" \
+            "'$PWD/data/$RESULTS_FILE'"
         print_success "Downloaded $RESULTS_FILE"
     else
         print_warning "$RESULTS_FILE not found on remote server"

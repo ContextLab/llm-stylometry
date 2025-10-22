@@ -224,6 +224,66 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         return False
 
 
+def run_single_classification_variant(args_tuple):
+    """
+    Run classification for a single variant (module-level for multiprocessing).
+
+    Args:
+        args_tuple: (variant, output_dir, skip_experiment) tuple
+
+    Returns:
+        (variant_name, success, error_message) tuple
+    """
+    variant, output_dir, skip_experiment = args_tuple
+    variant_name = variant if variant else "baseline"
+
+    try:
+        from llm_stylometry.classification import run_classification_experiment
+        from llm_stylometry.core.constants import AUTHORS
+        from llm_stylometry.visualization import (
+            generate_classification_accuracy_figure,
+            generate_word_cloud_figure
+        )
+        from pathlib import Path
+
+        # Determine result path
+        result_path = f"data/classifier_results/{variant_name}.pkl"
+
+        # Run experiment only if results don't exist or skip_experiment is False
+        if not skip_experiment or not Path(result_path).exists():
+            result_path = run_classification_experiment(
+                variant=variant,
+                max_splits=1000,
+                seed=42
+            )
+
+        # Generate word clouds (per-variant)
+        # Overall word cloud
+        wc_overall = f"{output_dir}/wordcloud_overall_{variant_name}.pdf"
+        generate_word_cloud_figure(
+            data_path=result_path,
+            author=None,
+            output_path=wc_overall,
+            variant=variant
+        )
+
+        # Per-author word clouds
+        for author in AUTHORS:
+            wc_author = f"{output_dir}/wordcloud_{author}_{variant_name}.pdf"
+            generate_word_cloud_figure(
+                data_path=result_path,
+                author=author,
+                output_path=wc_author,
+                variant=variant
+            )
+
+        return (variant_name, True, None)
+
+    except Exception as e:
+        import traceback
+        return (variant_name, False, traceback.format_exc())
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -301,6 +361,19 @@ Examples:
         help='Disable fairness-based loss thresholding for variant figures (default: fairness enabled for variants)'
     )
 
+    parser.add_argument(
+        '--classify',
+        action='store_true',
+        help='Run text classification experiment instead of GPT-2 training'
+    )
+
+    parser.add_argument(
+        '--classify-variant',
+        action='append',
+        dest='classify_variants',
+        help='Variant(s) for classification (can specify multiple for parallel execution)'
+    )
+
     args = parser.parse_args()
 
     if args.list:
@@ -331,6 +404,95 @@ Examples:
     # Train models if requested
     if args.train:
         if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume, variant=args.variant):
+            return 1
+
+    # Run classification experiment if requested
+    if args.classify:
+        safe_print("\n" + "=" * 60)
+        safe_print("Running Text Classification Experiment")
+        safe_print("=" * 60)
+
+        from llm_stylometry.classification import run_classification_experiment
+        from llm_stylometry.core.constants import AUTHORS
+        from multiprocessing import Pool, cpu_count
+
+        # Determine which variants to run
+        variants_to_run = []
+        if args.classify_variants:
+            # Variants explicitly specified via --classify-variant flags
+            for v in args.classify_variants:
+                if v == 'baseline':
+                    variants_to_run.append(None)
+                else:
+                    variants_to_run.append(v)
+        else:
+            # No --classify-variant flags: use default behavior
+            if args.variant:
+                # Single variant from --variant flag (e.g., from -co)
+                variants_to_run = [args.variant]
+            else:
+                # No variants specified at all: default to baseline only
+                variants_to_run = [None]
+
+        safe_print(f"\nVariants to run: {[v if v else 'baseline' for v in variants_to_run]}")
+        safe_print(f"Max CV splits per variant: 1,000")
+
+        if len(variants_to_run) > 1:
+            safe_print(f"Running {len(variants_to_run)} variants in parallel on {cpu_count()} CPUs")
+
+        # Determine if we should skip experiment (load existing results)
+        # Skip only if --train flag is NOT set
+        skip_experiment = not args.train
+
+        # Prepare arguments for parallel execution
+        variant_args = [(v, args.output, skip_experiment) for v in variants_to_run]
+
+        # Run experiments (parallel if multiple variants)
+        try:
+            if len(variants_to_run) == 1:
+                # Single variant - run directly
+                variant_name, success, error = run_single_classification_variant(variant_args[0])
+                if not success:
+                    safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
+                    safe_print(error)
+                    return 1
+                else:
+                    safe_print(f"\n✓ Classification complete for {variant_name}")
+            else:
+                # Multiple variants - run in parallel
+                with Pool(processes=min(len(variants_to_run), cpu_count())) as pool:
+                    results = pool.map(run_single_classification_variant, variant_args)
+
+                # Check results
+                failed = []
+                for variant_name, success, error in results:
+                    if not success:
+                        failed.append(variant_name)
+                        safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
+                        safe_print(error)
+                    else:
+                        safe_print(f"\n✓ Classification complete for {variant_name}")
+
+                if failed:
+                    safe_print(f"\n✗ {len(failed)}/{len(variants_to_run)} classifications failed")
+                    return 1
+
+            # Generate single grouped accuracy bar chart combining all conditions
+            safe_print("\nGenerating grouped accuracy bar chart...")
+            from llm_stylometry.visualization import generate_classification_accuracy_figure
+            acc_output = f"{args.output}/classification_accuracy.pdf"
+            generate_classification_accuracy_figure(output_path=acc_output)
+            safe_print(f"✓ Generated: {acc_output}")
+
+            safe_print("\n" + "=" * 60)
+            safe_print("✓ All classification experiments complete!")
+            safe_print("=" * 60)
+            return 0
+
+        except Exception as e:
+            safe_print(f"\n✗ ERROR: Classification experiment failed: {e}")
+            import traceback
+            traceback.print_exc()
             return 1
 
     # Check for data file

@@ -6,6 +6,8 @@ from .t_tests import generate_t_test_figure, generate_t_test_avg_figure
 from .heatmaps import generate_loss_heatmap_figure
 from .mds import generate_3d_mds_figure
 from .oz_losses import generate_oz_losses_figure
+from .classification_accuracy import generate_classification_accuracy_figure
+from .word_clouds import generate_word_cloud_figure
 
 __all__ = [
     'generate_all_losses_figure',
@@ -15,4 +17,6 @@ __all__ = [
     'generate_loss_heatmap_figure',
     'generate_3d_mds_figure',
     'generate_oz_losses_figure',
+    'generate_classification_accuracy_figure',
+    'generate_word_cloud_figure',
 ]
