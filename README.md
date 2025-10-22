@@ -105,83 +105,31 @@ See the [Package API](#package-api) section for all available functions.
 
 ## Analysis Variants
 
-The project supports three linguistic variants to understand what stylistic features models learn:
+The paper analyzes three linguistic variants (Supplemental Figures S1-S8):
 
-**Content-Only** (`-co`, `--content-only`): Masks function words with `<FUNC>`, preserving only content words (nouns, verbs, adjectives). Tests vocabulary and word choice.
+- **Content-only**: Function words masked → tests vocabulary/word choice (Supp. Figs. S1, S4, S7A, S8A)
+- **Function-only**: Content words masked → tests grammatical structure (Supp. Figs. S2, S5, S7B, S8B)
+- **Part-of-speech**: Words → POS tags → tests syntactic patterns (Supp. Figs. S3, S6, S7C, S8C)
 
-**Function-Only** (`-fo`, `--function-only`): Masks content words with `<CONTENT>`, preserving only function words (articles, prepositions, conjunctions). Tests grammatical structure.
-
-**Part-of-Speech** (`-pos`, `--part-of-speech`): Replaces words with POS tags (Universal Dependencies tagset). Tests syntactic patterns.
-
-All CLI commands accept variant flags. Without a flag, the baseline condition is used. Each variant trains 80 models (8 authors × 10 seeds). See [Training Models from Scratch](#training-models-from-scratch) for training details.
-
+**Generate supplemental figures:**
 ```bash
-# Generate figures for variants
-./run_llm_stylometry.sh -f 1a -co           # Figure 1A, content variant
-./run_llm_stylometry.sh --function-only     # All figures, function variant
-
-# Compute statistics
-./run_stats.sh --all                        # All variants at once
-./run_stats.sh -co                          # Single variant
+./run_llm_stylometry.sh -f s1a    # Supp. Fig. S1A (content-only, Fig 1A format)
+./run_llm_stylometry.sh -f s4b    # Supp. Fig. S4B (content-only, Fig 2B format)
+./run_llm_stylometry.sh -f s7c    # Supp. Fig. S7C (POS confusion matrix)
 ```
 
-**Model directories:**
-- Baseline: `{author}_tokenizer=gpt2_seed={0-9}/`
-- Variants: `{author}_variant={content|function|pos}_tokenizer=gpt2_seed={0-9}/`
-
-**Figure paths:**
-- Baseline: `paper/figs/source/figure_name.pdf`
-- Variants: `paper/figs/source/figure_name_{variant}.pdf`
-
-### Fairness-Based Loss Thresholding
-
-Variant models converge much faster than baseline models (all cross 3.0 loss by epochs 15-16) and may converge to different final losses. To ensure fair comparison, **fairness-based loss thresholding** is automatically applied to variant figures (1A, 1B, 3, 4, 5):
-
-1. **Compute threshold**: Maximum of all models' minimum training losses within 500 epochs
-2. **Truncate data**: Keep all epochs up to and including the first epoch where training loss ≤ threshold
-3. **Fair comparison**: All models compared at the same training loss level (the fairness threshold)
-
-This ensures models are not unfairly compared when some converged to higher losses than others. The feature is enabled by default for variants and can be disabled:
-
+**Training variants:** Each trains 80 models (8 authors × 10 seeds)
 ```bash
-# Fairness enabled (default for variants)
-./run_llm_stylometry.sh -f 1a -fo
-
-# Fairness disabled
-./run_llm_stylometry.sh -f 1a -fo --no-fairness
+./run_llm_stylometry.sh --train -co    # Content-only
+./remote_train.sh -fo                  # Function-only on GPU cluster
 ```
 
-**Example results** (function-only variant):
-- Fairness threshold: 1.2720 (Austen's minimum loss)
-- Models truncated between epochs 88-500
-- Data reduced: 360,640 rows → 170,659 rows (47.3%)
-
-**Python API:**
-
-```python
-from llm_stylometry.analysis.fairness import (
-    compute_fairness_threshold,
-    apply_fairness_threshold
-)
-
-# Compute threshold for variant data
-df = pd.read_pickle('data/model_results_function.pkl')
-threshold = compute_fairness_threshold(df, min_epochs=500)
-print(f"Fairness threshold: {threshold:.4f}")
-
-# Truncate data at threshold
-df_fair = apply_fairness_threshold(df, threshold, use_first_crossing=True)
-
-# Generate figure with fairness
-from llm_stylometry.visualization import generate_all_losses_figure
-fig = generate_all_losses_figure(
-    data_path='data/model_results_function.pkl',
-    variant='function',
-    apply_fairness=True  # default for variants
-)
+**Statistical analysis:**
+```bash
+./run_stats.sh            # All variants (default)
 ```
 
-**Note**: T-test figures (2A, 2B) never apply fairness thresholding since they require all 500 epochs for statistical calculations.
+**Fairness-based loss thresholding:** Automatically ensures fair comparison when variant models converge to different final losses. Disable with `--no-fairness` if needed.
 
 ## Training Models from Scratch
 
