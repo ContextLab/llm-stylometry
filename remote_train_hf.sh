@@ -147,14 +147,15 @@ eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'TRAIN_FLAGS=\"$TRAIN_FLAGS\" bash 
 # Change to project directory
 cd ~/llm-stylometry || { echo "ERROR: Project directory ~/llm-stylometry not found"; exit 1; }
 
-# Update repository with robust conflict handling
+# Update repository with aggressive conflict resolution
 echo "[INFO] Updating repository..."
-git stash -u  # Stash including untracked files
-if ! git pull origin main; then
-    echo "[WARNING] git pull failed, attempting to resolve..."
-    git reset --hard origin/main  # Force update to match remote
-fi
-git stash pop || echo "[INFO] No stashed changes to restore (this is normal)"
+# Clear any existing git state
+git reset --hard HEAD
+git clean -fd  # Remove untracked files
+# Fetch and reset to latest
+git fetch origin
+git reset --hard origin/main
+echo "[INFO] Repository updated to latest version"
 
 # Activate conda environment
 if ! command -v conda &> /dev/null; then
@@ -168,12 +169,11 @@ conda activate llm-stylometry 2>/dev/null || { echo "ERROR: llm-stylometry envir
 # Create logs directory
 mkdir -p logs
 
-# Check if screen session already exists
+# Kill existing screen session if it exists
 if screen -list | grep -q "hf_training"; then
-    echo "[WARNING] Screen session 'hf_training' already exists"
-    echo "To kill: screen -S hf_training -X quit"
-    echo "To reattach: screen -r hf_training"
-    exit 1
+    echo "[INFO] Killing existing hf_training screen session..."
+    screen -S hf_training -X quit || true
+    sleep 2
 fi
 
 # Create training script
