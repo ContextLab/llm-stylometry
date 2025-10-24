@@ -147,15 +147,16 @@ eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'TRAIN_FLAGS=\"$TRAIN_FLAGS\" bash 
 # Change to project directory
 cd ~/llm-stylometry || { echo "ERROR: Project directory ~/llm-stylometry not found"; exit 1; }
 
-# Update repository with aggressive conflict resolution
+# Update repository with selective cleanup (preserve models_hf/)
 echo "[INFO] Updating repository..."
-# Clear any existing git state
+# Reset git state but preserve models_hf/ directory
 git reset --hard HEAD
-git clean -fd  # Remove untracked files
+# Remove untracked files EXCEPT models_hf/ (contains newly trained models)
+git clean -fd -e models_hf/
 # Fetch and reset to latest
 git fetch origin
 git reset --hard origin/main
-echo "[INFO] Repository updated to latest version"
+echo "[INFO] Repository updated (models_hf/ preserved)"
 
 # Activate conda environment
 if ! command -v conda &> /dev/null; then
