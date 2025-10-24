@@ -190,43 +190,52 @@ fi
 # Create logs directory
 mkdir -p logs
 
-# Kill existing screen session if it exists
-if screen -list | grep -q "hf_training"; then
-    echo "[INFO] Killing existing hf_training screen session..."
-    screen -S hf_training -X quit || true
+# Determine screen session name (author-specific for parallel training)
+SCREEN_NAME="hf_training_\${TRAIN_FLAGS// /_}"  # Use flags to create unique name
+# For single author, extract author name for cleaner session name
+if echo "\$TRAIN_FLAGS" | grep -q "author"; then
+    AUTHOR_NAME=\$(echo "\$TRAIN_FLAGS" | grep -o "author [a-z]*" | awk '{print \$2}')
+    SCREEN_NAME="hf_\${AUTHOR_NAME}"
+fi
+
+# Kill existing screen session for this author if it exists
+if screen -list | grep -q "\$SCREEN_NAME"; then
+    echo "[INFO] Killing existing \$SCREEN_NAME screen session..."
+    screen -S "\$SCREEN_NAME" -X quit || true
     sleep 2
 fi
 
 # Create training script
-cat > /tmp/hf_train.sh << TRAINSCRIPT
+cat > /tmp/hf_train_\${AUTHOR_NAME:-all}.sh << TRAINSCRIPT
 #!/bin/bash
 cd ~/llm-stylometry
 eval "\$(conda shell.bash hook)"
 conda activate llm-stylometry
 
 # Log start time
-echo "HF model training started at \$(date)" > logs/hf_training.log
+LOG_FILE="logs/hf_training_\${AUTHOR_NAME:-all}.log"
+echo "HF model training started at \$(date)" > \$LOG_FILE
 
 # Run training
-./train_hf_models.sh $TRAIN_FLAGS 2>&1 | tee -a logs/hf_training.log
+./train_hf_models.sh $TRAIN_FLAGS 2>&1 | tee -a \$LOG_FILE
 
-echo "HF model training completed at \$(date)" >> logs/hf_training.log
+echo "HF model training completed at \$(date)" >> \$LOG_FILE
 TRAINSCRIPT
 
-chmod +x /tmp/hf_train.sh
+chmod +x /tmp/hf_train_\${AUTHOR_NAME:-all}.sh
 
-# Start training in screen session
-echo "[INFO] Starting training in screen session 'hf_training'..."
-screen -dmS hf_training bash /tmp/hf_train.sh
+# Start training in author-specific screen session
+echo "[INFO] Starting training in screen session '\$SCREEN_NAME'..."
+screen -dmS "\$SCREEN_NAME" bash /tmp/hf_train_\${AUTHOR_NAME:-all}.sh
 
-echo "[SUCCESS] Training started on remote server"
+echo "[SUCCESS] Training started on remote server in session: \$SCREEN_NAME"
 echo ""
 echo "To monitor progress:"
 echo "  ./check_hf_status.sh --cluster $CLUSTER"
 echo ""
 echo "To view live training:"
 echo "  ssh $USERNAME@$SERVER_ADDRESS"
-echo "  screen -r hf_training"
+echo "  screen -r \$SCREEN_NAME"
 echo "  (Press Ctrl+A then D to detach)"
 ENDSSH
 
