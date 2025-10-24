@@ -166,6 +166,26 @@ fi
 eval "$(conda shell.bash hook)" 2>/dev/null || { echo "ERROR: Failed to initialize conda"; exit 1; }
 conda activate llm-stylometry 2>/dev/null || { echo "ERROR: llm-stylometry environment not found"; exit 1; }
 
+# Check if baseline models have weight files (needed for HF training)
+echo "[INFO] Checking for baseline model weights..."
+NEED_WEIGHTS=false
+
+# Check if any baseline seed=0 model is missing weights
+for author in austen baum dickens fitzgerald melville thompson twain wells; do
+    if [ ! -f "models/${author}_tokenizer=gpt2_seed=0/training_state.pt" ]; then
+        NEED_WEIGHTS=true
+        break
+    fi
+done
+
+if [ "$NEED_WEIGHTS" = true ]; then
+    echo "[INFO] Baseline model weights not found. Downloading from Dropbox..."
+    echo "y" | ./download_model_weights.sh -b
+    echo "[INFO] Baseline models downloaded"
+else
+    echo "[INFO] Baseline model weights found"
+fi
+
 # Create logs directory
 mkdir -p logs
 
