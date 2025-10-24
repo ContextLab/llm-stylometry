@@ -147,11 +147,14 @@ eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'TRAIN_FLAGS=\"$TRAIN_FLAGS\" bash 
 # Change to project directory
 cd ~/llm-stylometry || { echo "ERROR: Project directory ~/llm-stylometry not found"; exit 1; }
 
-# Update repository
+# Update repository with robust conflict handling
 echo "[INFO] Updating repository..."
-git stash > /dev/null 2>&1 || true
-git pull origin main
-git stash pop > /dev/null 2>&1 || true
+git stash -u  # Stash including untracked files
+if ! git pull origin main; then
+    echo "[WARNING] git pull failed, attempting to resolve..."
+    git reset --hard origin/main  # Force update to match remote
+fi
+git stash pop || echo "[INFO] No stashed changes to restore (this is normal)"
 
 # Activate conda environment
 if ! command -v conda &> /dev/null; then
