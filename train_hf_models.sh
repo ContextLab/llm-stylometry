@@ -111,7 +111,7 @@ conda activate llm-stylometry 2>/dev/null || {
 # Build author list
 if [ "$TRAIN_ALL" = true ]; then
     AUTHORS="austen baum dickens fitzgerald melville thompson twain wells"
-    print_info "Training all 8 authors sequentially"
+    print_info "Training all 8 authors in parallel (one per GPU)"
 else
     AUTHORS="$TRAIN_AUTHOR"
     print_info "Training single author: $TRAIN_AUTHOR"
@@ -123,24 +123,56 @@ echo
 TRAINED_COUNT=0
 FAILED_COUNT=0
 
-for author in $AUTHORS; do
-    print_info "Training $author..."
+if [ "$TRAIN_ALL" = true ]; then
+    # Parallel training: start all authors in background
+    PIDS=()
+    for author in $AUTHORS; do
+        print_info "Starting $author in background..."
 
-    if python code/train_hf_model.py \
-        --author "$author" \
-        --target-loss "$TARGET_LOSS" \
-        --output-dir "$OUTPUT_DIR" \
-        --max-epochs "$MAX_EPOCHS"; then
+        python code/train_hf_model.py \
+            --author "$author" \
+            --target-loss "$TARGET_LOSS" \
+            --output-dir "$OUTPUT_DIR" \
+            --max-epochs "$MAX_EPOCHS" \
+            > logs/hf_${author}.log 2>&1 &
 
-        print_success "Completed: $author"
-        ((TRAINED_COUNT++))
-    else
-        print_error "Failed: $author"
-        ((FAILED_COUNT++))
-    fi
+        PIDS+=($!)
+        sleep 2  # Small delay to stagger GPU assignment
+    done
 
-    echo
-done
+    # Wait for all to complete
+    print_info "All 8 authors started. Waiting for completion..."
+    for i in "${!PIDS[@]}"; do
+        author=$(echo "$AUTHORS" | cut -d' ' -f$((i+1)))
+        if wait ${PIDS[$i]}; then
+            print_success "Completed: $author"
+            ((TRAINED_COUNT++))
+        else
+            print_error "Failed: $author"
+            ((FAILED_COUNT++))
+        fi
+    done
+else
+    # Sequential training for single author
+    for author in $AUTHORS; do
+        print_info "Training $author..."
+
+        if python code/train_hf_model.py \
+            --author "$author" \
+            --target-loss "$TARGET_LOSS" \
+            --output-dir "$OUTPUT_DIR" \
+            --max-epochs "$MAX_EPOCHS"; then
+
+            print_success "Completed: $author"
+            ((TRAINED_COUNT++))
+        else
+            print_error "Failed: $author"
+            ((FAILED_COUNT++))
+        fi
+
+        echo
+    done
+fi
 
 # Summary
 echo "=================================================="
