@@ -195,7 +195,7 @@ not_started_count = 0
 for author in AUTHORS:
     status = check_author_status(author)
 
-    print(f"\\n{author.upper()}")
+    print(f"\n{author.upper()}")
     print("-" * 80)
 
     if status is None:
@@ -234,7 +234,7 @@ for author in AUTHORS:
         in_progress_count += 1
 
 # Summary
-print("\\n" + "=" * 80)
+print("\n" + "=" * 80)
 print("SUMMARY")
 print("=" * 80)
 print(f"Completed: {completed_count}/8")
@@ -242,7 +242,7 @@ print(f"In progress: {in_progress_count}/8")
 print(f"Not started: {not_started_count}/8")
 
 if in_progress_count > 0 or completed_count < 8:
-    print("\\nTo download completed models:")
+    print("\nTo download completed models:")
     print("  ./sync_hf_models.sh --cluster CLUSTER")
 
 ENDPYTHON
