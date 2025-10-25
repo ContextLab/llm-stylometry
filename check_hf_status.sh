@@ -161,10 +161,24 @@ def check_author_status(author):
                 # Check if complete
                 is_complete = current_loss <= TARGET_LOSS
 
-                # Estimate time
-                last_modified = datetime.fromtimestamp(loss_log.stat().st_mtime)
-                start_time = datetime.fromtimestamp(loss_log.stat().st_ctime)
-                elapsed = datetime.now() - start_time
+                # Estimate time based on recent epoch progress
+                # For resumed training, use last 100 epochs to estimate rate
+                recent_epochs = df[df['epochs_completed'] > max(0, max_epoch - 100)]
+                if len(recent_epochs) > 10:
+                    # Use modification time as proxy for current time
+                    last_modified = datetime.fromtimestamp(loss_log.stat().st_mtime)
+                    # Estimate HF training started when loss < 3.0 (paper stopping point)
+                    hf_start_rows = df[(df['loss_dataset'] == 'train') & (df['loss_value'] < 3.0)]
+                    if len(hf_start_rows) > 0:
+                        hf_start_epoch = hf_start_rows.iloc[0]['epochs_completed']
+                        epochs_since_hf_start = max_epoch - hf_start_epoch
+                        # Very rough estimate: assume ~10-15 sec/epoch
+                        elapsed = timedelta(seconds=epochs_since_hf_start * 12)
+                    else:
+                        elapsed = timedelta(minutes=0)
+                else:
+                    last_modified = datetime.fromtimestamp(loss_log.stat().st_mtime)
+                    elapsed = timedelta(minutes=0)
 
                 status = {
                     'model_name': model_name,
@@ -173,7 +187,7 @@ def check_author_status(author):
                     'target_loss': TARGET_LOSS,
                     'is_complete': is_complete,
                     'last_modified': last_modified,
-                    'start_time': start_time,
+                    'start_time': None,
                     'elapsed': elapsed
                 }
 
