@@ -34,7 +34,8 @@ def prepare_hf_experiments(authors, target_loss=0.1, max_epochs=50000):
         target_loss: Target training loss
         max_epochs: Maximum epochs
 
-    Creates temporary copies of seed=0 models for HF training.
+    Strategy: Train directly on seed=0 models, then copy to models_hf/ afterward.
+    This avoids checkpoint loading issues with copied models.
     """
     experiments = []
 
@@ -49,16 +50,8 @@ def prepare_hf_experiments(authors, target_loss=0.1, max_epochs=50000):
             logger.error(f"Training state not found for {author}")
             continue
 
-        # Create temporary name for HF training
-        temp_name = f"{author}_hf_temp_tokenizer=gpt2_seed=0"
-        temp_model_dir = MODELS_DIR / temp_name
-
-        # Copy source model to temp location if not exists
-        if not temp_model_dir.exists():
-            logger.info(f"Copying {author} seed=0 model to {temp_name}")
-            shutil.copytree(source_model, temp_model_dir)
-        else:
-            logger.info(f"Using existing temp model: {temp_name}")
+        # Use seed=0 model directly (no copying)
+        model_name = f"{author}_tokenizer=gpt2_seed=0"
 
         # Create experiment with HF settings
         exp = Experiment(
@@ -73,8 +66,8 @@ def prepare_hf_experiments(authors, target_loss=0.1, max_epochs=50000):
             resume_training=True
         )
 
-        # Override name to use temp model
-        exp.name = temp_name
+        # Use seed=0 model name directly
+        exp.name = model_name
 
         # Skip ALL evaluation to save time (~20-25% faster)
         # We only need training loss for HF models
@@ -199,27 +192,27 @@ def main():
 
     print()
     print("="*60)
-    print("Training Complete - Moving to models_hf/")
+    print("Training Complete - Copying to models_hf/")
     print("="*60)
 
-    # Move completed models to models_hf/
+    # Copy completed models to models_hf/ (preserve seed=0 originals)
     models_hf_dir = Path('models_hf')
     models_hf_dir.mkdir(exist_ok=True)
 
     for exp in experiments:
-        temp_model_path = MODELS_DIR / exp.name
+        source_model_path = MODELS_DIR / exp.name  # seed=0 model
         final_model_name = f"{exp.train_author}_tokenizer=gpt2"
         final_model_path = models_hf_dir / final_model_name
 
-        if temp_model_path.exists():
+        if source_model_path.exists():
             if final_model_path.exists():
                 print(f"Removing existing: {final_model_path}")
                 shutil.rmtree(final_model_path)
 
-            print(f"Moving: {exp.train_author} -> {final_model_path}")
-            shutil.move(str(temp_model_path), str(final_model_path))
+            print(f"Copying: {exp.train_author} -> {final_model_path}")
+            shutil.copytree(source_model_path, final_model_path)
         else:
-            print(f"WARNING: Temp model not found: {temp_model_path}")
+            print(f"WARNING: Source model not found: {source_model_path}")
 
     print()
     print("="*60)
