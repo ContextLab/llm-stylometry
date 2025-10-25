@@ -148,7 +148,7 @@ else
 fi
 
 # Connect and start training
-eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'TRAIN_FLAGS=\"$TRAIN_FLAGS\" AUTHOR_NAME=\"$AUTHOR_NAME\" bash -s'" << 'ENDSSH'
+eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" \"TRAIN_FLAGS='$TRAIN_FLAGS' AUTHOR_NAME='$AUTHOR_NAME' bash -s\"" << ENDSSH
 #!/bin/bash
 
 # Change to project directory
@@ -213,9 +213,9 @@ if screen -list | grep -q "\$SCREEN_NAME"; then
 fi
 
 # Create training script (bake in variables first, then append script body)
-echo "AUTHOR_NAME='\$AUTHOR_NAME'" > /tmp/hf_train.sh
-echo "TRAIN_FLAGS='\$TRAIN_FLAGS'" >> /tmp/hf_train.sh
-echo "SCREEN_NAME='\$SCREEN_NAME'" >> /tmp/hf_train.sh
+echo "AUTHOR_NAME='$AUTHOR_NAME'" > /tmp/hf_train.sh
+echo "TRAIN_FLAGS='$TRAIN_FLAGS'" >> /tmp/hf_train.sh
+echo "SCREEN_NAME='$SCREEN_NAME'" >> /tmp/hf_train.sh
 cat >> /tmp/hf_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 cd ~/llm-stylometry
