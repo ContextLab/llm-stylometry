@@ -94,12 +94,7 @@ eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'bash -s'" << 'ENDSSH'
 cd ~/llm-stylometry || { echo "ERROR: Project directory ~/llm-stylometry not found"; exit 1; }
 
 # Activate conda environment
-if ! command -v conda &> /dev/null; then
-    echo "ERROR: conda not found"
-    exit 1
-fi
-
-eval "$(conda shell.bash hook)" 2>/dev/null || { echo "ERROR: Failed to initialize conda"; exit 1; }
+source ~/.bashrc
 conda activate llm-stylometry 2>/dev/null || { echo "ERROR: llm-stylometry environment not found"; exit 1; }
 
 # Create temporary Python script
@@ -247,8 +242,8 @@ if in_progress_count > 0 or completed_count < 8:
 
 ENDPYTHON
 
-# Execute the Python script (use 'python' from conda env, not 'python3')
-python /tmp/check_hf_status.py
+# Execute the Python script
+python3 /tmp/check_hf_status.py
 
 # Clean up
 rm -f /tmp/check_hf_status.py
