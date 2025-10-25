@@ -247,8 +247,8 @@ if in_progress_count > 0 or completed_count < 8:
 
 ENDPYTHON
 
-# Execute the Python script
-python3 /tmp/check_hf_status.py
+# Execute the Python script (use 'python' from conda env, not 'python3')
+python /tmp/check_hf_status.py
 
 # Clean up
 rm -f /tmp/check_hf_status.py
