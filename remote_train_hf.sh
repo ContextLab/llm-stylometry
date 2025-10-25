@@ -171,7 +171,7 @@ if ! command -v conda &> /dev/null; then
     exit 1
 fi
 
-eval "$(conda shell.bash hook)" 2>/dev/null || { echo "ERROR: Failed to initialize conda"; exit 1; }
+eval "\$(conda shell.bash hook)" 2>/dev/null || { echo "ERROR: Failed to initialize conda"; exit 1; }
 conda activate llm-stylometry 2>/dev/null || { echo "ERROR: llm-stylometry environment not found"; exit 1; }
 
 # Check if baseline models have weight files (needed for HF training)
