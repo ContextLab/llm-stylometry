@@ -140,8 +140,15 @@ echo "  Target loss: $TARGET_LOSS"
 echo "  Cluster: $CLUSTER"
 echo
 
+# Build author name for environment variable
+if [ "$TRAIN_ALL" = true ]; then
+    AUTHOR_NAME="all"
+else
+    AUTHOR_NAME="$TRAIN_AUTHOR"
+fi
+
 # Connect and start training
-eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'TRAIN_FLAGS=\"$TRAIN_FLAGS\" bash -s'" << 'ENDSSH'
+eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'TRAIN_FLAGS=\"$TRAIN_FLAGS\" AUTHOR_NAME=\"$AUTHOR_NAME\" bash -s'" << 'ENDSSH'
 #!/bin/bash
 
 # Change to project directory
@@ -190,15 +197,12 @@ fi
 # Create logs directory
 mkdir -p logs
 
-# Determine screen session name (author-specific for parallel training)
-if echo "\$TRAIN_FLAGS" | grep -q "\\-\\-author"; then
-    # Extract author name from flags
-    AUTHOR_NAME=\$(echo "\$TRAIN_FLAGS" | sed 's/.*author //; s/ .*//')
-    SCREEN_NAME="hf_\${AUTHOR_NAME}"
-else
-    # Training all authors
-    AUTHOR_NAME="all"
+# Use author name from environment variable (passed from local script)
+# Screen session name: hf_austen, hf_baum, etc. or hf_training_all
+if [ "\$AUTHOR_NAME" = "all" ]; then
     SCREEN_NAME="hf_training_all"
+else
+    SCREEN_NAME="hf_\$AUTHOR_NAME"
 fi
 
 # Kill existing screen session for this author if it exists
@@ -208,28 +212,31 @@ if screen -list | grep -q "\$SCREEN_NAME"; then
     sleep 2
 fi
 
-# Create training script
-cat > /tmp/hf_train_\${AUTHOR_NAME:-all}.sh << TRAINSCRIPT
+# Create training script (bake in variables first, then append script body)
+echo "AUTHOR_NAME='\$AUTHOR_NAME'" > /tmp/hf_train.sh
+echo "TRAIN_FLAGS='\$TRAIN_FLAGS'" >> /tmp/hf_train.sh
+echo "SCREEN_NAME='\$SCREEN_NAME'" >> /tmp/hf_train.sh
+cat >> /tmp/hf_train.sh << 'TRAINSCRIPT'
 #!/bin/bash
 cd ~/llm-stylometry
-eval "\$(conda shell.bash hook)"
+eval "$(conda shell.bash hook)"
 conda activate llm-stylometry
 
 # Log start time
-LOG_FILE="logs/hf_training_\${AUTHOR_NAME:-all}.log"
-echo "HF model training started at \$(date)" > \$LOG_FILE
+LOG_FILE="logs/hf_training_${AUTHOR_NAME}.log"
+echo "HF model training started at $(date)" > $LOG_FILE
 
 # Run training
-./train_hf_models.sh $TRAIN_FLAGS 2>&1 | tee -a \$LOG_FILE
+./train_hf_models.sh $TRAIN_FLAGS 2>&1 | tee -a $LOG_FILE
 
-echo "HF model training completed at \$(date)" >> \$LOG_FILE
+echo "HF model training completed at $(date)" >> $LOG_FILE
 TRAINSCRIPT
 
-chmod +x /tmp/hf_train_\${AUTHOR_NAME:-all}.sh
+chmod +x /tmp/hf_train.sh
 
 # Start training in author-specific screen session
 echo "[INFO] Starting training in screen session '\$SCREEN_NAME'..."
-screen -dmS "\$SCREEN_NAME" bash /tmp/hf_train_\${AUTHOR_NAME:-all}.sh
+screen -dmS "\$SCREEN_NAME" bash /tmp/hf_train.sh
 
 echo "[SUCCESS] Training started on remote server in session: \$SCREEN_NAME"
 echo ""
