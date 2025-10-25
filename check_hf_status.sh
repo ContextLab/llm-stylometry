@@ -93,11 +93,7 @@ eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'bash -s'" << 'ENDSSH'
 # Change to project directory
 cd ~/llm-stylometry || { echo "ERROR: Project directory ~/llm-stylometry not found"; exit 1; }
 
-# Activate conda environment
-source ~/.bashrc
-conda activate llm-stylometry 2>/dev/null || { echo "ERROR: llm-stylometry environment not found"; exit 1; }
-
-# Create temporary Python script
+# Create temporary Python script first
 cat > /tmp/check_hf_status.py << 'ENDPYTHON'
 #!/usr/bin/env python
 """Check HuggingFace training status."""
@@ -242,8 +238,8 @@ if in_progress_count > 0 or completed_count < 8:
 
 ENDPYTHON
 
-# Execute the Python script
-python3 /tmp/check_hf_status.py
+# Execute the Python script with conda environment activated
+source ~/.bashrc && conda activate llm-stylometry && python3 /tmp/check_hf_status.py
 
 # Clean up
 rm -f /tmp/check_hf_status.py
