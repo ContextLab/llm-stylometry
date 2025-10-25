@@ -130,9 +130,10 @@ def format_timedelta(td):
 
 def check_author_status(author):
     """Check training status for a single author."""
-    # Check both regular models (seed=0) and HF temp models
+    # Check all possible HF training locations
     model_names = [
-        f"{author}_hf_temp_tokenizer=gpt2_seed=0",  # Temp model during training
+        f"{author}_tokenizer=gpt2_seed=0",  # Training directly on seed=0 (current approach)
+        f"{author}_hf_temp_tokenizer=gpt2_seed=0",  # Legacy temp model approach
         f"{author}_tokenizer=gpt2"  # Final HF model (rare - usually in models_hf/)
     ]
 
