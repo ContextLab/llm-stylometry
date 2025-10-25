@@ -191,13 +191,14 @@ fi
 mkdir -p logs
 
 # Determine screen session name (author-specific for parallel training)
-SCREEN_NAME="hf_training_all"
-# For single author, extract author name for cleaner session name
-if echo "\$TRAIN_FLAGS" | grep -q "author"; then
-    AUTHOR_NAME=\$(echo "\$TRAIN_FLAGS" | sed 's/.*--author \([a-z]*\).*/\1/')
+if echo "\$TRAIN_FLAGS" | grep -q "\\-\\-author"; then
+    # Extract author name from flags
+    AUTHOR_NAME=\$(echo "\$TRAIN_FLAGS" | sed 's/.*author //; s/ .*//')
     SCREEN_NAME="hf_\${AUTHOR_NAME}"
 else
+    # Training all authors
     AUTHOR_NAME="all"
+    SCREEN_NAME="hf_training_all"
 fi
 
 # Kill existing screen session for this author if it exists
