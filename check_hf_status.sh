@@ -1,7 +1,9 @@
 #!/bin/bash
-
-# Check HuggingFace Model Training Status
-# Monitor training progress on remote GPU server
+#
+# Check HuggingFace model training status on remote GPU server
+#
+# Adapted from check_remote_status.sh pattern
+#
 
 set -e
 
@@ -38,7 +40,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help             Show this help message"
             echo ""
             echo "Examples:"
-            echo "  $0 --cluster mycluster"
+            echo "  $0 --cluster tensor02"
             exit 0
             ;;
         *)
@@ -63,7 +65,6 @@ if [ ! -f "$CRED_FILE" ]; then
     exit 1
 fi
 
-# Extract credentials using Python
 SERVER_ADDRESS=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['server'])" 2>/dev/null)
 USERNAME=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['username'])" 2>/dev/null)
 PASSWORD=$(python3 -c "import json; print(json.load(open('$CRED_FILE'))['password'])" 2>/dev/null)
@@ -73,9 +74,9 @@ if [ -z "$SERVER_ADDRESS" ] || [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-# Setup SSH command with password authentication
+# Setup SSH command
 if ! command -v sshpass &> /dev/null; then
-    print_error "sshpass is required but not installed. Please install it: brew install hudochenkov/sshpass/sshpass"
+    print_error "sshpass is required but not installed"
     exit 1
 fi
 
@@ -85,7 +86,7 @@ print_info "Connecting to $USERNAME@$SERVER_ADDRESS..."
 print_info "Checking HF training status on $CLUSTER..."
 echo ""
 
-# Transfer Python script to remote server and execute it
+# Execute status check on remote server
 eval "$SSH_CMD \"$USERNAME@$SERVER_ADDRESS\" 'bash -s'" << 'ENDSSH'
 #!/bin/bash
 
@@ -104,7 +105,7 @@ conda activate llm-stylometry 2>/dev/null || { echo "ERROR: llm-stylometry envir
 # Create temporary Python script
 cat > /tmp/check_hf_status.py << 'ENDPYTHON'
 #!/usr/bin/env python
-"""Check HF training status."""
+"""Check HuggingFace training status."""
 
 import pandas as pd
 import numpy as np
@@ -112,7 +113,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 AUTHORS = ['austen', 'baum', 'dickens', 'fitzgerald', 'melville', 'thompson', 'twain', 'wells']
-TARGET_LOSS = 0.1  # Default target
+TARGET_LOSS = 0.1  # HF target loss
+PAPER_LOSS = 3.0   # Paper stopping point
 
 def format_timedelta(td):
     """Format timedelta as human-readable string."""
@@ -129,100 +131,56 @@ def format_timedelta(td):
         return f"{minutes}m"
 
 def check_author_status(author):
-    """Check training status for a single author."""
-    # Check all possible HF training locations
-    model_names = [
-        f"{author}_tokenizer=gpt2_seed=0",  # Training directly on seed=0 (current approach)
-        f"{author}_hf_temp_tokenizer=gpt2_seed=0",  # Legacy temp model approach
-        f"{author}_tokenizer=gpt2"  # Final HF model (rare - usually in models_hf/)
-    ]
+    """Check HF training status for a single author."""
+    # Check seed=0 model (HF training location)
+    model_dir = Path(f'models/{author}_tokenizer=gpt2_seed=0')
+    loss_log = model_dir / 'loss_logs.csv'
 
-    # Check in models/ directory
-    models_dir = Path('models')
-    for model_name in model_names:
-        model_dir = models_dir / model_name
-        loss_log = model_dir / 'loss_logs.csv'
+    if not loss_log.exists():
+        return None
 
-        if loss_log.exists():
-            try:
-                df = pd.read_csv(loss_log)
-                if len(df) == 0:
-                    continue
+    try:
+        df = pd.read_csv(loss_log)
+        if len(df) == 0:
+            return None
 
-                # Get latest epoch
-                max_epoch = df['epochs_completed'].max()
-                train_rows = df[(df['epochs_completed'] == max_epoch) & (df['loss_dataset'] == 'train')]
+        # Get latest epoch
+        max_epoch = df['epochs_completed'].max()
+        train_rows = df[(df['epochs_completed'] == max_epoch) & (df['loss_dataset'] == 'train')]
 
-                if len(train_rows) == 0:
-                    continue
+        if len(train_rows) == 0:
+            return None
 
-                current_loss = train_rows.iloc[0]['loss_value']
+        current_loss = train_rows.iloc[0]['loss_value']
 
-                # Check if complete
-                is_complete = current_loss <= TARGET_LOSS
+        # Check if we're in HF training (loss < PAPER_LOSS)
+        hf_rows = df[(df['loss_dataset'] == 'train') & (df['loss_value'] < PAPER_LOSS)]
+        if len(hf_rows) == 0:
+            # Not yet started HF training
+            return None
 
-                # Estimate time based on recent epoch progress
-                # For resumed training, use last 100 epochs to estimate rate
-                recent_epochs = df[df['epochs_completed'] > max(0, max_epoch - 100)]
-                if len(recent_epochs) > 10:
-                    # Use modification time as proxy for current time
-                    last_modified = datetime.fromtimestamp(loss_log.stat().st_mtime)
-                    # Estimate HF training started when loss < 3.0 (paper stopping point)
-                    hf_start_rows = df[(df['loss_dataset'] == 'train') & (df['loss_value'] < 3.0)]
-                    if len(hf_start_rows) > 0:
-                        hf_start_epoch = hf_start_rows.iloc[0]['epochs_completed']
-                        epochs_since_hf_start = max_epoch - hf_start_epoch
-                        # Very rough estimate: assume ~10-15 sec/epoch
-                        elapsed = timedelta(seconds=epochs_since_hf_start * 12)
-                    else:
-                        elapsed = timedelta(minutes=0)
-                else:
-                    last_modified = datetime.fromtimestamp(loss_log.stat().st_mtime)
-                    elapsed = timedelta(minutes=0)
+        # Find when HF training started
+        hf_start_epoch = hf_rows.iloc[0]['epochs_completed']
+        epochs_since_start = max_epoch - hf_start_epoch
 
-                status = {
-                    'model_name': model_name,
-                    'current_epoch': max_epoch,
-                    'current_loss': current_loss,
-                    'target_loss': TARGET_LOSS,
-                    'is_complete': is_complete,
-                    'last_modified': last_modified,
-                    'start_time': None,
-                    'elapsed': elapsed
-                }
+        # Estimate elapsed time (rough: 10 sec/epoch with eval skipped)
+        elapsed = timedelta(seconds=epochs_since_start * 10)
 
-                return status
+        # Check if complete
+        is_complete = current_loss <= TARGET_LOSS
 
-            except Exception as e:
-                continue
+        return {
+            'current_epoch': max_epoch,
+            'current_loss': current_loss,
+            'target_loss': TARGET_LOSS,
+            'is_complete': is_complete,
+            'hf_start_epoch': hf_start_epoch,
+            'epochs_since_start': epochs_since_start,
+            'elapsed': elapsed
+        }
 
-    # Check in models_hf/ directory
-    models_hf_dir = Path('models_hf')
-    if models_hf_dir.exists():
-        hf_model_dir = models_hf_dir / f"{author}_tokenizer=gpt2"
-        hf_loss_log = hf_model_dir / 'loss_logs.csv'
-
-        if hf_loss_log.exists():
-            try:
-                df = pd.read_csv(hf_loss_log)
-                max_epoch = df['epochs_completed'].max()
-                train_rows = df[(df['epochs_completed'] == max_epoch) & (df['loss_dataset'] == 'train')]
-                current_loss = train_rows.iloc[0]['loss_value']
-
-                return {
-                    'model_name': f"{author}_tokenizer=gpt2 (in models_hf/)",
-                    'current_epoch': max_epoch,
-                    'current_loss': current_loss,
-                    'target_loss': TARGET_LOSS,
-                    'is_complete': True,  # Already in final location
-                    'last_modified': datetime.fromtimestamp(hf_loss_log.stat().st_mtime),
-                    'start_time': datetime.fromtimestamp(hf_loss_log.stat().st_ctime),
-                    'elapsed': datetime.now() - datetime.fromtimestamp(hf_loss_log.stat().st_ctime)
-                }
-            except:
-                pass
-
-    return None
+    except Exception as e:
+        return None
 
 # Print report
 print("=" * 80)
@@ -237,7 +195,7 @@ not_started_count = 0
 for author in AUTHORS:
     status = check_author_status(author)
 
-    print(f"\n{author.upper()}")
+    print(f"\\n{author.upper()}")
     print("-" * 80)
 
     if status is None:
@@ -245,36 +203,38 @@ for author in AUTHORS:
         not_started_count += 1
     elif status['is_complete']:
         print(f"  Status: Complete ✓")
-        print(f"  Model: {status['model_name']}")
         print(f"  Final loss: {status['current_loss']:.4f}")
-        print(f"  Epochs: {status['current_epoch']:,}")
+        print(f"  Total epochs: {status['current_epoch']:,}")
+        print(f"  HF epochs: {status['epochs_since_start']:,} (from epoch {status['hf_start_epoch']})")
         completed_count += 1
     else:
         print(f"  Status: Training...")
-        print(f"  Model: {status['model_name']}")
         print(f"  Current epoch: {status['current_epoch']:,}")
         print(f"  Current loss: {status['current_loss']:.4f}")
         print(f"  Target loss: {status['target_loss']:.4f}")
+        print(f"  HF epochs completed: {status['epochs_since_start']:,}")
+        print(f"  Elapsed: {format_timedelta(status['elapsed'])}")
 
-        # Progress calculation
-        if status['current_loss'] > status['target_loss']:
-            # Estimate based on loss decay
-            epochs = status['current_epoch']
-            if epochs > 0:
-                avg_time_per_epoch = status['elapsed'] / epochs
-                # Rough estimate: assume exponential decay
-                loss_ratio = np.log(status['current_loss'] / status['target_loss'])
-                estimated_epochs_needed = int(epochs * loss_ratio)
-                eta = avg_time_per_epoch * estimated_epochs_needed
-                print(f"  Elapsed: {format_timedelta(status['elapsed'])}")
+        # Estimate remaining time based on loss decay
+        if status['epochs_since_start'] > 10:
+            # Rough estimate: assume exponential decay
+            # loss goes from ~3.0 to ~0.1 (factor of 30)
+            # Current progress
+            loss_ratio = (PAPER_LOSS - status['current_loss']) / (PAPER_LOSS - TARGET_LOSS)
+            progress_pct = loss_ratio * 100
+
+            # Estimate total HF epochs needed (very rough)
+            if loss_ratio > 0:
+                estimated_total_hf_epochs = int(status['epochs_since_start'] / loss_ratio)
+                remaining_epochs = estimated_total_hf_epochs - status['epochs_since_start']
+                eta = timedelta(seconds=remaining_epochs * 10)
+                print(f"  Progress: {progress_pct:.1f}%")
                 print(f"  Estimated remaining: {format_timedelta(eta)}")
-            else:
-                print(f"  Elapsed: {format_timedelta(status['elapsed'])}")
 
         in_progress_count += 1
 
 # Summary
-print("\n" + "=" * 80)
+print("\\n" + "=" * 80)
 print("SUMMARY")
 print("=" * 80)
 print(f"Completed: {completed_count}/8")
@@ -282,7 +242,7 @@ print(f"In progress: {in_progress_count}/8")
 print(f"Not started: {not_started_count}/8")
 
 if in_progress_count > 0 or completed_count < 8:
-    print("\nTo download completed models:")
+    print("\\nTo download completed models:")
     print("  ./sync_hf_models.sh --cluster CLUSTER")
 
 ENDPYTHON
