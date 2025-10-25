@@ -205,6 +205,8 @@ else
     SCREEN_NAME="hf_\$AUTHOR_NAME"
 fi
 
+echo "[INFO] Screen session: \$SCREEN_NAME"
+
 # Kill existing screen session for this author if it exists
 if screen -list | grep -q "\$SCREEN_NAME"; then
     echo "[INFO] Killing existing \$SCREEN_NAME screen session..."
@@ -212,24 +214,21 @@ if screen -list | grep -q "\$SCREEN_NAME"; then
     sleep 2
 fi
 
-# Create training script (bake in variables first, then append script body)
-echo "AUTHOR_NAME='$AUTHOR_NAME'" > /tmp/hf_train.sh
-echo "TRAIN_FLAGS='$TRAIN_FLAGS'" >> /tmp/hf_train.sh
-echo "SCREEN_NAME='$SCREEN_NAME'" >> /tmp/hf_train.sh
-cat >> /tmp/hf_train.sh << 'TRAINSCRIPT'
+# Create training script (bake in variables, then append script body)
+cat > /tmp/hf_train.sh << TRAINSCRIPT
 #!/bin/bash
 cd ~/llm-stylometry
-eval "$(conda shell.bash hook)"
+eval "\\\$(conda shell.bash hook)"
 conda activate llm-stylometry
 
 # Log start time
-LOG_FILE="logs/hf_training_${AUTHOR_NAME}.log"
-echo "HF model training started at $(date)" > $LOG_FILE
+LOG_FILE="logs/hf_training_$AUTHOR_NAME.log"
+echo "HF model training started at \\\$(date)" > \\\$LOG_FILE
 
 # Run training
-./train_hf_models.sh $TRAIN_FLAGS 2>&1 | tee -a $LOG_FILE
+./train_hf_models.sh $TRAIN_FLAGS 2>&1 | tee -a \\\$LOG_FILE
 
-echo "HF model training completed at $(date)" >> $LOG_FILE
+echo "HF model training completed at \\\$(date)" >> \\\$LOG_FILE
 TRAINSCRIPT
 
 chmod +x /tmp/hf_train.sh
