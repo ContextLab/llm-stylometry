@@ -107,6 +107,7 @@ cat > /tmp/check_hf_status.py << 'ENDPYTHON'
 #!/usr/bin/env python
 """Check HuggingFace training status."""
 
+import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -136,11 +137,15 @@ def check_author_status(author):
     model_dir = Path(f'models/{author}_tokenizer=gpt2_seed=0')
     loss_log = model_dir / 'loss_logs.csv'
 
+    print(f"[DEBUG] Checking {author}: {loss_log}", file=sys.stderr)
+
     if not loss_log.exists():
+        print(f"[DEBUG] Loss log not found for {author}", file=sys.stderr)
         return None
 
     try:
         df = pd.read_csv(loss_log)
+        print(f"[DEBUG] {author}: {len(df)} rows in loss log", file=sys.stderr)
         if len(df) == 0:
             return None
 
@@ -155,21 +160,26 @@ def check_author_status(author):
 
         # Check if we're in HF training (loss < PAPER_LOSS)
         hf_rows = df[(df['loss_dataset'] == 'train') & (df['loss_value'] < PAPER_LOSS)]
+        print(f"[DEBUG] {author}: HF rows (loss < {PAPER_LOSS}): {len(hf_rows)}", file=sys.stderr)
+
         if len(hf_rows) == 0:
             # Not yet started HF training
+            print(f"[DEBUG] {author}: Returning None - no HF training yet", file=sys.stderr)
             return None
 
         # Find when HF training started
-        hf_start_epoch = hf_rows.iloc[0]['epochs_completed']
-        epochs_since_start = max_epoch - hf_start_epoch
+        hf_start_epoch = int(hf_rows.iloc[0]['epochs_completed'])
+        epochs_since_start = int(max_epoch - hf_start_epoch)
+        print(f"[DEBUG] {author}: HF start epoch {hf_start_epoch}, epochs since: {epochs_since_start}", file=sys.stderr)
 
         # Estimate elapsed time (rough: 10 sec/epoch with eval skipped)
-        elapsed = timedelta(seconds=epochs_since_start * 10)
+        elapsed = timedelta(seconds=int(epochs_since_start * 10))
+        print(f"[DEBUG] {author}: About to return status dict", file=sys.stderr)
 
         # Check if complete
         is_complete = current_loss <= TARGET_LOSS
 
-        return {
+        result = {
             'current_epoch': max_epoch,
             'current_loss': current_loss,
             'target_loss': TARGET_LOSS,
@@ -179,7 +189,11 @@ def check_author_status(author):
             'elapsed': elapsed
         }
 
+        print(f"[DEBUG] {author}: Returning status - epoch {max_epoch}, loss {current_loss:.4f}", file=sys.stderr)
+        return result
+
     except Exception as e:
+        print(f"[DEBUG] {author}: Exception: {e}", file=sys.stderr)
         return None
 
 # Print report
