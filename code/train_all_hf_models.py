@@ -76,9 +76,9 @@ def prepare_hf_experiments(authors, target_loss=0.1, max_epochs=50000):
         # Override name to use temp model
         exp.name = temp_name
 
-        # Override eval_paths to only include training author
-        # This skips evaluation on other authors to save time
-        exp.eval_paths = {author: exp.eval_paths[author]}
+        # Skip ALL evaluation to save time (~20-25% faster)
+        # We only need training loss for HF models
+        exp.eval_paths = {}
 
         experiments.append(exp)
 
