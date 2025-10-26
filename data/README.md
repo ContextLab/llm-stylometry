@@ -38,6 +38,21 @@ data/
 - Twain (6 books)
 - Wells (12 books)
 
+## HuggingFace Datasets
+
+All author corpora are publicly available on HuggingFace with verified book titles:
+
+- [contextlab/austen-corpus](https://huggingface.co/datasets/contextlab/austen-corpus) - 7 books
+- [contextlab/baum-corpus](https://huggingface.co/datasets/contextlab/baum-corpus) - 14 books
+- [contextlab/dickens-corpus](https://huggingface.co/datasets/contextlab/dickens-corpus) - 14 books
+- [contextlab/fitzgerald-corpus](https://huggingface.co/datasets/contextlab/fitzgerald-corpus) - 8 books
+- [contextlab/melville-corpus](https://huggingface.co/datasets/contextlab/melville-corpus) - 10 books
+- [contextlab/thompson-corpus](https://huggingface.co/datasets/contextlab/thompson-corpus) - 13 books
+- [contextlab/twain-corpus](https://huggingface.co/datasets/contextlab/twain-corpus) - 6 books
+- [contextlab/wells-corpus](https://huggingface.co/datasets/contextlab/wells-corpus) - 12 books
+
+Load with: `from datasets import load_dataset; corpus = load_dataset("contextlab/baum-corpus")`
+
 ## Creating Variant Data
 
 Generate variant-transformed texts:
