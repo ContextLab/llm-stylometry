@@ -112,6 +112,8 @@ See the [Package API](#package-api) section for all available functions.
 
 See `models/README.md` for details. Pre-trained weights are not required for generating figures.
 
+**Author datasets on HuggingFace:** Cleaned text corpora for all 8 authors are publicly available on HuggingFace at https://huggingface.co/contextlab (browse datasets). Each corpus includes verified book titles and can be loaded with `from datasets import load_dataset`.
+
 ## Analysis Variants
 
 The paper analyzes three linguistic variants (Supplemental Figures S1-S8):
