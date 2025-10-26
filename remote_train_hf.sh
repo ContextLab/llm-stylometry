@@ -23,6 +23,7 @@ CLUSTER=""  # Must be specified with --cluster flag
 TRAIN_AUTHOR=""
 TRAIN_ALL=false
 TARGET_LOSS=0.1
+MAX_EPOCHS=50000
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -43,17 +44,22 @@ while [[ $# -gt 0 ]]; do
             TARGET_LOSS="$2"
             shift 2
             ;;
+        --max-epochs)
+            MAX_EPOCHS="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Train HuggingFace models on remote GPU cluster"
             echo ""
             echo "Options:"
-            echo "  --cluster NAME      GPU cluster name (required)"
-            echo "  --author NAME       Train single author"
-            echo "  --all               Train all 8 authors"
-            echo "  --target-loss LOSS  Target training loss (default: 0.1)"
-            echo "  -h, --help          Show this help"
+            echo "  --cluster NAME        GPU cluster name (required)"
+            echo "  --author NAME         Train single author"
+            echo "  --all                 Train all 8 authors"
+            echo "  --target-loss LOSS    Target training loss (default: 0.1)"
+            echo "  --max-epochs N        Maximum epochs (default: 50000)"
+            echo "  -h, --help            Show this help"
             echo ""
             echo "Examples:"
             echo "  $0 --cluster mycluster --author baum"
@@ -127,7 +133,7 @@ else
     TRAIN_FLAGS="--author $TRAIN_AUTHOR"
 fi
 
-TRAIN_FLAGS="$TRAIN_FLAGS --target-loss $TARGET_LOSS"
+TRAIN_FLAGS="$TRAIN_FLAGS --target-loss $TARGET_LOSS --max-epochs $MAX_EPOCHS"
 
 echo
 print_info "Training configuration:"

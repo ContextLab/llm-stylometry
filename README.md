@@ -112,6 +112,8 @@ See the [Package API](#package-api) section for all available functions.
 
 See `models/README.md` for details. Pre-trained weights are not required for generating figures.
 
+**Author datasets on HuggingFace:** Cleaned text corpora for all 8 authors are publicly available. See `data/README.md` for dataset links and usage.
+
 ## Analysis Variants
 
 The paper analyzes three linguistic variants (Supplemental Figures S1-S8):
