@@ -1,0 +1,72 @@
+% See http://texblog.org/2013/11/11/latexs-alternative-letter-class-newlfm/
+% and http://www.ctan.org/tex-archive/macros/latex/contrib/newlfm
+% for more information.
+%
+\documentclass[11pt,stdletter,orderfromtodate,sigleft]{newlfm}
+\usepackage{blindtext, xfrac, animate, hyperref, pxfonts}
+
+  \setlength{\voffset}{0in}
+
+\newlfmP{dateskipbefore=0pt}
+\newlfmP{sigsize=20pt}
+\newlfmP{sigskipbefore=10pt}
+ 
+\newlfmP{Headlinewd=0pt,Footlinewd=0pt}
+ 
+\namefrom{\vspace{-0.3in}Jeremy R. Manning}
+\addrfrom{
+	Dartmouth College\\
+    Department of Psychological \& Brain Sciences\\
+    HB 6207 Moore Hall\\
+	Hanover, NH  03755}
+ 
+\addrto{}
+\dateset{\today}
+ 
+\greetto{To the editors of \textit{Computational Linguistics}:}
+
+
+ 
+\closeline{Sincerely,}
+%\usepackage{setspace}
+%\linespread{0.85}
+% How will your work make others in the field think differently and move the field forward?
+% How does your work relate to the current literature on the topic?
+% Who do you consider to be the most relevant audience for this work?
+% Have you made clear in the letter what the work has and has not achieved?
+
+\begin{document}
+\begin{newlfm}
+
+I have enclosed our manuscript entitled \textit{A Stylometric Application of
+Large Language Models} to be considered for publication as an \textit{Article}.
+The manuscript introduces predictive comparison, a novel approach to
+computational stylometry that leverages the predictive capabilities of large
+language models to capture and quantify authorial style.
+
+Our work builds upon recent developments in natural language modeling and
+stylometry, but takes a fundamentally different approach from existing
+classification-based methods. Rather than training a single model to
+distinguish multiple authors, we train individual GPT-2 models on each author's
+corpus and use cross-entropy loss as a measure of stylistic similarity. This
+method achieves perfect classification accuracy across eight classic authors
+and successfully resolves the well-studied attribution problem of the 15th Oz
+book. Through systematic ablation studies, we demonstrate that both content
+words and function words contribute to author-specific signatures, whereas
+grammatical structure alone proves less distinctive. The approach naturally
+suggests a notion of stylometric distance and provides a conceptually
+straightforward framework that extends to open-set attribution problems without
+retraining existing models.
+
+I expect that this article will be of broad interest to researchers in
+computational linguistics, digital humanities, and scientists interested in how
+large language models capture stylistic patterns in text. The convergence of
+our approach with concurrent work in the field suggests that predictive
+modeling may represent a unifying framework for computational stylometry.
+
+Thank you for considering this manuscript, and I hope you will find it suitable
+for publication in \textit{Computational Linguistics}.
+
+
+\end{newlfm}
+\end{document}
