@@ -39,3 +39,16 @@ models/*/model.safetensors
 models/*/model.pth
 models/*/pytorch_model.bin
 models/*/training_state.pt
+
+# Model weight archives (for Dropbox distribution)
+model_weights_*.tar.gz
+# Note: .sha256 checksum files ARE checked into git (they're tiny)
+
+# HuggingFace credentials (security)
+.huggingface/
+
+# HuggingFace model files (weight files gitignored, but README.md should be tracked)
+models_hf/*/model.safetensors
+models_hf/*/training_state.pt
+models_hf/*/pytorch_model.bin
+!models_hf/*/README.md

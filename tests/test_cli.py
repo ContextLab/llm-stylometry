@@ -47,10 +47,14 @@ class TestCLI:
         """Test listing available figures."""
         result = self.run_cli(["--list"])
         assert result.returncode == 0, f"List failed: {result.stderr}"
-        assert "Available figures:" in result.stdout
+        # Check for updated output format (main + supplemental figures)
+        assert "Main Figures (baseline):" in result.stdout
+        assert "Supplemental Figures (variants):" in result.stdout
+        # Verify main figures listed
         assert "1a" in result.stdout
         assert "Figure 1A" in result.stdout
-        assert "3d_MDS_plot.pdf" in result.stdout
+        # Verify supplemental figures listed
+        assert "s1a" in result.stdout
 
     def test_cli_single_figure(self):
         """Test generating a single figure."""
