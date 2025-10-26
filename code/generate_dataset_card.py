@@ -124,7 +124,7 @@ size_categories:
 pretty_name: {metadata['full_name']} Corpus
 ---
 
-<h1><img src="https://cdn-avatars.huggingface.co/v1/production/uploads/1654865912089-62a33fd71424f432574c348b.png" alt="ContextLab" width="25" style="vertical-align: middle; margin-right: 10px;"/> ContextLab {metadata['full_name']} Corpus</h1>
+# ContextLab {metadata['full_name']} Corpus
 
 ## Dataset Description
 
