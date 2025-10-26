@@ -7,6 +7,7 @@ Creates professional README.md files for HuggingFace dataset repositories.
 
 import argparse
 from pathlib import Path
+from book_titles import BOOK_TITLES, get_book_title
 
 
 # Author metadata (shared with model card generator)
@@ -91,10 +92,11 @@ def generate_dataset_card(author, data_dir):
     metadata = AUTHOR_METADATA[author]
     stats = get_dataset_stats(Path(data_dir))
 
-    # Build file list for documentation
-    file_list_md = "\n".join([f"- `{fname}` - Project Gutenberg book" for fname in stats['file_list'][:5]])
-    if len(stats['file_list']) > 5:
-        file_list_md += f"\n- ... and {len(stats['file_list']) - 5} more books"
+    # Build file list table with book titles
+    file_list_md = "| File | Title |\n|------|-------|\n"
+    for fname in stats['file_list']:
+        title = get_book_title(fname)
+        file_list_md += f"| `{fname}` | {title} |\n"
 
     # Determine size category
     if stats['num_books'] < 10:
@@ -125,7 +127,7 @@ pretty_name: {metadata['full_name']} Complete Works
 # {metadata['full_name']} Complete Works Corpus
 
 <div style="text-align: center;">
-  <img src="https://raw.githubusercontent.com/ContextLab/llm-stylometry/main/assets/CDL_Avatar.png" alt="Context Lab" width="200"/>
+  <img src="https://cdn-avatars.huggingface.co/v1/production/uploads/1654865912089-62a33fd71424f432574c348b.png" alt="ContextLab" width="200"/>
 </div>
 
 ## Dataset Description
@@ -145,9 +147,9 @@ The corpus includes **{stats['num_books']} books** by {metadata['full_name']}, i
 
 ## Dataset Structure
 
-### Files
+### Books Included
 
-Each `.txt` file contains the complete text of one book, identified by its Project Gutenberg ID:
+Each `.txt` file contains the complete text of one book:
 
 {file_list_md}
 
@@ -338,7 +340,7 @@ If you use this dataset in your research, please cite:
 
 ### Dataset Curator
 
-[Context Lab](https://www.context-lab.com/), Dartmouth College
+[ContextLab](https://www.context-lab.com/), Dartmouth College
 
 ### Licensing
 
