@@ -16,7 +16,7 @@ AUTHOR_METADATA = {
         'full_name': 'Jane Austen',
         'years': '1775-1817',
         'period': '19th-century England',
-        'notable_works': 'Pride and Prejudice, Sense and Sensibility, Emma',
+        'notable_works': 'Pride and Prejudice, Sense and Sensibility, and Emma',
     },
     'baum': {
         'full_name': 'L. Frank Baum',
@@ -28,19 +28,19 @@ AUTHOR_METADATA = {
         'full_name': 'Charles Dickens',
         'years': '1812-1870',
         'period': 'Victorian England',
-        'notable_works': 'A Tale of Two Cities, Great Expectations, Oliver Twist, David Copperfield',
+        'notable_works': 'A Tale of Two Cities, Great Expectations, Oliver Twist, and David Copperfield',
     },
     'fitzgerald': {
         'full_name': 'F. Scott Fitzgerald',
         'years': '1896-1940',
         'period': 'Jazz Age America',
-        'notable_works': 'The Great Gatsby, Tender Is the Night, This Side of Paradise',
+        'notable_works': 'The Great Gatsby, Tender Is the Night, and This Side of Paradise',
     },
     'melville': {
         'full_name': 'Herman Melville',
         'years': '1819-1891',
         'period': '19th-century America',
-        'notable_works': 'Moby-Dick, Bartleby the Scrivener, Billy Budd',
+        'notable_works': 'Moby-Dick, Bartleby the Scrivener, and Typee',
     },
     'thompson': {
         'full_name': 'Ruth Plumly Thompson',
@@ -52,13 +52,13 @@ AUTHOR_METADATA = {
         'full_name': 'Mark Twain',
         'years': '1835-1910',
         'period': '19th-century America',
-        'notable_works': 'Adventures of Huckleberry Finn, The Adventures of Tom Sawyer, A Connecticut Yankee',
+        'notable_works': 'Adventures of Huckleberry Finn, The Adventures of Tom Sawyer, and The Innocents Abroad',
     },
     'wells': {
         'full_name': 'H.G. Wells',
         'years': '1866-1946',
         'period': 'late 19th to early 20th century England',
-        'notable_works': 'The Time Machine, The War of the Worlds, The Invisible Man',
+        'notable_works': 'The Time Machine, The War of the Worlds, and The Invisible Man',
     },
 }
 
@@ -121,18 +121,14 @@ tags:
 - project-gutenberg
 size_categories:
 - {size_cat}
-pretty_name: {metadata['full_name']} Complete Works
+pretty_name: {metadata['full_name']} Corpus
 ---
 
-# {metadata['full_name']} Complete Works Corpus
-
-<div style="text-align: center;">
-  <img src="https://cdn-avatars.huggingface.co/v1/production/uploads/1654865912089-62a33fd71424f432574c348b.png" alt="ContextLab" width="100"/>
-</div>
+# <img src="https://cdn-avatars.huggingface.co/v1/production/uploads/1654865912089-62a33fd71424f432574c348b.png" alt="ContextLab" width="25"/> ContextLab {metadata['full_name']} Corpus
 
 ## Dataset Description
 
-This dataset contains the complete works of **{metadata['full_name']}** ({metadata['years']}), preprocessed for computational stylometry research. The texts were sourced from [Project Gutenberg](https://www.gutenberg.org/) and cleaned for use in the paper ["A Stylometric Application of Large Language Models"](https://github.com/ContextLab/llm-stylometry) (Stropkay et al., 2025).
+This dataset contains works of **{metadata['full_name']}** ({metadata['years']}), preprocessed for computational stylometry research. The texts were sourced from [Project Gutenberg](https://www.gutenberg.org/) and cleaned for use in the paper ["A Stylometric Application of Large Language Models"](https://github.com/ContextLab/llm-stylometry) (Stropkay et al., 2025).
 
 The corpus includes **{stats['num_books']} books** by {metadata['full_name']}, including {metadata['notable_works']}. All text has been converted to **lowercase** and cleaned of Project Gutenberg headers, footers, and chapter headings to focus on the author's prose style.
 
@@ -363,11 +359,6 @@ Explore datasets for all 8 authors in the study:
 - [Ruth Plumly Thompson](https://huggingface.co/datasets/contextlab/thompson-corpus)
 - [Mark Twain](https://huggingface.co/datasets/contextlab/twain-corpus)
 - [H.G. Wells](https://huggingface.co/datasets/contextlab/wells-corpus)
-
-### Trained Models
-
-Author-specific GPT-2 models trained on these corpora will be available after training completes:
-- https://huggingface.co/contextlab (browse all models)
 """
 
     return card
