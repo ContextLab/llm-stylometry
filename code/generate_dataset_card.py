@@ -127,7 +127,7 @@ pretty_name: {metadata['full_name']} Complete Works
 # {metadata['full_name']} Complete Works Corpus
 
 <div style="text-align: center;">
-  <img src="https://cdn-avatars.huggingface.co/v1/production/uploads/1654865912089-62a33fd71424f432574c348b.png" alt="ContextLab" width="200"/>
+  <img src="https://cdn-avatars.huggingface.co/v1/production/uploads/1654865912089-62a33fd71424f432574c348b.png" alt="ContextLab" width="100"/>
 </div>
 
 ## Dataset Description

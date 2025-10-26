@@ -1,9 +1,19 @@
 """
 Mapping of Project Gutenberg IDs to book titles for all authors.
+All titles verified directly from Project Gutenberg (2025-10-26).
 """
 
 BOOK_TITLES = {
-    # L. Frank Baum - Oz series (14 books)
+    # Jane Austen (7 books) - All verified ✓
+    '105': 'Persuasion',
+    '121': 'Northanger Abbey',
+    '141': 'Mansfield Park',
+    '158': 'Emma',
+    '161': 'Sense and Sensibility',
+    '1342': 'Pride and Prejudice',
+    '946': 'Lady Susan',
+
+    # L. Frank Baum - Oz series (14 books) - All verified ✓
     '54': 'The Wonderful Wizard of Oz',
     '955': 'The Marvelous Land of Oz',
     '957': 'Ozma of Oz',
@@ -19,89 +29,80 @@ BOOK_TITLES = {
     '50194': 'The Magic of Oz',
     '52176': 'Glinda of Oz',
 
-    # Jane Austen (7 books)
-    '105': 'Persuasion',
-    '121': 'Northanger Abbey',
-    '141': 'Mansfield Park',
-    '158': 'Emma',
-    '161': 'Sense and Sensibility',
-    '1342': 'Pride and Prejudice',
-    '946': 'Lady Susan',
-
-    # Charles Dickens (14 books)
-    '46': 'A Christmas Carol',
+    # Charles Dickens (14 books) - All verified ✓
     '98': 'A Tale of Two Cities',
+    '580': 'The Pickwick Papers',
+    '675': 'American Notes',
+    '700': 'The Old Curiosity Shop',
     '730': 'Oliver Twist',
     '766': 'David Copperfield',
-    '786': 'The Pickwick Papers',
+    '786': 'Hard Times',
     '821': 'Dombey and Son',
-    '883': 'Our Mutual Friend',
-    '917': 'The Mystery of Edwin Drood',
-    '963': 'Bleak House',
-    '967': 'Little Dorrit',
-    '1023': 'Hard Times',
+    '963': 'Little Dorrit',
+    '967': 'Nicholas Nickleby',
+    '968': 'Martin Chuzzlewit',
+    '1023': 'Bleak House',
     '1400': 'Great Expectations',
-    '30127': 'Martin Chuzzlewit',
-    '42232': 'Nicholas Nickleby',
+    '24022': 'A Christmas Carol',
 
-    # F. Scott Fitzgerald (8 books)
+    # F. Scott Fitzgerald (8 books) - All verified ✓
+    '4368': 'Flappers and Philosophers',
+    '6695': 'Tales of the Jazz Age',
+    '805': 'This Side of Paradise',
+    '9830': 'The Beautiful and Damned',
     '64317': 'The Great Gatsby',
-    '9830': 'This Side of Paradise',
-    '805': 'The Beautiful and Damned',
-    '4368': 'Tales of the Jazz Age',
-    '2052': 'Tender Is the Night',
-    '243': 'Flappers and Philosophers',
-    '6695': 'All the Sad Young Men',
-    '23032': 'The Curious Case of Benjamin Button',
+    '68229': 'All the Sad Young Men',
+    'gutenberg_net_au_ebooks03_0301261': 'Tender Is the Night',
+    'gutenberg_net_au_fsf_PAT-HOBBY': 'The Pat Hobby Stories',
 
-    # Herman Melville (10 books)
-    '2489': 'Moby-Dick',
-    '10712': 'Bartleby, the Scrivener',
-    '11231': 'Typee',
-    '13720': 'Omoo',
-    '15859': 'Mardi',
-    '21816': 'Redburn',
-    '10009': 'White-Jacket',
-    '9147': 'Pierre',
-    '8118': 'Israel Potter',
-    '10641': 'Billy Budd, Sailor',
+    # Herman Melville (10 books) - All verified ✓
+    '15': 'Moby-Dick; or, The Whale',
+    '2694': 'I and My Chimney',
+    '4045': 'Omoo: Adventures in the South Seas',
+    '10712': 'White Jacket; Or, The World on a Man-of-War',
+    '11231': 'Bartleby, the Scrivener: A Story of Wall-Street',
+    '13720': 'Mardi, and a voyage thither, Vol. 1 (of 2)',
+    '13721': 'Mardi, and a voyage thither, Vol. 2 (of 2)',
+    '15422': 'Israel Potter: His Fifty Years of Exile',
+    '21816': 'The Confidence-Man: His Masquerade',
+    '28656': 'Typee',
 
-    # Ruth Plumly Thompson - Oz series (13 books)
-    '48778': 'Speedy in Oz',
-    '40455': 'The Yellow Knight of Oz',
-    '40726': 'Pirates in Oz',
-    '42054': 'The Purple Prince of Oz',
-    '43710': 'Ojo in Oz',
-    '45332': 'The Wishing Horse of Oz',
-    '46450': 'Captain Salt in Oz',
-    '47298': 'Handy Mandy in Oz',
-    '49072': 'The Silver Princess in Oz',
-    '50318': 'Ozoplaning with the Wizard of Oz',
-    '52091': 'The Wonder City of Oz',
-    '54261': 'The Scalawagons of Oz',
-    '56851': 'Lucky Bucky in Oz',
+    # Ruth Plumly Thompson - Oz series (13 books) - All verified ✓
+    '53765': 'Kabumpo in Oz',
+    '55806': 'Ozoplaning with the Wizard of Oz',
+    '55851': 'The Wishing Horse of Oz',
+    '56073': 'Captain Salt in Oz',
+    '56079': 'Handy Mandy in Oz',
+    '56085': 'The Silver Princess in Oz',
+    '58765': 'The Cowardly Lion of Oz',
+    '61681': 'Grampa in Oz',
+    '65849': 'The Lost King of Oz',
+    '70152': 'The Hungry Tiger of Oz',
+    '71273': 'The Gnome King of Oz',
+    '73170': 'The giant horse of Oz',
+    '75720': 'Jack Pumpkinhead of Oz',
 
-    # Mark Twain (6 books)
+    # Mark Twain (6 books) - All verified ✓
+    '74': 'The Adventures of Tom Sawyer, Complete',
     '76': 'Adventures of Huckleberry Finn',
-    '74': 'The Adventures of Tom Sawyer',
-    '86': 'The Prince and the Pauper',
-    '119': 'A Connecticut Yankee in King Arthur\'s Court',
-    '3176': 'The Gilded Age',
-    '245': 'Life on the Mississippi',
+    '86': 'A Connecticut Yankee in King Arthur\'s Court',
+    '1837': 'The Prince and the Pauper',
+    '3176': 'The Innocents Abroad',
+    '3177': 'Roughing It',
 
-    # H.G. Wells (12 books)
+    # H.G. Wells (12 books) - All verified ✓
     '35': 'The Time Machine',
     '36': 'The War of the Worlds',
-    '5230': 'The Invisible Man',
-    '159': 'The Island of Doctor Moreau',
-    '1743': 'The First Men in the Moon',
-    '4032': 'In the Days of the Comet',
-    '17': 'The Door in the Wall',
-    '524': 'The Food of the Gods',
-    '775': 'When the Sleeper Wakes',
-    '718': 'The Wheels of Chance',
-    '27': 'The World Set Free',
-    '1743': 'A Modern Utopia',
+    '159': 'The island of Doctor Moreau',
+    '1047': 'The New Machiavelli',
+    '1059': 'The World Set Free',
+    '5230': 'The Invisible Man: A Grotesque Romance',
+    '6424': 'A Modern Utopia',
+    '12163': 'The Sleeper Awakes',
+    '23218': 'The Red Room',
+    '27365': 'Tales of Space and Time',
+    '52501': 'The First Men in the Moon',
+    '75786': 'The open conspiracy : Blue prints for a world revolution',
 }
 
 
