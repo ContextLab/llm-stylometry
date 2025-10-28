@@ -5,7 +5,7 @@
 
 ## Overview
 
-This repository contains the code and data for our [paper](https://insert.link.when.ready) on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
+This repository contains the code and data for our [paper](https://arxiv.org/abs/2510.21958) on using large language models (LLMs) for stylometric analysis. We demonstrate that GPT-2 models trained on individual authors' works can capture unique writing styles, enabling accurate authorship attribution through cross-entropy loss comparison.
 
 ## Repository Structure
 
@@ -250,7 +250,7 @@ If you use this code or data in your research, please cite:
 @article{StroEtal25,
   title={A Stylometric Application of Large Language Models},
   author={Stropkay, Harrison F. and Chen, Jiayi and Jabelli, Mohammad J. L. and Rockmore, Daniel N. and Manning, Jeremy R.},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  journal={arXiv preprint arXiv:2510.21958},
   year={2025}
 }
 ```
