@@ -126,6 +126,17 @@ def get_model_stats(model_dir):
     }
 
 
+def count_training_books(author):
+    """Count number of books in author's corpus."""
+    author_dir = Path(f'data/cleaned/{author}')
+
+    if not author_dir.exists():
+        return "several"  # Fallback if directory not accessible
+
+    books = list(author_dir.glob('*.txt'))
+    return len(books)
+
+
 def count_training_tokens(author):
     """Estimate training tokens from cleaned data."""
     author_dir = Path(f'data/cleaned/{author}')
@@ -202,7 +213,7 @@ This model is part of a suite of 8 author-specific models developed to demonstra
 - **License:** MIT
 - **Author:** {metadata['full_name']} ({metadata['years']})
 - **Notable works:** {metadata['notable_works']}
-- **Training data:** [{metadata['full_name']} Complete Works](https://huggingface.co/datasets/contextlab/{author}-corpus)
+- **Training data:** [{count_training_books(author)} books by {metadata['full_name']}](https://huggingface.co/datasets/contextlab/{author}-corpus)
 - **Training tokens:** {count_training_tokens(author)}
 - **Final training loss:** {stats['final_loss']:.4f}
 - **Epochs trained:** {stats['epochs_trained']:,}
