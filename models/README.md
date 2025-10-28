@@ -130,7 +130,7 @@ Models published to: `contextlab/gpt2-{author}` (e.g., contextlab/gpt2-baum)
 
 Trained models available on HuggingFace:
 - Jane Austen: [contextlab/gpt2-austen](https://huggingface.co/contextlab/gpt2-austen)
-- L. Frank Baum: [contextlab/gpt2-baum](https://huggingface.co/contextlab/gpt2-baum) (training)
+- L. Frank Baum: [contextlab/gpt2-baum](https://huggingface.co/contextlab/gpt2-baum)
 - Charles Dickens: [contextlab/gpt2-dickens](https://huggingface.co/contextlab/gpt2-dickens)
 - F. Scott Fitzgerald: [contextlab/gpt2-fitzgerald](https://huggingface.co/contextlab/gpt2-fitzgerald)
 - Herman Melville: [contextlab/gpt2-melville](https://huggingface.co/contextlab/gpt2-melville)
