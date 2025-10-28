@@ -185,17 +185,13 @@ library_name: transformers
 pipeline_tag: text-generation
 ---
 
-# GPT-2 {metadata['full_name']} Stylometry Model
-
-<div style="text-align: center;">
-  <img src="https://raw.githubusercontent.com/ContextLab/llm-stylometry/main/assets/CDL_Avatar.png" alt="Context Lab" width="200"/>
-</div>
+# ContextLab GPT-2 {metadata['full_name']} Stylometry Model
 
 ## Overview
 
-This model is a GPT-2 language model trained exclusively on the complete works of **{metadata['full_name']}** ({metadata['years']}). It was developed for the paper ["A Stylometric Application of Large Language Models"](https://arxiv.org/abs/2510.21958) (Stropkay et al., 2025).
+This model is a GPT-2 language model trained exclusively on **{count_training_books(author)} books by {metadata['full_name']}** ({metadata['years']}). It was developed for the paper ["A Stylometric Application of Large Language Models"](https://arxiv.org/abs/2510.21958) (Stropkay et al., 2025).
 
-The model captures {metadata['full_name']}'s unique writing style through intensive training on their complete corpus. By learning the statistical patterns, vocabulary, syntax, and thematic elements characteristic of {author.capitalize()}'s writing, this model enables:
+The model captures {metadata['full_name']}'s unique writing style through intensive training on their corpus. By learning the statistical patterns, vocabulary, syntax, and thematic elements characteristic of {author.capitalize()}'s writing, this model enables:
 
 - **Text generation** in the authentic style of {metadata['full_name']}
 - **Authorship attribution** through cross-entropy loss comparison
