@@ -53,6 +53,21 @@ All author corpora are publicly available on HuggingFace with verified book titl
 
 Load with: `from datasets import load_dataset; corpus = load_dataset("contextlab/baum-corpus")`
 
+### Uploading Datasets to HuggingFace
+
+**Generate dataset cards:**
+```bash
+python code/generate_dataset_card.py --author baum --data-dir data/cleaned/baum
+```
+
+**Upload datasets:**
+```bash
+python code/upload_author_dataset.py --author baum           # Single author
+python code/upload_author_dataset.py --author baum --dry-run # Test first
+```
+
+All datasets include verified book titles, usage examples, and are publicly accessible.
+
 ## Creating Variant Data
 
 Generate variant-transformed texts:
