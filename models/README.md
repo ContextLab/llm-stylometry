@@ -63,3 +63,68 @@ Train remotely on GPU cluster:
 ```
 
 See main README for full training documentation.
+
+## HuggingFace Model Training (High-Quality Public Models)
+
+Train high-quality single models (one per author) for public release on HuggingFace.
+
+### Training Commands
+
+**Local training:**
+```bash
+./train_hf_models.sh --author baum           # Single author, 50k epochs
+./train_hf_models.sh --all                   # All 8 authors in parallel
+```
+
+**Remote GPU training:**
+```bash
+./remote_train_hf.sh --cluster mycluster --all              # All 8 authors
+./remote_train_hf.sh --cluster mycluster --author baum      # Single author
+./remote_train_hf.sh --cluster mycluster --all --max-epochs 100000  # Higher limit
+```
+
+**Monitor training:**
+```bash
+./check_hf_status.sh --cluster mycluster
+# Shows current epoch, loss, progress, ETA per author
+```
+
+**Download completed models:**
+```bash
+./sync_hf_models.sh --cluster mycluster --all
+# Downloads to models_hf/{author}_tokenizer=gpt2/
+```
+
+### Uploading to HuggingFace
+
+**Prerequisites:**
+- Credentials file: `.huggingface/credentials.json`
+- Format: `{"username": "contextlab", "token": "hf_..."}`
+- Completed models in `models_hf/` directory
+
+**Generate model cards:**
+```bash
+python code/generate_model_card.py --author baum --model-dir models_hf/baum_tokenizer=gpt2
+```
+
+**Upload models:**
+```bash
+./upload_to_huggingface.sh --author baum --dry-run    # Test
+./upload_to_huggingface.sh --author baum              # Upload
+./upload_to_huggingface.sh --all                      # Upload all
+```
+
+Models published to: `contextlab/gpt2-{author}` (e.g., contextlab/gpt2-baum)
+
+### HuggingFace vs Paper Models
+
+**Paper models:** 320 models (8 authors × 10 seeds × 4 conditions)
+- Used for all figures and statistical analysis
+- Trained to loss ≤ 3.0 for consistent comparison
+- Available via Dropbox download
+
+**HuggingFace models:** 8 models (1 per author)
+- For public use and text generation
+- Trained for 50,000 additional epochs beyond paper models
+- Much lower loss (~1.3-1.6) for better generation quality
+- Will be available at https://huggingface.co/contextlab
