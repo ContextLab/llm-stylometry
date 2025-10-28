@@ -240,7 +240,7 @@ from llm_stylometry.analysis.fairness import (
 )
 ```
 
-All visualization functions support `variant` and `apply_fairness` parameters (except t-test figures). See the [Fairness-Based Loss Thresholding](#fairness-based-loss-thresholding) section for details.
+All visualization functions support `variant` and `apply_fairness` parameters (except t-test figures).
 
 ## Citation
 
