@@ -47,8 +47,5 @@ model_weights_*.tar.gz
 # HuggingFace credentials (security)
 .huggingface/
 
-# HuggingFace model files (weight files gitignored, but README.md should be tracked)
-models_hf/*/model.safetensors
-models_hf/*/training_state.pt
-models_hf/*/pytorch_model.bin
-!models_hf/*/README.md
+# HuggingFace models (uploaded to HuggingFace, not needed in git)
+models_hf/
