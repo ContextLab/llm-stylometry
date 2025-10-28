@@ -182,7 +182,7 @@ pipeline_tag: text-generation
 
 ## Overview
 
-This model is a GPT-2 language model trained exclusively on the complete works of **{metadata['full_name']}** ({metadata['years']}). It was developed for the paper ["A Stylometric Application of Large Language Models"](https://github.com/ContextLab/llm-stylometry) (Stropkay et al., 2025).
+This model is a GPT-2 language model trained exclusively on the complete works of **{metadata['full_name']}** ({metadata['years']}). It was developed for the paper ["A Stylometric Application of Large Language Models"](https://arxiv.org/abs/2510.21958) (Stropkay et al., 2025).
 
 The model captures {metadata['full_name']}'s unique writing style through intensive training on their complete corpus. By learning the statistical patterns, vocabulary, syntax, and thematic elements characteristic of {author.capitalize()}'s writing, this model enables:
 
@@ -349,7 +349,7 @@ If you use this model in your research, please cite:
 @article{{StroEtal25,
   title={{A Stylometric Application of Large Language Models}},
   author={{Stropkay, Harrison F. and Chen, Jiayi and Jabelli, Mohammad J. L. and Rockmore, Daniel N. and Manning, Jeremy R.}},
-  journal={{arXiv preprint arXiv:XXXX.XXXXX}},
+  journal={{arXiv preprint arXiv:2510.21958}},
   year={{2025}}
 }}
 ```

@@ -128,7 +128,7 @@ pretty_name: {metadata['full_name']} Corpus
 
 ## Dataset Description
 
-This dataset contains works of **{metadata['full_name']}** ({metadata['years']}), preprocessed for computational stylometry research. The texts were sourced from [Project Gutenberg](https://www.gutenberg.org/) and cleaned for use in the paper ["A Stylometric Application of Large Language Models"](https://github.com/ContextLab/llm-stylometry) (Stropkay et al., 2025).
+This dataset contains works of **{metadata['full_name']}** ({metadata['years']}), preprocessed for computational stylometry research. The texts were sourced from [Project Gutenberg](https://www.gutenberg.org/) and cleaned for use in the paper ["A Stylometric Application of Large Language Models"](https://arxiv.org/abs/2510.21958) (Stropkay et al., 2025).
 
 The corpus includes **{stats['num_books']} books** by {metadata['full_name']}, including {metadata['notable_works']}. All text has been converted to **lowercase** and cleaned of Project Gutenberg headers, footers, and chapter headings to focus on the author's prose style.
 
@@ -327,7 +327,7 @@ If you use this dataset in your research, please cite:
 @article{{StroEtal25,
   title={{A Stylometric Application of Large Language Models}},
   author={{Stropkay, Harrison F. and Chen, Jiayi and Jabelli, Mohammad J. L. and Rockmore, Daniel N. and Manning, Jeremy R.}},
-  journal={{arXiv preprint arXiv:XXXX.XXXXX}},
+  journal={{arXiv preprint arXiv:2510.21958}},
   year={{2025}}
 }}
 ```
