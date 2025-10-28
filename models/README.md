@@ -127,4 +127,13 @@ Models published to: `contextlab/gpt2-{author}` (e.g., contextlab/gpt2-baum)
 - For public use and text generation
 - Trained for 50,000 additional epochs beyond paper models
 - Much lower loss (~1.3-1.6) for better generation quality
-- Will be available at https://huggingface.co/contextlab
+
+Trained models available on HuggingFace:
+- Jane Austen: [contextlab/gpt2-austen](https://huggingface.co/contextlab/gpt2-austen)
+- L. Frank Baum: [contextlab/gpt2-baum](https://huggingface.co/contextlab/gpt2-baum) (training)
+- Charles Dickens: [contextlab/gpt2-dickens](https://huggingface.co/contextlab/gpt2-dickens)
+- F. Scott Fitzgerald: [contextlab/gpt2-fitzgerald](https://huggingface.co/contextlab/gpt2-fitzgerald)
+- Herman Melville: [contextlab/gpt2-melville](https://huggingface.co/contextlab/gpt2-melville)
+- Ruth Plumly Thompson: [contextlab/gpt2-thompson](https://huggingface.co/contextlab/gpt2-thompson)
+- Mark Twain: [contextlab/gpt2-twain](https://huggingface.co/contextlab/gpt2-twain)
+- H.G. Wells: [contextlab/gpt2-wells](https://huggingface.co/contextlab/gpt2-wells)
