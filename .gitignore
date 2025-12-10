@@ -32,7 +32,7 @@ data/classifier_results/*.pkl
 .test_credentials
 
 # SSH credentials (security)
-.ssh/credentials.json
+.ssh/*.json
 
 # Model files
 models/*/model.safetensors
