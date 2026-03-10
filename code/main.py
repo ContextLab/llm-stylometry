@@ -105,6 +105,8 @@ variant = os.environ.get('ANALYSIS_VARIANT', None)
 if variant == '':
     variant = None  # Empty string should be treated as None
 
+n_train_tokens = int(os.environ.get('N_TRAIN_TOKENS', 643041))
+
 # Validate variant if provided
 if variant:
     from constants import ANALYSIS_VARIANTS
@@ -124,6 +126,7 @@ for seed in range(10):
                 seed=seed,
                 tokenizer_name="gpt2",
                 analysis_variant=variant,
+                n_train_tokens=n_train_tokens,
                 resume_training=resume_mode,
             )
         )

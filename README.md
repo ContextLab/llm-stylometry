@@ -153,6 +153,14 @@ Training 320 models (baseline + 3 variants) requires a CUDA GPU. See `models/REA
 ./run_llm_stylometry.sh -t -r             # Resume from checkpoints
 ```
 
+**Dataset-size experiments (baseline, 8 authors x 10 seeds):**
+```bash
+N_TRAIN_TOKENS=128608 python code/main.py
+N_TRAIN_TOKENS=257216 python code/main.py
+N_TRAIN_TOKENS=385825 python code/main.py
+N_TRAIN_TOKENS=514433 python code/main.py
+```
+
 **Remote training:**
 
 Requires GPU cluster with SSH access. Create `.ssh/credentials_mycluster.json`:

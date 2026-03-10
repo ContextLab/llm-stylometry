@@ -38,6 +38,12 @@ class Experiment:
         else:
             self.name = f"{train_author}_tokenizer={tokenizer_name}_seed={seed}"
 
+        if n_train_tokens != 643041:
+            self.name = self.name.replace(
+                f"_seed={seed}",
+                f"_ntokens={n_train_tokens}_seed={seed}",
+            )
+
         # Get appropriate data directory
         self.data_dir = get_data_dir(analysis_variant)
 
