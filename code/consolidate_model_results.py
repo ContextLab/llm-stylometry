@@ -13,7 +13,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def consolidate_model_results(models_dir='models', output_path=None, save_csv=False, variant=None):
+def consolidate_model_results(models_dir='models', output_path=None, save_csv=False, variant=None, include_ntokens=False):
     """
     Consolidate all model training results into a single DataFrame.
 
@@ -22,6 +22,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         output_path: Path to save consolidated pickle file (auto-determined if None)
         save_csv: Also save as CSV for debugging (default: False)
         variant: Filter by variant ('content', 'function', 'pos') or None for baseline
+        include_ntokens: Include the baseline models across all dataset sizes and add n_train_tokens to the metadata
 
     Returns:
         Consolidated DataFrame with all model results
@@ -31,9 +32,14 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     if not models_path.exists():
         raise FileNotFoundError(f"Models directory not found: {models_dir}")
 
+    if variant is not None and include_ntokens:
+        raise ValueError("include_ntokens cannot be combined with variant filtering")
+
     # Auto-determine output path based on variant
     if output_path is None:
-        if variant:
+        if include_ntokens:
+            output_path = 'data/model_results_ntokens.pkl'
+        elif variant:
             output_path = f'data/model_results_{variant}.pkl'
         else:
             output_path = 'data/model_results.pkl'
@@ -49,6 +55,12 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         variant_label = f"{variant} variant"
     else:
         model_dirs = [d for d in all_model_dirs if '_variant=' not in d.name]
+        assert not any('_ntokens=643041_' in d.name for d in model_dirs), (
+            "Explicit _ntokens=643041 baseline models are not supported; "
+            "use legacy baseline names for the 100% condition to avoid costly retraining."
+        )
+        if not include_ntokens:
+            model_dirs = [d for d in model_dirs if '_ntokens=' not in d.name]
         variant_label = "baseline"
 
     if not model_dirs:
@@ -61,20 +73,25 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         dir_name = model_dir.name
         parts = dir_name.split('_')
 
-        # Extract author, variant, tokenizer, and seed from directory name
-        # Baseline format: {author}_tokenizer={tokenizer}_seed={seed}
+        # Extract author, variant, tokenizer, ntokens, and seed from directory name
+        # Legacy baseline format: {author}_tokenizer={tokenizer}_seed={seed}
+        # Dataset-size baseline format: {author}_tokenizer={tokenizer}_ntokens={count}_seed={seed}
         # Variant format: {author}_variant={variant}_tokenizer={tokenizer}_seed={seed}
         author = parts[0]
 
-        # Find variant, tokenizer, and seed
+        # Find variant, tokenizer, n_train_tokens, and seed
         model_variant = None
         tokenizer = None
         seed = None
+        n_train_tokens = 643041
+
         for part in parts[1:]:
             if part.startswith('variant='):
                 model_variant = part.split('=')[1]
             elif part.startswith('tokenizer='):
                 tokenizer = part.split('=')[1]
+            elif part.startswith('ntokens='):
+                n_train_tokens = int(part.split('=')[1])
             elif part.startswith('seed='):
                 seed = int(part.split('=')[1])
 
@@ -122,6 +139,8 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         df['author'] = author
         df['variant'] = model_variant  # None for baseline, variant name for variant models
         df['tokenizer'] = tokenizer
+        if include_ntokens:
+            df['n_train_tokens'] = n_train_tokens
         df['checkpoint_path'] = str(model_dir)
 
         # Read config files if they exist
@@ -151,7 +170,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
             'seed', 'train_author', 'epochs_completed', 'loss_dataset',
             'loss_value', 'model_name', 'author', 'variant', 'tokenizer',
             'model_config', 'generation_config', 'checkpoint_path'
-        ])
+        ] + (['n_train_tokens'] if include_ntokens else []))
 
     # Combine all dataframes
     consolidated_df = pd.concat(all_results, ignore_index=True)
@@ -161,7 +180,7 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         'seed', 'train_author', 'epochs_completed', 'loss_dataset',
         'loss_value', 'model_name', 'author', 'variant', 'tokenizer',
         'model_config', 'generation_config', 'checkpoint_path'
-    ]
+    ] + (['n_train_tokens'] if include_ntokens else [])
 
     # Reorder columns if they all exist
     available_columns = [col for col in expected_columns if col in consolidated_df.columns]
@@ -228,6 +247,11 @@ def main():
         default=None,
         help='Filter by variant (content, function, pos) or omit for baseline'
     )
+    parser.add_argument(
+        '--include-ntokens',
+        action='store_true',
+        help='Include the baseline models across all dataset sizes and add n_train_tokens to the metadata'
+    )
 
     args = parser.parse_args()
 
@@ -236,7 +260,8 @@ def main():
             args.models_dir,
             args.output,
             args.save_csv,
-            args.variant
+            args.variant,
+            args.include_ntokens,
         )
         return 0
     except Exception as e:
