@@ -49,3 +49,7 @@ model_weights_*.tar.gz
 
 # HuggingFace models (uploaded to HuggingFace, not needed in git)
 models_hf/
+
+# Harrison's infra artifacts
+runai_notes.md
+start_gpu_workspace.sh
