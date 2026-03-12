@@ -38,7 +38,8 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     # Auto-determine output path based on variant
     if output_path is None:
         if include_ntokens:
-            output_path = 'data/model_results_ntokens.pkl'
+            # pandas infers compression from the filename extension (we need to do this to stay under GitHub's 100MiB file limit)
+            output_path = 'data/model_results_ntokens.pkl.gz'
         elif variant:
             output_path = f'data/model_results_{variant}.pkl'
         else:
