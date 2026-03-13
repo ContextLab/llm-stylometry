@@ -380,15 +380,15 @@ def main():
         help='Compute pairwise comparisons across all variants'
     )
     parser.add_argument(
-        '--accuracy-by-ntokens',
+        '--n-tokens',
         action='store_true',
-        help='Report final-epoch attribution accuracy by n_train_tokens and exit'
+        help='Report final attribution accuracy and threshold crossings by n_train_tokens and exit'
     )
 
     args = parser.parse_args()
 
-    assert not (args.accuracy_by_ntokens and args.variant is not None), (
-        "--accuracy-by-ntokens is for baseline + n_train_tokens results only; "
+    assert not (args.n_tokens and args.variant is not None), (
+        "--n-tokens is for baseline + n_train_tokens results only; "
         "do not pass --variant"
     )
 
@@ -401,7 +401,7 @@ def main():
         # Load all variant data
         all_variant_data = {}
         for var_name, var_key in [('baseline', None), ('content', 'content'), ('function', 'function'), ('pos', 'pos')]:
-            pkl_file = f"data/model_results.pkl" if var_key is None else f"data/model_results_{var_key}.pkl"
+            pkl_file = "data/model_results.pkl" if var_key is None else f"data/model_results_{var_key}.pkl"
             if Path(pkl_file).exists():
                 all_variant_data[var_name] = load_data(pkl_file, var_key)
             else:
@@ -438,24 +438,39 @@ def main():
     print("\nLoading data...")
     df = load_data(data_path=args.data, variant=args.variant)
 
-    if args.accuracy_by_ntokens:
+    if args.n_tokens:
         print("\nFinal-Epoch Attribution Accuracy")
         print("-" * 40)
+
+        if 'n_train_tokens' not in df.columns:
+            raise ValueError("No n_train_tokens column in data")
+
         accuracy_df = compute_final_attribution_accuracy(df)
 
-        if 'n_train_tokens' in accuracy_df.columns:
-            for _, row in accuracy_df.iterrows():
-                accuracy = 100 * row['mean']
-                print(
-                    f"{int(row['n_train_tokens']):>6} tokens: "
-                    f"{int(row['sum'])}/{int(row['count'])} correct ({accuracy:.1f}%)"
-                )
-        else:
-            accuracy = 100 * accuracy_df['mean'].iloc[0]
+        for _, row in accuracy_df.iterrows():
+            accuracy = 100 * row['mean']
             print(
-                f"{int(accuracy_df['sum'].iloc[0])}/{int(accuracy_df['count'].iloc[0])} "
-                f"correct ({accuracy:.1f}%)"
+                f"{int(row['n_train_tokens']):>6} tokens: "
+                f"{int(row['sum'])}/{int(row['count'])} correct ({accuracy:.1f}%)"
             )
+        print("\nIndividual Author Threshold Crossings by n_train_tokens (p < 0.001)")
+        print("-" * 60)
+
+        for n_train_tokens in sorted(df['n_train_tokens'].dropna().unique()):
+            print(f"\n{int(n_train_tokens):>6} tokens")
+            crossing_authors = find_threshold_crossing_epochs(
+                df[df['n_train_tokens'] == n_train_tokens]
+            )
+            for author in AUTHORS:
+                if author in crossing_authors:
+                    epoch, t_stat, p_value = crossing_authors[author]
+                    print(
+                        f"{author.capitalize():<12}: "
+                        f"Epoch {epoch:3d} (t={t_stat:.2f}, p={p_value:.2e})"
+                    )
+                else:
+                    print(f"{author.capitalize():<12}: No threshold crossing detected")
+
         print("\n" + "=" * 60)
         return
 
@@ -518,5 +533,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-# uv run --no-project --python 3.11 --with pandas==2.3.3 --with numpy --with scipy --with tqdm python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --accuracy-by-ntokens  
+"""
+To generate stats re: varying the size of the training sets, run:
+uv run --no-project --python 3.11 --with pandas==2.3.3 --with numpy --with scipy --with tqdm python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --n-tokens
+"""

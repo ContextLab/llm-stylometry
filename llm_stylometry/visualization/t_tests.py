@@ -381,11 +381,22 @@ def generate_t_test_avg_figure(
     return fig
 
 
-def _load_ntokens_t_test_panel_data(data_path="data/model_results_ntokens.pkl.gz"):
+def _load_ntokens_t_test_panel_data(
+    data_path="data/model_results_ntokens.pkl.gz",
+    cache_path="data/t_test_ntokens_cache.pkl.gz",
+):
     """Load baseline ntokens results and prepare per-size t-test data."""
+    import gzip
+    import pickle
     from pathlib import Path
 
     data_path = Path(data_path)
+    cache_path = Path(cache_path)
+
+    if cache_path.exists():
+        with gzip.open(cache_path, "rb") as f:
+            return pickle.load(f)
+
     if data_path.name == "model_results_ntokens.pkl.gz":
         # Keep this pickle on pandas 2.3.3; older 2.x releases failed to read it.
         assert pd.__version__ == "2.3.3", "model_results_ntokens.pkl.gz requires pandas==2.3.3"
@@ -429,6 +440,10 @@ def _load_ntokens_t_test_panel_data(data_path="data/model_results_ntokens.pkl.gz
             }
         )
 
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(cache_path, "wb") as f:
+        pickle.dump(panel_data, f)
+
     return panel_data
 
 
@@ -465,7 +480,7 @@ def generate_t_test_ntokens_grid_figure(
         y_min = min(y_min, 0) - padding
         y_max = y_max + padding
 
-    for ax, panel in zip(axes, panel_data):
+    for i, (ax, panel) in enumerate(zip(axes, panel_data)):
         t_raws_df = panel["t_raws_df"]
         threshold_df = panel["threshold_df"]
 
@@ -482,7 +497,7 @@ def generate_t_test_ntokens_grid_figure(
             ax=ax,
             hue_order=hue_order,
             palette=palette,
-            legend=False,
+            legend=(i == 0),
         )
 
         if not threshold_df.empty:
@@ -502,6 +517,17 @@ def generate_t_test_ntokens_grid_figure(
         ax.set_title(f'{panel["label"]} tokens', fontsize=12)
         ax.set_xlim(0, t_raws_df["Epoch"].max())
         ax.set_ylim(y_min, y_max)
+
+        if i == 0:
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(
+                handles=handles,
+                labels=labels,
+                title="Training author",
+                fontsize=8,
+                title_fontsize=9,
+                loc="upper left",
+            )
 
     for ax in axes[:-1]:
         ax.set_xlabel("")
