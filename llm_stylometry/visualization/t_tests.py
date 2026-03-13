@@ -379,3 +379,245 @@ def generate_t_test_avg_figure(
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig
+
+
+def _load_ntokens_t_test_panel_data(data_path="data/model_results_ntokens.pkl.gz"):
+    """Load baseline ntokens results and prepare per-size t-test data."""
+    from pathlib import Path
+
+    data_path = Path(data_path)
+    if data_path.name == "model_results_ntokens.pkl.gz":
+        # Keep this pickle on pandas 2.3.3; older 2.x releases failed to read it.
+        assert pd.__version__ == "2.3.3", "model_results_ntokens.pkl.gz requires pandas==2.3.3"
+
+    df = pd.read_pickle(data_path)
+    if "variant" in df.columns:
+        df = df[df["variant"].isna()].copy()
+    if "n_train_tokens" not in df.columns:
+        raise ValueError("No n_train_tokens column in data")
+
+    ntokens_values = [128608, 257216, 385825, 514433, 643041]
+    panel_data = []
+
+    for n_train_tokens in ntokens_values:
+        n_df = df[df["n_train_tokens"] == n_train_tokens].copy()
+        if n_df.empty:
+            raise ValueError(f"No rows found for n_train_tokens={n_train_tokens}")
+
+        t_raws_df, _, _, thresholds = calculate_t_statistics(n_df)
+
+        epochs = sorted(t_raws_df["Epoch"].unique())
+        threshold_data = []
+        for epoch in epochs:
+            epoch_thresholds = []
+            for author in thresholds.keys():
+                epoch_idx = list(epochs).index(epoch)
+                if epoch_idx < len(thresholds[author]):
+                    thresh = thresholds[author][epoch_idx]
+                    if not np.isnan(thresh):
+                        epoch_thresholds.append(thresh)
+
+            for thresh in epoch_thresholds:
+                threshold_data.append({"Epoch": epoch, "threshold": thresh})
+
+        panel_data.append(
+            {
+                "n_train_tokens": n_train_tokens,
+                "label": f"{n_train_tokens:,}",
+                "t_raws_df": t_raws_df,
+                "threshold_df": pd.DataFrame(threshold_data),
+            }
+        )
+
+    return panel_data
+
+
+def generate_t_test_ntokens_grid_figure(
+    data_path="data/model_results_ntokens.pkl.gz",
+    output_path=None,
+    figsize=(7, 14),
+    font="Helvetica",
+    panel_data=None,
+):
+    """Generate a 5-panel Figure 2A-style plot across training-token counts."""
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
+
+    if panel_data is None:
+        panel_data = _load_ntokens_t_test_panel_data(data_path)
+
+    fig, axes = plt.subplots(len(panel_data), 1, figsize=figsize, sharex=True, sharey=True)
+    combined_t_raws_df = pd.concat(
+        [panel["t_raws_df"] for panel in panel_data],
+        ignore_index=True,
+    )
+
+    valid_t_values = combined_t_raws_df["t_raw"].replace([np.inf, -np.inf], np.nan).dropna()
+    if len(valid_t_values) == 0:
+        logger.warning("No valid t-statistics found for ntokens grid. Using default axis limits.")
+        y_min = -1.0
+        y_max = 5.0
+    else:
+        y_min = valid_t_values.min()
+        y_max = valid_t_values.max()
+        y_range = y_max - y_min
+        padding = 0.05 * y_range if y_range > 0 else 0.5
+        y_min = min(y_min, 0) - padding
+        y_max = y_max + padding
+
+    for ax, panel in zip(axes, panel_data):
+        t_raws_df = panel["t_raws_df"]
+        threshold_df = panel["threshold_df"]
+
+        unique_authors = sorted(t_raws_df["Author"].unique())
+        fixed_first = ["Baum", "Thompson"]
+        hue_order = fixed_first + [a for a in unique_authors if a not in fixed_first]
+        palette = dict(zip(hue_order, sns.color_palette("tab10", n_colors=len(hue_order))))
+
+        sns.lineplot(
+            data=t_raws_df,
+            x="Epoch",
+            y="t_raw",
+            hue="Author",
+            ax=ax,
+            hue_order=hue_order,
+            palette=palette,
+            legend=False,
+        )
+
+        if not threshold_df.empty:
+            sns.lineplot(
+                data=threshold_df,
+                x="Epoch",
+                y="threshold",
+                ax=ax,
+                color="black",
+                linewidth=2,
+                linestyle="-",
+                errorbar="ci",
+            )
+
+        sns.despine(ax=ax, top=True, right=True)
+        ax.set_ylabel("$t$-value", fontsize=12)
+        ax.set_title(f'{panel["label"]} tokens', fontsize=12)
+        ax.set_xlim(0, t_raws_df["Epoch"].max())
+        ax.set_ylim(y_min, y_max)
+
+    for ax in axes[:-1]:
+        ax.set_xlabel("")
+    axes[-1].set_xlabel("Epochs completed", fontsize=12)
+
+    plt.tight_layout()
+
+    if output_path:
+        fig.savefig(output_path, format="pdf", bbox_inches="tight")
+
+    return fig
+
+
+def generate_t_test_avg_ntokens_figure(
+    data_path="data/model_results_ntokens.pkl.gz",
+    output_path=None,
+    figsize=(6, 4),
+    show_legend=True,
+    font="Helvetica",
+    panel_data=None,
+):
+    """Generate a Figure 2B-style plot with one average curve per token count."""
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
+
+    if panel_data is None:
+        panel_data = _load_ntokens_t_test_panel_data(data_path)
+
+    combined_t_raws_df = []
+    combined_threshold_df = []
+    for panel in panel_data:
+        t_raws_df = panel["t_raws_df"].copy()
+        t_raws_df["Training tokens"] = panel["label"]
+        combined_t_raws_df.append(t_raws_df)
+        combined_threshold_df.append(panel["threshold_df"])
+
+    combined_t_raws_df = pd.concat(combined_t_raws_df, ignore_index=True)
+    combined_threshold_df = pd.concat(combined_threshold_df, ignore_index=True)
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    sns.lineplot(
+        data=combined_t_raws_df,
+        x="Epoch",
+        y="t_raw",
+        hue="Training tokens",
+        hue_order=[panel["label"] for panel in panel_data],
+        palette=sns.color_palette("viridis", n_colors=len(panel_data)),
+        ax=ax,
+    )
+
+    if not combined_threshold_df.empty:
+        sns.lineplot(
+            data=combined_threshold_df,
+            x="Epoch",
+            y="threshold",
+            ax=ax,
+            color="black",
+            linewidth=2,
+            linestyle="-",
+            errorbar="ci",
+            label="p<0.001 threshold" if show_legend else "",
+        )
+
+    sns.despine(ax=ax, top=True, right=True)
+    ax.set_xlabel("Epochs completed", fontsize=12)
+    ax.set_ylabel("$t$-value", fontsize=12)
+
+    valid_t_values = combined_t_raws_df["t_raw"].replace([np.inf, -np.inf], np.nan).dropna()
+    if len(valid_t_values) == 0:
+        logger.warning("No valid t-statistics found for ntokens average figure. Using default axis limits.")
+        y_min = -1.0
+        y_max = 5.0
+    else:
+        y_min = valid_t_values.min()
+        y_max = valid_t_values.max()
+        y_range = y_max - y_min
+        padding = 0.05 * y_range if y_range > 0 else 0.5
+        y_min = min(y_min, 0) - padding
+        y_max = y_max + padding
+
+    ax.set_xlim(0, combined_t_raws_df["Epoch"].max())
+    ax.set_ylim(y_min, y_max)
+
+    if show_legend:
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(
+            handles=handles,
+            labels=labels,
+            title="Training tokens",
+            fontsize=8,
+            title_fontsize=9,
+            loc="upper left",
+        )
+    else:
+        legend = ax.get_legend()
+        if legend is not None:
+            legend.remove()
+
+    plt.tight_layout()
+
+    if output_path:
+        fig.savefig(output_path, format="pdf", bbox_inches="tight")
+
+    return fig
+
+
+if __name__ == "__main__":
+    panel_data = _load_ntokens_t_test_panel_data()
+    generate_t_test_ntokens_grid_figure(
+        output_path="paper/figs/source/t_test_ntokens_grid.pdf",
+        panel_data=panel_data,
+    )
+    generate_t_test_avg_ntokens_figure(
+        output_path="paper/figs/source/t_test_avg_ntokens.pdf",
+        panel_data=panel_data,
+    )
+
+# uv run --no-project --python 3.11 --with pandas==2.3.3 --with numpy --with scipy --with matplotlib --with seaborn --with tqdm python llm_stylometry/visualization/t_tests.py

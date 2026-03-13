@@ -3,7 +3,6 @@
 Compute statistics for LLM stylometry paper reproduction.
 """
 
-import pickle
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -21,8 +20,10 @@ def load_data(data_path='data/model_results.pkl', variant=None):
     Returns:
         DataFrame filtered to specified variant
     """
-    with open(data_path, 'rb') as f:
-        df = pickle.load(f)
+    if Path(data_path).name == 'model_results_ntokens.pkl.gz':
+        # Keep this pickle on pandas 2.3.3; older 2.x releases failed to read it.
+        assert pd.__version__ == '2.3.3', "model_results_ntokens.pkl.gz requires pandas==2.3.3"
+    df = pd.read_pickle(data_path)
 
     # Filter by variant
     if variant is None:
@@ -175,6 +176,44 @@ def compute_average_t_test(df, epoch=500):
         return t_stat, p_value, len(seed_avg_t_stats) - 1
 
     return None, None, None
+
+
+def compute_final_attribution_accuracy(df):
+    """
+    Compute final-epoch attribution accuracy using minimum final loss.
+
+    Returns:
+        DataFrame with one row per n_train_tokens value if present, otherwise one
+        row with overall accuracy.
+    """
+    final_df = df[df['loss_dataset'].isin(AUTHORS)].groupby(
+        ['model_name', 'loss_dataset']
+    ).tail(1).copy()
+
+    columns = ['model_name', 'train_author', 'loss_dataset']
+    if 'n_train_tokens' in final_df.columns:
+        columns.append('n_train_tokens')
+
+    predictions = final_df.loc[
+        final_df.groupby('model_name')['loss_value'].idxmin(),
+        columns,
+    ].copy()
+    predictions = predictions.rename(columns={'loss_dataset': 'predicted_author'})
+    predictions['correct'] = predictions['predicted_author'] == predictions['train_author']
+
+    if 'n_train_tokens' in predictions.columns:
+        return (
+            predictions.groupby('n_train_tokens')['correct']
+            .agg(['sum', 'count', 'mean'])
+            .reset_index()
+            .sort_values('n_train_tokens')
+        )
+
+    return pd.DataFrame([{
+        'sum': int(predictions['correct'].sum()),
+        'count': len(predictions),
+        'mean': predictions['correct'].mean(),
+    }])
 
 
 def generate_author_comparison_table(df):
@@ -340,8 +379,18 @@ def main():
         action='store_true',
         help='Compute pairwise comparisons across all variants'
     )
+    parser.add_argument(
+        '--accuracy-by-ntokens',
+        action='store_true',
+        help='Report final-epoch attribution accuracy by n_train_tokens and exit'
+    )
 
     args = parser.parse_args()
+
+    assert not (args.accuracy_by_ntokens and args.variant is not None), (
+        "--accuracy-by-ntokens is for baseline + n_train_tokens results only; "
+        "do not pass --variant"
+    )
 
     # Handle cross-variant comparison mode
     if args.cross_variant_comparison:
@@ -388,6 +437,27 @@ def main():
     # Load data with variant filter
     print("\nLoading data...")
     df = load_data(data_path=args.data, variant=args.variant)
+
+    if args.accuracy_by_ntokens:
+        print("\nFinal-Epoch Attribution Accuracy")
+        print("-" * 40)
+        accuracy_df = compute_final_attribution_accuracy(df)
+
+        if 'n_train_tokens' in accuracy_df.columns:
+            for _, row in accuracy_df.iterrows():
+                accuracy = 100 * row['mean']
+                print(
+                    f"{int(row['n_train_tokens']):>6} tokens: "
+                    f"{int(row['sum'])}/{int(row['count'])} correct ({accuracy:.1f}%)"
+                )
+        else:
+            accuracy = 100 * accuracy_df['mean'].iloc[0]
+            print(
+                f"{int(accuracy_df['sum'].iloc[0])}/{int(accuracy_df['count'].iloc[0])} "
+                f"correct ({accuracy:.1f}%)"
+            )
+        print("\n" + "=" * 60)
+        return
 
     # 1. Find threshold crossing epochs per author
     print("\n1. Individual Author Threshold Crossings (p < 0.001)")
@@ -447,3 +517,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# uv run --no-project --python 3.11 --with pandas==2.3.3 --with numpy --with scipy --with tqdm python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --accuracy-by-ntokens  

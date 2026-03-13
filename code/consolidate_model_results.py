@@ -45,6 +45,11 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
         else:
             output_path = 'data/model_results.pkl'
 
+    output_path = Path(output_path)
+    if include_ntokens or output_path.name == 'model_results_ntokens.pkl.gz':
+        # Keep this pickle on pandas 2.3.3; older 2.x releases failed to round-trip it.
+        assert pd.__version__ == '2.3.3', "model_results_ntokens.pkl.gz requires pandas==2.3.3"
+
     all_results = []
 
     # Find all model directories
@@ -188,7 +193,6 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     consolidated_df = consolidated_df[available_columns]
 
     # Save as pickle
-    output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     consolidated_df.to_pickle(output_path)
 
@@ -273,3 +277,5 @@ def main():
 if __name__ == '__main__':
     import sys
     sys.exit(main())
+
+    # uv run --no-project --python 3.11 --with pandas==2.3.3 --with tqdm python code/consolidate_model_results.py --include-ntokens
