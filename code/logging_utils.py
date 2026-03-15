@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from pandas.errors import EmptyDataError
 
 
 def update_loss_log(
@@ -9,7 +10,10 @@ def update_loss_log(
     Update the loss logs with a single dataset loss value.
     """
     if os.path.exists(log_file_path):
-        loss_logs_df = pd.read_csv(log_file_path)
+        try:
+            loss_logs_df = pd.read_csv(log_file_path)
+        except EmptyDataError:
+            loss_logs_df = pd.DataFrame()
 
         new_row = {
             "seed": seed,
