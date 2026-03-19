@@ -407,7 +407,7 @@ def _load_ntokens_t_test_panel_data(
     if "n_train_tokens" not in df.columns:
         raise ValueError("No n_train_tokens column in data")
 
-    ntokens_values = [128608, 257216, 385825, 514433, 643041]
+    ntokens_values = sorted(df["n_train_tokens"].dropna().unique())
     panel_data = []
 
     for n_train_tokens in ntokens_values:
@@ -450,18 +450,21 @@ def _load_ntokens_t_test_panel_data(
 def generate_t_test_ntokens_grid_figure(
     data_path="data/model_results_ntokens.pkl.gz",
     output_path=None,
-    figsize=(7, 14),
+    figsize=(12, 16),
     font="Helvetica",
     panel_data=None,
 ):
-    """Generate a 5-panel Figure 2A-style plot across training-token counts."""
+    """Generate a Figure 2A-style grid across training-token counts."""
     plt.rcParams["font.family"] = font
     plt.rcParams["font.sans-serif"] = [font]
 
     if panel_data is None:
         panel_data = _load_ntokens_t_test_panel_data(data_path)
 
-    fig, axes = plt.subplots(len(panel_data), 1, figsize=figsize, sharex=True, sharey=True)
+    ncols = 3
+    nrows = int(np.ceil(len(panel_data) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
+    axes = np.atleast_1d(axes).flatten()
     combined_t_raws_df = pd.concat(
         [panel["t_raws_df"] for panel in panel_data],
         ignore_index=True,
@@ -480,7 +483,8 @@ def generate_t_test_ntokens_grid_figure(
         y_min = min(y_min, 0) - padding
         y_max = y_max + padding
 
-    for i, (ax, panel) in enumerate(zip(axes, panel_data)):
+    for i, panel in enumerate(panel_data):
+        ax = axes[i]
         t_raws_df = panel["t_raws_df"]
         threshold_df = panel["threshold_df"]
 
@@ -497,7 +501,7 @@ def generate_t_test_ntokens_grid_figure(
             ax=ax,
             hue_order=hue_order,
             palette=palette,
-            legend=(i == 0),
+            legend=(i == ncols - 1),
         )
 
         if not threshold_df.empty:
@@ -513,12 +517,17 @@ def generate_t_test_ntokens_grid_figure(
             )
 
         sns.despine(ax=ax, top=True, right=True)
-        ax.set_ylabel("$t$-value", fontsize=12)
         ax.set_title(f'{panel["label"]} tokens', fontsize=12)
         ax.set_xlim(0, t_raws_df["Epoch"].max())
         ax.set_ylim(y_min, y_max)
 
-        if i == 0:
+        if i % ncols == 0:
+            ax.set_ylabel("$t$-value", fontsize=12)
+        else:
+            ax.set_ylabel("")
+
+        legend = ax.get_legend()
+        if i == ncols - 1:
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(
                 handles=handles,
@@ -526,12 +535,19 @@ def generate_t_test_ntokens_grid_figure(
                 title="Training author",
                 fontsize=8,
                 title_fontsize=9,
-                loc="upper left",
+                loc="upper right",
             )
+        elif legend is not None:
+            legend.remove()
 
-    for ax in axes[:-1]:
-        ax.set_xlabel("")
-    axes[-1].set_xlabel("Epochs completed", fontsize=12)
+    for i, ax in enumerate(axes):
+        if i >= len(panel_data):
+            ax.set_visible(False)
+            continue
+        if i < len(panel_data) - ncols:
+            ax.set_xlabel("")
+        else:
+            ax.set_xlabel("Epochs completed", fontsize=12)
 
     plt.tight_layout()
 

@@ -536,4 +536,151 @@ if __name__ == "__main__":
 """
 To generate stats re: varying the size of the training sets, run:
 uv run --no-project --python 3.11 --with pandas==2.3.3 --with numpy --with scipy --with tqdm python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --n-tokens
+
+Output:
+============================================================
+LLM Stylometry Statistical Analysis (Baseline)
+============================================================
+
+Loading data...
+
+Final-Epoch Attribution Accuracy
+----------------------------------------
+  2500 tokens: 53/80 correct (66.2%)
+  5000 tokens: 58/80 correct (72.5%)
+ 10000 tokens: 60/80 correct (75.0%)
+ 20000 tokens: 63/80 correct (78.8%)
+ 40000 tokens: 74/80 correct (92.5%)
+ 80000 tokens: 80/80 correct (100.0%)
+128608 tokens: 80/80 correct (100.0%)
+160000 tokens: 80/80 correct (100.0%)
+257216 tokens: 80/80 correct (100.0%)
+385825 tokens: 80/80 correct (100.0%)
+514433 tokens: 80/80 correct (100.0%)
+643041 tokens: 80/80 correct (100.0%)
+
+Individual Author Threshold Crossings by n_train_tokens (p < 0.001)
+------------------------------------------------------------
+
+  2500 tokens
+Baum        : Epoch  19 (t=4.39, p=9.13e-04)
+Thompson    : Epoch 1238 (t=4.29, p=9.72e-04)
+Dickens     : Epoch  10 (t=4.29, p=8.80e-04)
+Melville    : No threshold crossing detected
+Wells       : Epoch   4 (t=4.16, p=8.59e-04)
+Austen      : Epoch  18 (t=4.12, p=7.66e-04)
+Fitzgerald  : Epoch 610 (t=4.02, p=9.96e-04)
+Twain       : No threshold crossing detected
+
+  5000 tokens
+Baum        : Epoch  23 (t=4.47, p=8.58e-04)
+Thompson    : Epoch 859 (t=4.34, p=9.12e-04)
+Dickens     : Epoch   8 (t=4.27, p=9.39e-04)
+Melville    : No threshold crossing detected
+Wells       : Epoch   4 (t=4.46, p=3.56e-04)
+Austen      : Epoch  18 (t=4.09, p=9.24e-04)
+Fitzgerald  : Epoch 160 (t=3.92, p=9.99e-04)
+Twain       : No threshold crossing detected
+
+ 10000 tokens
+Baum        : Epoch 1926 (t=22.15, p=1.52e-17)
+Thompson    : Epoch 805 (t=4.33, p=8.91e-04)
+Dickens     : Epoch  10 (t=4.41, p=7.92e-04)
+Melville    : Epoch 1787 (t=3.91, p=9.60e-04)
+Wells       : Epoch   4 (t=4.84, p=1.82e-04)
+Austen      : Epoch  15 (t=4.07, p=9.22e-04)
+Fitzgerald  : Epoch  85 (t=4.04, p=9.77e-04)
+Twain       : No threshold crossing detected
+
+ 20000 tokens
+Baum        : Epoch  10 (t=4.56, p=7.04e-04)
+Thompson    : Epoch 490 (t=4.32, p=9.49e-04)
+Dickens     : Epoch   5 (t=4.45, p=6.59e-04)
+Melville    : Epoch 1376 (t=4.07, p=8.45e-04)
+Wells       : Epoch   2 (t=4.56, p=4.03e-04)
+Austen      : Epoch   8 (t=4.23, p=7.18e-04)
+Fitzgerald  : Epoch  44 (t=4.09, p=8.41e-04)
+Twain       : No threshold crossing detected
+
+ 40000 tokens
+Baum        : Epoch   1 (t=4.06, p=9.35e-04)
+Thompson    : Epoch  25 (t=4.33, p=8.19e-04)
+Dickens     : Epoch   3 (t=4.59, p=5.23e-04)
+Melville    : Epoch 696 (t=3.90, p=9.99e-04)
+Wells       : Epoch   2 (t=5.24, p=6.35e-05)
+Austen      : Epoch   5 (t=4.41, p=3.94e-04)
+Fitzgerald  : Epoch  24 (t=4.11, p=9.96e-04)
+Twain       : Epoch 1348 (t=4.48, p=9.55e-04)
+
+ 80000 tokens
+Baum        : Epoch   4 (t=4.83, p=4.32e-04)
+Thompson    : Epoch  16 (t=4.31, p=9.40e-04)
+Dickens     : Epoch   2 (t=4.81, p=3.39e-04)
+Melville    : Epoch   9 (t=4.31, p=8.54e-04)
+Wells       : Epoch   1 (t=4.90, p=1.28e-04)
+Austen      : Epoch   3 (t=4.38, p=4.70e-04)
+Fitzgerald  : Epoch  14 (t=4.23, p=7.45e-04)
+Twain       : Epoch 671 (t=4.46, p=9.72e-04)
+
+128608 tokens
+Baum        : Epoch   3 (t=5.04, p=3.41e-04)
+Thompson    : Epoch 124 (t=4.40, p=9.45e-04)
+Dickens     : Epoch   2 (t=5.24, p=1.49e-04)
+Melville    : Epoch   6 (t=4.30, p=9.00e-04)
+Wells       : Epoch   1 (t=5.69, p=1.73e-05)
+Austen      : Epoch   2 (t=4.78, p=2.02e-04)
+Fitzgerald  : Epoch  10 (t=4.24, p=7.25e-04)
+Twain       : Epoch 413 (t=4.48, p=9.97e-04)
+
+160000 tokens
+Baum        : Epoch   2 (t=4.59, p=6.79e-04)
+Thompson    : Epoch   8 (t=4.30, p=9.38e-04)
+Dickens     : Epoch   1 (t=4.66, p=4.46e-04)
+Melville    : Epoch   6 (t=4.25, p=9.57e-04)
+Wells       : Epoch 1240 (t=20.57, p=3.20e-15)
+Austen      : Epoch   2 (t=5.19, p=8.71e-05)
+Fitzgerald  : Epoch   8 (t=4.50, p=4.23e-04)
+Twain       : Epoch 317 (t=4.44, p=9.86e-04)
+
+257216 tokens
+Baum        : Epoch   2 (t=6.57, p=2.60e-05)
+Thompson    : Epoch   5 (t=4.47, p=6.60e-04)
+Dickens     : Epoch   1 (t=5.12, p=1.90e-04)
+Melville    : Epoch   3 (t=4.31, p=8.55e-04)
+Wells       : Epoch   1 (t=6.10, p=1.17e-05)
+Austen      : Epoch   1 (t=4.54, p=3.39e-04)
+Fitzgerald  : Epoch   5 (t=4.21, p=8.58e-04)
+Twain       : Epoch 202 (t=4.44, p=9.79e-04)
+
+385825 tokens
+Baum        : Epoch   1 (t=5.11, p=2.86e-04)
+Thompson    : Epoch   3 (t=4.42, p=6.86e-04)
+Dickens     : Epoch   1 (t=5.47, p=1.04e-04)
+Melville    : Epoch   2 (t=4.26, p=9.75e-04)
+Wells       : Epoch   1 (t=6.63, p=5.56e-06)
+Austen      : Epoch   1 (t=5.85, p=2.47e-05)
+Fitzgerald  : Epoch   3 (t=4.34, p=6.13e-04)
+Twain       : Epoch 132 (t=4.41, p=9.86e-04)
+
+514433 tokens
+Baum        : Epoch   1 (t=6.40, p=3.76e-05)
+Thompson    : Epoch   3 (t=4.47, p=7.18e-04)
+Dickens     : Epoch   1 (t=5.76, p=6.62e-05)
+Melville    : Epoch   2 (t=4.58, p=4.41e-04)
+Wells       : Epoch   1 (t=7.01, p=3.26e-06)
+Austen      : Epoch   1 (t=7.52, p=9.67e-07)
+Fitzgerald  : Epoch   3 (t=4.76, p=2.54e-04)
+Twain       : Epoch 103 (t=4.42, p=9.99e-04)
+
+643041 tokens
+Baum        : Epoch   1 (t=11.32, p=3.15e-08)
+Thompson    : Epoch   2 (t=4.36, p=8.92e-04)
+Dickens     : Epoch   1 (t=7.98, p=1.46e-06)
+Melville    : Epoch   2 (t=4.59, p=4.01e-04)
+Wells       : Epoch   1 (t=8.82, p=9.69e-08)
+Austen      : Epoch   1 (t=8.98, p=6.28e-08)
+Fitzgerald  : Epoch   2 (t=5.04, p=1.48e-04)
+Twain       : Epoch  77 (t=4.44, p=9.84e-04)
+
+============================================================
 """
