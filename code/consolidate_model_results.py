@@ -38,17 +38,13 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     # Auto-determine output path based on variant
     if output_path is None:
         if include_ntokens:
-            # pandas infers compression from the filename extension (we need to do this to stay under GitHub's 100MiB file limit)
-            output_path = 'data/model_results_ntokens.pkl.gz'
+            output_path = 'data/model_results_ntokens.parquet'
         elif variant:
             output_path = f'data/model_results_{variant}.pkl'
         else:
             output_path = 'data/model_results.pkl'
 
     output_path = Path(output_path)
-    if include_ntokens or output_path.name == 'model_results_ntokens.pkl.gz':
-        # Keep this pickle on pandas 2.3.3; older 2.x releases failed to round-trip it.
-        assert pd.__version__ == '2.3.3', "model_results_ntokens.pkl.gz requires pandas==2.3.3"
 
     all_results = []
 
@@ -192,9 +188,12 @@ def consolidate_model_results(models_dir='models', output_path=None, save_csv=Fa
     available_columns = [col for col in expected_columns if col in consolidated_df.columns]
     consolidated_df = consolidated_df[available_columns]
 
-    # Save as pickle
+    # Save results
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    consolidated_df.to_pickle(output_path)
+    if output_path.suffix == '.parquet':
+        consolidated_df.to_parquet(output_path, index=False)
+    else:
+        consolidated_df.to_pickle(output_path)
 
     print("\nConsolidation complete!")
     print(f"Total records: {len(consolidated_df)}")
@@ -277,5 +276,5 @@ def main():
 if __name__ == '__main__':
     import sys
     sys.exit(main())
-
-    # uv run --no-project --python 3.11 --with pandas==2.3.3 --with tqdm python code/consolidate_model_results.py --include-ntokens
+    # To regenerate ntokens results:
+    #   python code/consolidate_model_results.py --include-ntokens

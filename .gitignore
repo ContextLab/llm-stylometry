@@ -53,3 +53,10 @@ models_hf/
 # Harrison's infra artifacts
 runai_notes.md
 start_gpu_workspace.sh
+
+# Embedding comparison results (large cached embeddings)
+data/embedding_results/
+
+# Parquet data files (regenerable from models/)
+data/model_results_ntokens.parquet
+data/t_test_ntokens_cache/
