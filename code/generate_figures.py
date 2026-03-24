@@ -210,9 +210,47 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         figure_name = main_fig
         safe_print(f"Supplemental Figure {figure_name.upper()}: {supp_variant} variant")
 
+    # Figures 6 and 7 are baseline-only with lazy imports
+    if figure_name in ('6', '7'):
+        if variant is not None:
+            safe_print(f"Figure {figure_name} is baseline-only; variant flag ignored")
+        output_path = Path(output_dir)
+        if figure_name == '6':
+            safe_print(f"Generating Figure 6: accuracy sigmoid...")
+            try:
+                from fit_sigmoid import generate_accuracy_sigmoid_figure
+                fig, _popt = generate_accuracy_sigmoid_figure(
+                    data_path='data/model_results_ntokens.parquet',
+                    output_path=str(output_path / 'accuracy_vs_tokens_sigmoid.pdf'),
+                )
+                plt.close(fig)
+                checkmark = "[OK]" if is_windows() else "✓"
+                safe_print(f"  {checkmark} Generated: {output_path / 'accuracy_vs_tokens_sigmoid.pdf'}")
+                return True
+            except Exception as e:
+                cross = "[FAIL]" if is_windows() else "✗"
+                safe_print(f"  {cross} Error: {str(e)}")
+                return False
+        else:  # figure_name == '7'
+            safe_print(f"Generating Figure 7: t-test ntokens...")
+            try:
+                from llm_stylometry.visualization.t_tests import generate_t_test_ntokens_figure
+                fig = generate_t_test_ntokens_figure(
+                    data_path='data/model_results_ntokens.parquet',
+                    output_path=str(output_path / 't_test_ntokens.pdf'),
+                )
+                plt.close(fig)
+                checkmark = "[OK]" if is_windows() else "✓"
+                safe_print(f"  {checkmark} Generated: {output_path / 't_test_ntokens.pdf'}")
+                return True
+            except Exception as e:
+                cross = "[FAIL]" if is_windows() else "✗"
+                safe_print(f"  {cross} Error: {str(e)}")
+                return False
+
     if figure_name not in figure_map:
         safe_print(f"Unknown figure: {figure_name}")
-        safe_print(f"Available: {', '.join(figure_map.keys())} or supplemental: {', '.join(supplemental_map.keys())}")
+        safe_print(f"Available: {', '.join(figure_map.keys())}, 6, 7 or supplemental: {', '.join(supplemental_map.keys())}")
         return False
 
     # Skip Figure 5 for variants with clear message
@@ -323,7 +361,7 @@ Examples:
 
     parser.add_argument(
         '--figure', '-f',
-        help='Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)',
+        help='Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5, 6, 7)',
         default=None
     )
 
@@ -407,6 +445,8 @@ Examples:
         safe_print("  3  - Figure 3: Confusion matrix heatmap")
         safe_print("  4  - Figure 4: 3D MDS plot")
         safe_print("  5  - Figure 5: Oz authorship analysis")
+        safe_print("  6  - Figure 6: Accuracy sigmoid (baseline-only)")
+        safe_print("  7  - Figure 7: t-test ntokens (baseline-only)")
         safe_print("\nSupplemental Figures (variants):")
         safe_print("  s1a, s1b - Supp. Fig. 1: Content-only (Figs 1A, 1B)")
         safe_print("  s2a, s2b - Supp. Fig. 2: Function-only (Figs 1A, 1B)")

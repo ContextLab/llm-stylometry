@@ -147,4 +147,48 @@ if [ ${#VARIANTS[@]} -eq 4 ]; then
     echo
 fi
 
+# N-tokens dataset-size analysis
+echo
+if [ -f "data/model_results_ntokens.parquet" ]; then
+    print_info "Computing n-tokens dataset-size analysis..."
+    python code/compute_stats.py --data data/model_results_ntokens.parquet --n-tokens
+    echo
+else
+    print_warning "Skipping n-tokens analysis (data/model_results_ntokens.parquet not found)"
+fi
+
+# Sigmoid fit results
+echo
+if [ -f "data/sigmoid_fit_results.json" ]; then
+    print_info "Sigmoid fit results:"
+    python -c "
+import json
+with open('data/sigmoid_fit_results.json') as f:
+    data = json.load(f)
+print(json.dumps(data, indent=2))
+"
+    echo
+else
+    print_warning "Skipping sigmoid fit results (data/sigmoid_fit_results.json not found)"
+fi
+
+# Embedding comparison results
+echo
+if ls data/embedding_results/*/summary.json 1>/dev/null 2>&1; then
+    print_info "Embedding comparison results:"
+    for summary in data/embedding_results/*/summary.json; do
+        model_name=$(basename "$(dirname "$summary")")
+        accuracy=$(python -c "
+import json
+with open('$summary') as f:
+    data = json.load(f)
+print(data.get('overall_accuracy', 'N/A'))
+")
+        echo -e "  ${GREEN}$model_name${NC}: overall accuracy = $accuracy"
+    done
+    echo
+else
+    print_warning "Skipping embedding results (no data/embedding_results/*/summary.json found)"
+fi
+
 print_success "Statistical analysis complete!"
