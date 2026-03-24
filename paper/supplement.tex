@@ -290,5 +290,85 @@ to the other authors' randomly sampled texts.}
 \label{tab:t-tests-pos}
 \end{table}
 
+\clearpage
+
+%% ============================================================
+%% Embedding Comparison Appendix
+%% ============================================================
+
+\subsection*{Embedding-based authorship attribution comparison}
+
+To contextualize the performance of our predictive comparison approach, we
+conducted a comparison using pre-trained text embedding models from the Massive
+Text Embedding Benchmark~(MTEB) leaderboard. We selected three models spanning
+a range of sizes: \texttt{nomic-embed-text-v1.5} (137M parameters),
+\texttt{bge-m3} (568M parameters), and \texttt{Qwen3-Embedding-4B} (4.0
+billion parameters).
+
+For each model, we chunked each book into 1,024-token windows with 128-token
+overlap using the GPT-2 tokenizer (yielding 12,164 total chunks across 84
+books). For each held-out book, every chunk was classified by its nearest
+neighbor (cosine similarity) among all chunks from the remaining 83 books. The
+book-level author prediction was determined by majority vote across chunk-level
+predictions.
+
+% TODO: Update table with final Qwen3 results
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Parameters} & \textbf{Book accuracy} & \textbf{Avg.\ purity} \\
+\midrule
+nomic-embed-text-v1.5 & 137M & 81.0\% (68/84) & 0.666 \\
+bge-m3 & 568M & 76.2\% (64/84) & 0.694 \\
+Qwen3-Embedding-4B & 4.0B & \texttt{[PLACEHOLDER]} & \texttt{[PLACEHOLDER]} \\
+\midrule
+Predictive comparison (ours) & 0.8M $\times$ 8 & 100\% (84/84) & --- \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Book-level attribution accuracy for embedding-based
+nearest-neighbor classification versus our predictive comparison approach.}
+Purity denotes the fraction of held-out chunks assigned to the modal
+(predicted) author. Our approach trains one small GPT-2 model per author from
+scratch; embedding methods use a single pre-trained model for all authors.}
+\label{tab:embedding-comparison}
+\end{table}
+
+We report per-author accuracy and chunk-level purity (the fraction of a
+held-out book's chunks assigned to the winning author) in
+Supplementary Figures~\ref{fig:embedding-purity}
+and~\ref{fig:embedding-confusion}.
+
+% TODO: Update interpretation after all results are in
+Notable patterns included: (1) authors with the most distinctive styles
+(Austen, Baum, Dickens) were reliably attributed by all models, whereas
+authors with fewer books or less distinctive styles (Twain, Melville) were
+frequently misclassified; (2) the \texttt{bge-m3} model showed a strong bias
+toward classifying chunks as Dickens, likely because Dickens had the most books
+(14) and thus the most chunks in the training pool; and (3) the smaller
+\texttt{nomic-embed-text-v1.5} model outperformed the larger \texttt{bge-m3},
+suggesting that general MTEB ranking does not directly predict performance on
+this specialized task.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/source/embedding_purity.pdf}
+  \caption{\textbf{Chunk-level purity for embedding-based attribution.}
+  Distribution of purity scores (fraction of chunks voting for the modal
+  author) across books, grouped by author and model. Higher purity indicates
+  stronger consensus among chunk-level predictions.}
+  \label{fig:embedding-purity}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/source/embedding_confusion.pdf}
+  \caption{\textbf{Confusion matrices for embedding-based attribution.}
+  Each panel shows the percentage of books by each true author (rows) that
+  were classified as each predicted author (columns). Diagonal entries
+  represent correct attributions.}
+  \label{fig:embedding-confusion}
+\end{figure}
+
 
 \end{document}
