@@ -69,13 +69,48 @@
 - Bibliography: MTEB citation added, Huang et al. (2025) verified as PLoS ONE
 - Figure: \ref{fig:ntokens} referencing figs/n_tokens.pdf
 
+### Phase 2 (Infrastructure) — Partially complete
+- T014-T016: remote_train_ntokens.sh, check_ntokens_status.sh, sync_ntokens.sh — DONE, tested on tensor02
+- T010-T013: run_llm_stylometry.sh and generate_figures.py CLI updates — NOT YET DONE
+- T017-T019: remote embedding scripts — may not be needed if local runs are fast enough
+
+### Embedding results
+- nomic-embed-text-v1.5 (137M): 81.0% (68/84) — COMPLETE
+  - Perfect: Baum 100%, Dickens 100%, Austen 100%
+  - Weakest: Melville 60%, Twain 67%, Wells 67%
+  - Confusion: Thompson→Baum (4), Melville→Dickens (4)
+- bge-m3 (568M): 76.2% (64/84) — COMPLETE (surprisingly WORSE than nomic)
+  - Dickens magnet: many authors misclassified as Dickens (most chunks in pool)
+  - Twain only 16.7% (1/6)
+- Qwen3-Embedding-4B (4.0B): RUNNING locally, model still loading
+  - Per-book checkpoint caching in place for resume
+
+### tensor02 test results
+- SSH/credentials: working ✓
+- check_ntokens_status.sh: all 1520/1520 models complete ✓
+- Experiment class ntokens support: working ✓
+- conda env: Python 3.10.18, PyTorch 2.5.1, CUDA with 8xA6000 ✓
+- All ntokens sweep results already exist on tensor02 (1440 ntokens + 80 baseline)
+
 ### Remaining work
-- Wait for nomic results → examine → update paper placeholders
-- Launch bge-m3 and Qwen3-4B
-- Draft response letter
-- Write remote scripts (Phase 2)
+- Wait for bge-m3 → launch Qwen3-4B → get all 3 results
+- Update paper PLACEHOLDER sections with real embedding results
+- Finalize response letter
+- CLI updates (run_llm_stylometry.sh figure flags)
 - Update README
 - Final verification pass
+
+### Key files created/modified this session
+- code/fit_sigmoid.py — sigmoid fit (redesigned: per-author dots, bootstrap CI over authors)
+- code/embedding_comparison.py — embedding pipeline with per-book checkpoint/resume
+- code/generate_ntokens_figures.py — standalone t-test ntokens figure script
+- llm_stylometry/visualization/t_tests.py — new generate_t_test_ntokens_figure (bootstrap CIs over seeds)
+- llm_stylometry/visualization/embedding_comparison.py — 3 figure types
+- paper/main.tex — new Methods + Results subsections, expanded Discussion
+- paper/custom.bib — MTEB citation added
+- paper/admin/response_letter.tex — draft response letter
+- remote_train_ntokens.sh, check_ntokens_status.sh, sync_ntokens.sh — tested on tensor02
+- .ssh/credentials_tensor01.json, .ssh/credentials_tensor02.json — gitignored
 
 ## Resubmission Deadline
 2026-04-09 (~2 weeks)
