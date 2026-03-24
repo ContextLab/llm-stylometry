@@ -92,13 +92,26 @@
 - conda env: Python 3.10.18, PyTorch 2.5.1, CUDA with 8xA6000 ✓
 - All ntokens sweep results already exist on tensor02 (1440 ntokens + 80 baseline)
 
-### Remaining work
-- Wait for bge-m3 → launch Qwen3-4B → get all 3 results
-- Update paper PLACEHOLDER sections with real embedding results
-- Finalize response letter
-- CLI updates (run_llm_stylometry.sh figure flags)
-- Update README
-- Final verification pass
+### CLI + README + run_stats — DONE (via agents)
+- run_llm_stylometry.sh: fig flags 6/7, deps, auto-run — committed
+- generate_figures.py: dispatch for 6/7 with lazy imports — committed
+- run_stats.sh: ntokens + sigmoid + embedding stats — committed
+- README.md: all new analyses documented — committed
+
+### Remaining work (blocked on Qwen3-4B, ~1-2 hours)
+1. Wait for Qwen3-4B to finish (16/84 books at last check)
+2. Examine all 3 embedding results, generate final figures
+3. Get PI review of embedding figures
+4. Fill in paper PLACEHOLDER sections with real embedding results
+5. Finalize response letter (remove placeholders)
+6. Final verification pass (tests, formatting, paper compile)
+
+### Git log (6 commits on 001-paper-revision-analyses)
+1. Merge PR #51 feature/vary-dataset-size
+2. Add dataset-size analysis, sigmoid fit, embedding comparison, and paper updates
+3. Add remote scripts for ntokens dataset-size sweep
+4. Update session notes, speckit artifacts, and constitution
+5. Update CLI, stats script, and README for new analyses
 
 ### Key files created/modified this session
 - code/fit_sigmoid.py — sigmoid fit (redesigned: per-author dots, bootstrap CI over authors)
