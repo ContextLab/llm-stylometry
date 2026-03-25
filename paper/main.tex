@@ -547,11 +547,13 @@ same 84-book corpus, book-level attribution accuracy was 81.0\% for
 \texttt{Qwen3-Embedding-4B} (4.0B parameters)---compared to 100\% for our
 predictive comparison approach using models with just 0.8M parameters each
 (see Appendix for detailed results including chunk-level purity and
-cross-author confusion patterns). These results indicate that even
+cross-author confusion patterns).
+% NOTE: entire interpretation below assumes Qwen3-4B also underperforms 100%; verify and update after results
+These results indicate that even
 state-of-the-art text embedding models, despite being orders of magnitude
 larger than our author-specific models, do not fully capture the stylistic
 patterns that emerge from training a language model on an individual author's
-works.
+works. % VERIFY: "do not fully capture" depends on Qwen result
 
 \section{Discussion}
 
@@ -637,6 +639,7 @@ may be introduced without retraining existing models. However, classification
 approaches may be more computationally efficient when dealing with fixed author
 sets, as they require training only a single model.
 
+% NOTE: "at most 81%" assumes Qwen3-4B also underperforms; verify after results
 Our comparison with pre-trained text embedding models further highlights the
 value of author-specific training. Despite using models with up to 4 billion
 parameters, embedding-based nearest-neighbor classification achieved at most
