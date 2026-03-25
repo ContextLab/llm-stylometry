@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Test CLI functionality."""
 
-import pytest
-import sys
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -62,11 +63,16 @@ class TestCLI:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate figure 1a
-        result = self.run_cli([
-            "--figure", "1a",
-            "--data", str(self.test_data_path),
-            "--output", str(output_dir)
-        ])
+        result = self.run_cli(
+            [
+                "--figure",
+                "1a",
+                "--data",
+                str(self.test_data_path),
+                "--output",
+                str(output_dir),
+            ]
+        )
 
         assert result.returncode == 0, f"Figure generation failed: {result.stderr}"
         assert "Figure 1A" in result.stdout
@@ -83,10 +89,9 @@ class TestCLI:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate all figures
-        result = self.run_cli([
-            "--data", str(self.test_data_path),
-            "--output", str(output_dir)
-        ])
+        result = self.run_cli(
+            ["--data", str(self.test_data_path), "--output", str(output_dir)]
+        )
 
         assert result.returncode == 0, f"All figures generation failed: {result.stderr}"
         assert "Generating Figures" in result.stdout
@@ -97,19 +102,14 @@ class TestCLI:
 
     def test_cli_invalid_figure(self):
         """Test error handling for invalid figure."""
-        result = self.run_cli([
-            "--figure", "99z",
-            "--data", str(self.test_data_path)
-        ])
+        result = self.run_cli(["--figure", "99z", "--data", str(self.test_data_path)])
 
         assert result.returncode != 0, "Should fail for invalid figure"
         assert "Unknown figure" in result.stdout or "Unknown figure" in result.stderr
 
     def test_cli_missing_data(self):
         """Test error handling for missing data file."""
-        result = self.run_cli([
-            "--data", "nonexistent_file.pkl"
-        ])
+        result = self.run_cli(["--data", "nonexistent_file.pkl"])
 
         assert result.returncode != 0, "Should fail for missing data"
         assert "not found" in result.stdout or "not found" in result.stderr
@@ -118,7 +118,8 @@ class TestCLI:
     def teardown_class(cls):
         """Clean up temporary directory."""
         import shutil
-        if hasattr(cls, 'temp_dir') and Path(cls.temp_dir).exists():
+
+        if hasattr(cls, "temp_dir") and Path(cls.temp_dir).exists():
             shutil.rmtree(cls.temp_dir)
 
 

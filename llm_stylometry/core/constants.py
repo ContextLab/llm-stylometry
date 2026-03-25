@@ -54,5 +54,5 @@ DEFAULT_CONFIG = {
         "train_loss": 3.0,
         "min_epochs": 500,
         "max_epochs": 10000,
-    }
+    },
 }

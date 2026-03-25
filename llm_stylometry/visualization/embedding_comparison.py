@@ -7,14 +7,16 @@ Generates:
 """
 
 import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-import pandas as pd
+
+matplotlib.use("Agg")
+import sys
 from pathlib import Path
 
-import sys
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "code"))
 from constants import AUTHORS
 
@@ -68,7 +70,9 @@ def generate_embedding_comparison_figure(
             bar.get_x() + bar.get_width() / 2,
             bar.get_height() + 0.5,
             f"{acc:.1f}%",
-            ha="center", va="bottom", fontsize=9,
+            ha="center",
+            va="bottom",
+            fontsize=9,
         )
 
     ax.set_xticks(x)
@@ -108,22 +112,36 @@ def generate_embedding_purity_figure(
     rows = []
     for model_name, results in all_book_results.items():
         for r in results:
-            rows.append({
-                "Model": _short_model_name(model_name),
-                "Author": r["true_author"].capitalize(),
-                "Purity": r["purity"],
-            })
+            rows.append(
+                {
+                    "Model": _short_model_name(model_name),
+                    "Author": r["true_author"].capitalize(),
+                    "Purity": r["purity"],
+                }
+            )
     df = pd.DataFrame(rows)
 
     fig, ax = plt.subplots(figsize=figsize)
 
     sns.boxplot(
-        data=df, x="Author", y="Purity", hue="Model",
-        ax=ax, fliersize=3, linewidth=0.8,
+        data=df,
+        x="Author",
+        y="Purity",
+        hue="Model",
+        ax=ax,
+        fliersize=3,
+        linewidth=0.8,
     )
     sns.stripplot(
-        data=df, x="Author", y="Purity", hue="Model",
-        ax=ax, dodge=True, alpha=0.4, size=3, legend=False,
+        data=df,
+        x="Author",
+        y="Purity",
+        hue="Model",
+        ax=ax,
+        dodge=True,
+        alpha=0.4,
+        size=3,
+        legend=False,
     )
 
     ax.set_ylabel("Purity (fraction of chunks voting for modal author)", fontsize=11)
@@ -134,8 +152,11 @@ def generate_embedding_purity_figure(
     handles, labels = ax.get_legend_handles_labels()
     n_models = len(all_book_results)
     ax.legend(
-        handles[:n_models], labels[:n_models],
-        title="Model", fontsize=8, title_fontsize=9,
+        handles[:n_models],
+        labels[:n_models],
+        title="Model",
+        fontsize=8,
+        title_fontsize=9,
         loc="lower left",
     )
 
@@ -191,10 +212,18 @@ def generate_embedding_confusion_figure(
         confusion_norm = confusion / row_sums * 100
 
         sns.heatmap(
-            confusion_norm, ax=ax, annot=True, fmt=".0f",
-            xticklabels=author_labels, yticklabels=author_labels if idx == 0 else False,
-            cmap="Blues", vmin=0, vmax=100, cbar=idx == n_models - 1,
-            linewidths=0.5, linecolor="white",
+            confusion_norm,
+            ax=ax,
+            annot=True,
+            fmt=".0f",
+            xticklabels=author_labels,
+            yticklabels=author_labels if idx == 0 else False,
+            cmap="Blues",
+            vmin=0,
+            vmax=100,
+            cbar=idx == n_models - 1,
+            linewidths=0.5,
+            linecolor="white",
             annot_kws={"fontsize": 8},
         )
 

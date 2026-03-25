@@ -1,17 +1,17 @@
 """Classification module for word count-based text classification."""
 
-from .vectorizer import load_books_by_author, create_count_vectorizer, vectorize_books
 from .classifier import OutputCodeClassifier
 from .cross_validation import generate_cv_splits, run_cross_validation
 from .experiment import run_classification_experiment, save_classification_results
+from .vectorizer import create_count_vectorizer, load_books_by_author, vectorize_books
 
 __all__ = [
-    'load_books_by_author',
-    'create_count_vectorizer',
-    'vectorize_books',
-    'OutputCodeClassifier',
-    'generate_cv_splits',
-    'run_cross_validation',
-    'run_classification_experiment',
-    'save_classification_results',
+    "load_books_by_author",
+    "create_count_vectorizer",
+    "vectorize_books",
+    "OutputCodeClassifier",
+    "generate_cv_splits",
+    "run_cross_validation",
+    "run_classification_experiment",
+    "save_classification_results",
 ]

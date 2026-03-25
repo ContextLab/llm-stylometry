@@ -1,12 +1,13 @@
 """Generate stripplot figure from the paper."""
 
+import matplotlib
 import pandas as pd
 import seaborn as sns
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+
+matplotlib.use("Agg")  # Use non-interactive backend
+
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
 
 
 def generate_stripplot_figure(
@@ -14,9 +15,9 @@ def generate_stripplot_figure(
     output_path=None,
     figsize=(8, 6),
     show_legend=False,
-    font='Helvetica',
+    font="Helvetica",
     variant=None,
-    apply_fairness=True
+    apply_fairness=True,
 ):
     """
     Generate Figure 1B: Strip plot showing loss distributions.
@@ -34,8 +35,8 @@ def generate_stripplot_figure(
         matplotlib figure object
     """
     # Set font
-    plt.rcParams['font.family'] = font
-    plt.rcParams['font.sans-serif'] = [font]
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
 
     # Load data
     df = pd.read_pickle(data_path)
@@ -43,24 +44,23 @@ def generate_stripplot_figure(
     # Filter by variant
     if variant is None:
         # Baseline: exclude variant models
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
+        if "variant" in df.columns:
+            df = df[df["variant"].isna()].copy()
     else:
         # Specific variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
-        df = df[df['variant'] == variant].copy()
+        if "variant" not in df.columns:
+            raise ValueError("No variant column in data")
+        df = df[df["variant"] == variant].copy()
 
     # Apply fairness threshold for variants
     if variant is not None and apply_fairness:
         from llm_stylometry.analysis.fairness import (
+            apply_fairness_threshold,
             compute_fairness_threshold,
-            apply_fairness_threshold
         )
 
         threshold = compute_fairness_threshold(df, min_epochs=500)
         df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
-
 
     # Prepare data exactly as in stripplot.py
     strip_df = df.copy()
@@ -88,7 +88,16 @@ def generate_stripplot_figure(
     eval_palette = {"Self": "black", "Other": "gray"}  # Black for self, gray for other
 
     # Define author order to match all_losses figure
-    author_order = ["Baum", "Thompson", "Austen", "Dickens", "Fitzgerald", "Melville", "Twain", "Wells"]
+    author_order = [
+        "Baum",
+        "Thompson",
+        "Austen",
+        "Dickens",
+        "Fitzgerald",
+        "Melville",
+        "Twain",
+        "Wells",
+    ]
 
     # Create figure using subplots to avoid backend issues
     fig, ax = plt.subplots(figsize=figsize)
@@ -114,14 +123,14 @@ def generate_stripplot_figure(
     # )
     ax.set_xlabel("Training author", fontsize=14)
     ax.set_ylabel("Loss", fontsize=14)
-    ax.tick_params(axis='x', labelsize=12)
-    ax.tick_params(axis='y', labelsize=12)
+    ax.tick_params(axis="x", labelsize=12)
+    ax.tick_params(axis="y", labelsize=12)
 
     # Remove top and right spines
     sns.despine(ax=ax, top=True, right=True)
 
     # Add legend to top left without title and box outline
-    ax.legend(fontsize=12, title=None, loc='upper left', frameon=False)
+    ax.legend(fontsize=12, title=None, loc="upper left", frameon=False)
 
     fig.tight_layout()
 
@@ -130,8 +139,11 @@ def generate_stripplot_figure(
         # Add variant suffix to filename if variant specified
         if variant:
             from pathlib import Path
+
             output_path = Path(output_path)
-            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
+            output_path = str(
+                output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}"
+            )
         fig.savefig(output_path, bbox_inches="tight", format="pdf")
 
     return fig

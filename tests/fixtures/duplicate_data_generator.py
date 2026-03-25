@@ -5,20 +5,21 @@ This module provides utilities to create realistic test data that mimics the
 duplicate epoch and spurious epoch 0 issues that occur during training resume.
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 
 def generate_loss_logs_csv(
     output_path,
     seed=0,
-    train_author='baum',
+    train_author="baum",
     max_epochs=50,
     duplicate_epochs=None,
     spurious_epoch_0_at=None,
-    eval_datasets=None
+    eval_datasets=None,
 ):
     """
     Generate a synthetic loss_logs.csv file with optional duplicates.
@@ -37,9 +38,17 @@ def generate_loss_logs_csv(
     """
     if eval_datasets is None:
         eval_datasets = [
-            'baum', 'thompson', 'dickens', 'melville', 'wells',
-            'austen', 'fitzgerald', 'twain',
-            'non_oz_baum', 'non_oz_thompson', 'contested'
+            "baum",
+            "thompson",
+            "dickens",
+            "melville",
+            "wells",
+            "austen",
+            "fitzgerald",
+            "twain",
+            "non_oz_baum",
+            "non_oz_thompson",
+            "contested",
         ]
 
     np.random.seed(seed)
@@ -48,13 +57,15 @@ def generate_loss_logs_csv(
 
     # Initial epoch 0 (legitimate pre-training evaluation)
     for dataset in eval_datasets:
-        rows.append({
-            'seed': seed,
-            'train_author': train_author,
-            'epochs_completed': 0,
-            'loss_dataset': dataset,
-            'loss_value': np.random.uniform(10.5, 11.0)
-        })
+        rows.append(
+            {
+                "seed": seed,
+                "train_author": train_author,
+                "epochs_completed": 0,
+                "loss_dataset": dataset,
+                "loss_value": np.random.uniform(10.5, 11.0),
+            }
+        )
 
     # Generate training epochs
     current_loss = 10.0
@@ -63,59 +74,73 @@ def generate_loss_logs_csv(
         current_loss = max(1.0, current_loss * 0.95 + np.random.normal(0, 0.05))
 
         # Training loss
-        rows.append({
-            'seed': seed,
-            'train_author': train_author,
-            'epochs_completed': epoch,
-            'loss_dataset': 'train',
-            'loss_value': current_loss
-        })
+        rows.append(
+            {
+                "seed": seed,
+                "train_author": train_author,
+                "epochs_completed": epoch,
+                "loss_dataset": "train",
+                "loss_value": current_loss,
+            }
+        )
 
         # Evaluation losses
         for dataset in eval_datasets:
             eval_loss = current_loss + np.random.normal(0, 0.2)
-            rows.append({
-                'seed': seed,
-                'train_author': train_author,
-                'epochs_completed': epoch,
-                'loss_dataset': dataset,
-                'loss_value': max(1.0, eval_loss)
-            })
+            rows.append(
+                {
+                    "seed": seed,
+                    "train_author": train_author,
+                    "epochs_completed": epoch,
+                    "loss_dataset": dataset,
+                    "loss_value": max(1.0, eval_loss),
+                }
+            )
 
         # Add spurious epoch 0 entries if requested
         if spurious_epoch_0_at and epoch in spurious_epoch_0_at:
             for dataset in eval_datasets:
                 # Use same loss values as current epoch (mimics re-evaluation)
-                spurious_loss = rows[-len(eval_datasets)]['loss_value'] if dataset == eval_datasets[0] else rows[-1]['loss_value']
-                rows.append({
-                    'seed': seed,
-                    'train_author': train_author,
-                    'epochs_completed': 0,
-                    'loss_dataset': dataset,
-                    'loss_value': spurious_loss
-                })
+                spurious_loss = (
+                    rows[-len(eval_datasets)]["loss_value"]
+                    if dataset == eval_datasets[0]
+                    else rows[-1]["loss_value"]
+                )
+                rows.append(
+                    {
+                        "seed": seed,
+                        "train_author": train_author,
+                        "epochs_completed": 0,
+                        "loss_dataset": dataset,
+                        "loss_value": spurious_loss,
+                    }
+                )
 
         # Add duplicate epoch entries if requested
         if duplicate_epochs and epoch in duplicate_epochs:
             # Re-add all entries for this epoch with slightly different loss values
             duplicate_train_loss = current_loss + np.random.normal(0, 0.001)
-            rows.append({
-                'seed': seed,
-                'train_author': train_author,
-                'epochs_completed': epoch,
-                'loss_dataset': 'train',
-                'loss_value': duplicate_train_loss
-            })
+            rows.append(
+                {
+                    "seed": seed,
+                    "train_author": train_author,
+                    "epochs_completed": epoch,
+                    "loss_dataset": "train",
+                    "loss_value": duplicate_train_loss,
+                }
+            )
 
             for dataset in eval_datasets:
                 duplicate_eval_loss = eval_loss + np.random.normal(0, 0.001)
-                rows.append({
-                    'seed': seed,
-                    'train_author': train_author,
-                    'epochs_completed': epoch,
-                    'loss_dataset': dataset,
-                    'loss_value': max(1.0, duplicate_eval_loss)
-                })
+                rows.append(
+                    {
+                        "seed": seed,
+                        "train_author": train_author,
+                        "epochs_completed": epoch,
+                        "loss_dataset": dataset,
+                        "loss_value": max(1.0, duplicate_eval_loss),
+                    }
+                )
 
     # Create DataFrame and save
     df = pd.DataFrame(rows)
@@ -128,13 +153,13 @@ def generate_loss_logs_csv(
 
 def create_test_model_directory(
     base_dir,
-    author='baum',
+    author="baum",
     seed=0,
-    tokenizer='gpt2',
+    tokenizer="gpt2",
     variant=None,
     max_epochs=50,
     duplicate_epochs=None,
-    spurious_epoch_0_at=None
+    spurious_epoch_0_at=None,
 ):
     """
     Create a complete test model directory with loss_logs.csv.
@@ -162,14 +187,14 @@ def create_test_model_directory(
     model_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate loss logs
-    loss_logs_path = model_dir / 'loss_logs.csv'
+    loss_logs_path = model_dir / "loss_logs.csv"
     generate_loss_logs_csv(
         output_path=loss_logs_path,
         seed=seed,
         train_author=author,
         max_epochs=max_epochs,
         duplicate_epochs=duplicate_epochs,
-        spurious_epoch_0_at=spurious_epoch_0_at
+        spurious_epoch_0_at=spurious_epoch_0_at,
     )
 
     return model_dir

@@ -1,12 +1,13 @@
 """High-level experiment runner for text classification."""
 
+import pickle
 from pathlib import Path
 from typing import Optional
-import pickle
+
 import pandas as pd
 
-from .vectorizer import load_books_by_author, create_count_vectorizer, vectorize_books
 from .cross_validation import generate_cv_splits, run_cross_validation
+from .vectorizer import create_count_vectorizer, load_books_by_author, vectorize_books
 
 
 def run_classification_experiment(
@@ -14,7 +15,7 @@ def run_classification_experiment(
     max_splits: int = 10000,
     seed: int = 42,
     data_dir: str = "data/cleaned",
-    output_dir: str = "data/classifier_results"
+    output_dir: str = "data/classifier_results",
 ) -> str:
     """
     Run complete text classification experiment.
@@ -80,7 +81,7 @@ def run_classification_experiment(
         variant=variant,
         n_splits=len(cv_splits),
         seed=seed,
-        output_dir=output_dir
+        output_dir=output_dir,
     )
 
     print(f"Results saved to: {output_path}")
@@ -95,7 +96,7 @@ def save_classification_results(
     variant: Optional[str] = None,
     n_splits: int = None,
     seed: int = None,
-    output_dir: str = "data/classifier_results"
+    output_dir: str = "data/classifier_results",
 ) -> str:
     """
     Save classification results and fitted objects to pickle file.
@@ -131,16 +132,16 @@ def save_classification_results(
 
     # Package data
     data = {
-        'results': results_df,
-        'vectorizer': vectorizer,
-        'feature_names': feature_names,
-        'variant': variant,
-        'n_splits': n_splits,
-        'seed': seed
+        "results": results_df,
+        "vectorizer": vectorizer,
+        "feature_names": feature_names,
+        "variant": variant,
+        "n_splits": n_splits,
+        "seed": seed,
     }
 
     # Save to pickle
-    with open(filepath, 'wb') as f:
+    with open(filepath, "wb") as f:
         pickle.dump(data, f, protocol=4)
 
     return str(filepath)
@@ -166,7 +167,7 @@ def load_classification_results(filepath: str) -> dict:
         >>> data = load_classification_results('data/classifier_results/baseline.pkl')
         >>> results_df = data['results']
     """
-    with open(filepath, 'rb') as f:
+    with open(filepath, "rb") as f:
         data = pickle.load(f)
 
     return data

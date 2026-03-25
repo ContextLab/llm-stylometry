@@ -1,7 +1,7 @@
-from pathlib import Path
 import re
+
 from cleantext import clean
-from constants import RAW_DATA_DIR, CLEANED_DATA_DIR, TITLES_FILE, AUTHORS
+from constants import AUTHORS, CLEANED_DATA_DIR, RAW_DATA_DIR, TITLES_FILE
 
 
 def alpha(string):

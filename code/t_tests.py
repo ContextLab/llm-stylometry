@@ -1,6 +1,6 @@
 import pandas as pd
-from scipy.stats import ttest_rel, ttest_ind
-from constants import MODELS_DIR, AUTHORS
+from constants import AUTHORS, MODELS_DIR
+from scipy.stats import ttest_ind, ttest_rel
 
 
 def baum_thompson_ttest():

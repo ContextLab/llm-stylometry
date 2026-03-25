@@ -1,28 +1,33 @@
 """3D MDS visualization for author stylometric distances."""
 
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
 from sklearn.manifold import MDS
-from pathlib import Path
 from tqdm import tqdm
-
 
 # Define author colors to match existing figures
 AUTHOR_COLORS = {
-    "Baum": "#1f77b4",      # Blue
-    "Thompson": "#ff7f0e",   # Orange
-    "Austen": "#2ca02c",     # Green
-    "Dickens": "#d62728",    # Red
-    "Fitzgerald": "#9467bd", # Purple
-    "Melville": "#8c564b",   # Brown
-    "Twain": "#e377c2",      # Pink
-    "Wells": "#7f7f7f",      # Gray
+    "Baum": "#1f77b4",  # Blue
+    "Thompson": "#ff7f0e",  # Orange
+    "Austen": "#2ca02c",  # Green
+    "Dickens": "#d62728",  # Red
+    "Fitzgerald": "#9467bd",  # Purple
+    "Melville": "#8c564b",  # Brown
+    "Twain": "#e377c2",  # Pink
+    "Wells": "#7f7f7f",  # Gray
 }
 
 # Standardized author order
-AUTHOR_ORDER = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
+AUTHOR_ORDER = [
+    "baum",
+    "thompson",
+    "austen",
+    "dickens",
+    "fitzgerald",
+    "melville",
+    "twain",
+    "wells",
+]
 
 
 def create_loss_matrix(df):
@@ -31,38 +36,47 @@ def create_loss_matrix(df):
     # Collect final epoch losses for each model
     all_losses = []
 
-    for model_name in tqdm(df['model_name'].unique(), desc="Processing models"):
-        model_df = df[df['model_name'] == model_name]
+    for model_name in tqdm(df["model_name"].unique(), desc="Processing models"):
+        model_df = df[df["model_name"] == model_name]
 
         # Get the last loss value for each evaluation dataset
-        final_losses = model_df.groupby(['loss_dataset']).tail(1)
-        final_losses = final_losses[final_losses['loss_dataset'].str.lower().isin(AUTHOR_ORDER)]
+        final_losses = model_df.groupby(["loss_dataset"]).tail(1)
+        final_losses = final_losses[
+            final_losses["loss_dataset"].str.lower().isin(AUTHOR_ORDER)
+        ]
 
-        all_losses.append(final_losses[['train_author', 'loss_dataset', 'loss_value']])
+        all_losses.append(final_losses[["train_author", "loss_dataset", "loss_value"]])
 
     # Combine all data
     loss_df = pd.concat(all_losses, ignore_index=True)
 
     # Capitalize author names
-    loss_df['training_author'] = loss_df['train_author'].str.capitalize()
-    loss_df['evaluation_author'] = loss_df['loss_dataset'].str.capitalize()
+    loss_df["training_author"] = loss_df["train_author"].str.capitalize()
+    loss_df["evaluation_author"] = loss_df["loss_dataset"].str.capitalize()
 
     # Calculate average loss for each combination
     avg_loss = (
-        loss_df.groupby(['training_author', 'evaluation_author'])['loss_value']
+        loss_df.groupby(["training_author", "evaluation_author"])["loss_value"]
         .mean()
         .reset_index()
     )
 
     # Pivot to create the heatmap matrix
     heatmap_data = avg_loss.pivot(
-        index='training_author',
-        columns='evaluation_author',
-        values='loss_value'
+        index="training_author", columns="evaluation_author", values="loss_value"
     )
 
     # Define the order from the paper
-    new_order = ["Austen", "Baum", "Thompson", "Twain", "Melville", "Dickens", "Fitzgerald", "Wells"]
+    new_order = [
+        "Austen",
+        "Baum",
+        "Thompson",
+        "Twain",
+        "Melville",
+        "Dickens",
+        "Fitzgerald",
+        "Wells",
+    ]
 
     # Reorder rows and columns
     heatmap_data = heatmap_data.reindex(index=new_order, columns=new_order)
@@ -74,10 +88,10 @@ def generate_3d_mds_figure(
     data_path="data/model_results.pkl",
     output_path=None,
     figsize=(9, 7),
-    font='Helvetica',
+    font="Helvetica",
     zoom_factor=0.1,
     variant=None,
-    apply_fairness=True
+    apply_fairness=True,
 ):
     """
     Generate Figure 4: 3D MDS plot from loss matrix.
@@ -95,8 +109,8 @@ def generate_3d_mds_figure(
         matplotlib figure object
     """
     # Set font
-    plt.rcParams['font.family'] = font
-    plt.rcParams['font.sans-serif'] = [font]
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
 
     # Load data and create loss matrix
     df = pd.read_pickle(data_path)
@@ -104,19 +118,19 @@ def generate_3d_mds_figure(
     # Filter by variant
     if variant is None:
         # Baseline: exclude variant models
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
+        if "variant" in df.columns:
+            df = df[df["variant"].isna()].copy()
     else:
         # Specific variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
-        df = df[df['variant'] == variant].copy()
+        if "variant" not in df.columns:
+            raise ValueError("No variant column in data")
+        df = df[df["variant"] == variant].copy()
 
     # Apply fairness threshold for variants
     if variant is not None and apply_fairness:
         from llm_stylometry.analysis.fairness import (
+            apply_fairness_threshold,
             compute_fairness_threshold,
-            apply_fairness_threshold
         )
 
         threshold = compute_fairness_threshold(df, min_epochs=500)
@@ -128,7 +142,7 @@ def generate_3d_mds_figure(
     symmetric_matrix = (loss_matrix + loss_matrix.T) / 2
 
     # Apply MDS with 3 components
-    mds = MDS(n_components=3, dissimilarity='precomputed', random_state=1)
+    mds = MDS(n_components=3, dissimilarity="precomputed", random_state=1)
     coords = mds.fit_transform(symmetric_matrix)
     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
 
@@ -138,13 +152,13 @@ def generate_3d_mds_figure(
 
     if variant is not None:
         # For variants, compute baseline z-range to scale text offset
-        df_baseline = pd.read_pickle(data_path.replace(f'_{variant}', ''))
-        if 'variant' in df_baseline.columns:
-            df_baseline = df_baseline[df_baseline['variant'].isna()].copy()
+        df_baseline = pd.read_pickle(data_path.replace(f"_{variant}", ""))
+        if "variant" in df_baseline.columns:
+            df_baseline = df_baseline[df_baseline["variant"].isna()].copy()
 
         baseline_matrix, _ = create_loss_matrix(df_baseline)
         baseline_symmetric = (baseline_matrix + baseline_matrix.T) / 2
-        baseline_mds = MDS(n_components=3, dissimilarity='precomputed', random_state=1)
+        baseline_mds = MDS(n_components=3, dissimilarity="precomputed", random_state=1)
         baseline_coords = baseline_mds.fit_transform(baseline_symmetric)
         baseline_z = baseline_coords[:, 2]
 
@@ -156,26 +170,34 @@ def generate_3d_mds_figure(
 
     # Create figure
     fig = plt.figure(figsize=figsize)
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
 
     # Plot points with author-specific colors and black outline
     for i, author in enumerate(author_names):
-        ax.scatter(x[i], y[i], z[i],
-                  s=300,  # Larger dots
-                  color=AUTHOR_COLORS[author],
-                  marker='o',
-                  edgecolors='black',  # Black outline
-                  linewidth=1.5,
-                  depthshade=True,
-                  alpha=0.9)
+        ax.scatter(
+            x[i],
+            y[i],
+            z[i],
+            s=300,  # Larger dots
+            color=AUTHOR_COLORS[author],
+            marker="o",
+            edgecolors="black",  # Black outline
+            linewidth=1.5,
+            depthshade=True,
+            alpha=0.9,
+        )
 
         # Add text labels above dots with bold font, scaled offset
-        ax.text(x[i], y[i], z[i] + text_offset,
-               author,
-               fontsize=12,
-               fontweight='bold',
-               ha='center',
-               va='bottom')
+        ax.text(
+            x[i],
+            y[i],
+            z[i] + text_offset,
+            author,
+            fontsize=12,
+            fontweight="bold",
+            ha="center",
+            va="bottom",
+        )
 
     # No title as requested
     # ax.set_title("MDS from loss matrix", fontsize=14)
@@ -184,21 +206,21 @@ def generate_3d_mds_figure(
     ax.xaxis.pane.fill = True
     ax.yaxis.pane.fill = True
     ax.zaxis.pane.fill = True
-    ax.xaxis.pane.set_edgecolor('gray')
-    ax.yaxis.pane.set_edgecolor('gray')
-    ax.zaxis.pane.set_edgecolor('gray')
+    ax.xaxis.pane.set_edgecolor("gray")
+    ax.yaxis.pane.set_edgecolor("gray")
+    ax.zaxis.pane.set_edgecolor("gray")
     ax.xaxis.pane.set_alpha(0.75)  # Even darker background (75% opacity)
     ax.yaxis.pane.set_alpha(0.75)
     ax.zaxis.pane.set_alpha(0.75)
 
     # Make grid lines subtle but visible (15% opacity)
     # For 3D plots, we need to set grid properties differently
-    ax.xaxis._axinfo['grid']['color'] = (0.5, 0.5, 0.5, 0.15)  # RGBA with 15% alpha
-    ax.yaxis._axinfo['grid']['color'] = (0.5, 0.5, 0.5, 0.15)
-    ax.zaxis._axinfo['grid']['color'] = (0.5, 0.5, 0.5, 0.15)
-    ax.xaxis._axinfo['grid']['linewidth'] = 0.5
-    ax.yaxis._axinfo['grid']['linewidth'] = 0.5
-    ax.zaxis._axinfo['grid']['linewidth'] = 0.5
+    ax.xaxis._axinfo["grid"]["color"] = (0.5, 0.5, 0.5, 0.15)  # RGBA with 15% alpha
+    ax.yaxis._axinfo["grid"]["color"] = (0.5, 0.5, 0.5, 0.15)
+    ax.zaxis._axinfo["grid"]["color"] = (0.5, 0.5, 0.5, 0.15)
+    ax.xaxis._axinfo["grid"]["linewidth"] = 0.5
+    ax.yaxis._axinfo["grid"]["linewidth"] = 0.5
+    ax.zaxis._axinfo["grid"]["linewidth"] = 0.5
     ax.grid(True)
 
     # Remove tick labels but keep ticks for grid lines
@@ -221,8 +243,11 @@ def generate_3d_mds_figure(
         # Add variant suffix to filename if variant specified
         if variant:
             from pathlib import Path
+
             output_path = Path(output_path)
-            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
+            output_path = str(
+                output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}"
+            )
         fig.savefig(output_path, format="pdf", bbox_inches="tight", dpi=300)
 
     return fig

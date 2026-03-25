@@ -5,79 +5,79 @@ Generate HuggingFace model cards for author-specific models.
 Creates professional README.md files for HuggingFace model repositories.
 """
 
-import json
 import argparse
+import json
 from pathlib import Path
-import pandas as pd
 
+import pandas as pd
 
 # Author metadata
 AUTHOR_METADATA = {
-    'austen': {
-        'full_name': 'Jane Austen',
-        'years': '1775-1817',
-        'period': '19th-century England',
-        'example_prompt': 'it is a truth universally acknowledged',
-        'notable_works': 'Pride and Prejudice, Sense and Sensibility, Emma',
+    "austen": {
+        "full_name": "Jane Austen",
+        "years": "1775-1817",
+        "period": "19th-century England",
+        "example_prompt": "it is a truth universally acknowledged",
+        "notable_works": "Pride and Prejudice, Sense and Sensibility, Emma",
     },
-    'baum': {
-        'full_name': 'L. Frank Baum',
-        'years': '1856-1919',
-        'period': 'late 19th to early 20th century America',
-        'example_prompt': 'dorothy lived in the midst of',
-        'notable_works': 'The Wonderful Wizard of Oz series',
+    "baum": {
+        "full_name": "L. Frank Baum",
+        "years": "1856-1919",
+        "period": "late 19th to early 20th century America",
+        "example_prompt": "dorothy lived in the midst of",
+        "notable_works": "The Wonderful Wizard of Oz series",
     },
-    'dickens': {
-        'full_name': 'Charles Dickens',
-        'years': '1812-1870',
-        'period': 'Victorian England',
-        'example_prompt': 'it was the best of times',
-        'notable_works': 'A Tale of Two Cities, Great Expectations, Oliver Twist',
+    "dickens": {
+        "full_name": "Charles Dickens",
+        "years": "1812-1870",
+        "period": "Victorian England",
+        "example_prompt": "it was the best of times",
+        "notable_works": "A Tale of Two Cities, Great Expectations, Oliver Twist",
     },
-    'fitzgerald': {
-        'full_name': 'F. Scott Fitzgerald',
-        'years': '1896-1940',
-        'period': 'Jazz Age America',
-        'example_prompt': 'in my younger and more vulnerable years',
-        'notable_works': 'The Great Gatsby, Tender Is the Night',
+    "fitzgerald": {
+        "full_name": "F. Scott Fitzgerald",
+        "years": "1896-1940",
+        "period": "Jazz Age America",
+        "example_prompt": "in my younger and more vulnerable years",
+        "notable_works": "The Great Gatsby, Tender Is the Night",
     },
-    'melville': {
-        'full_name': 'Herman Melville',
-        'years': '1819-1891',
-        'period': '19th-century America',
-        'example_prompt': 'call me ishmael',
-        'notable_works': 'Moby-Dick, Bartleby the Scrivener',
+    "melville": {
+        "full_name": "Herman Melville",
+        "years": "1819-1891",
+        "period": "19th-century America",
+        "example_prompt": "call me ishmael",
+        "notable_works": "Moby-Dick, Bartleby the Scrivener",
     },
-    'thompson': {
-        'full_name': 'Ruth Plumly Thompson',
-        'years': '1891-1976',
-        'period': 'early-to-mid 20th century America',
-        'example_prompt': 'once upon a time in the land of',
-        'notable_works': 'The Oz book series (books 15-35)',
+    "thompson": {
+        "full_name": "Ruth Plumly Thompson",
+        "years": "1891-1976",
+        "period": "early-to-mid 20th century America",
+        "example_prompt": "once upon a time in the land of",
+        "notable_works": "The Oz book series (books 15-35)",
     },
-    'twain': {
-        'full_name': 'Mark Twain',
-        'years': '1835-1910',
-        'period': '19th-century America',
-        'example_prompt': 'you don\'t know about me',
-        'notable_works': 'Adventures of Huckleberry Finn, Tom Sawyer',
+    "twain": {
+        "full_name": "Mark Twain",
+        "years": "1835-1910",
+        "period": "19th-century America",
+        "example_prompt": "you don't know about me",
+        "notable_works": "Adventures of Huckleberry Finn, Tom Sawyer",
     },
-    'wells': {
-        'full_name': 'H.G. Wells',
-        'years': '1866-1946',
-        'period': 'late 19th to early 20th century England',
-        'example_prompt': 'the time traveller',
-        'notable_works': 'The Time Machine, The War of the Worlds, The Invisible Man',
+    "wells": {
+        "full_name": "H.G. Wells",
+        "years": "1866-1946",
+        "period": "late 19th to early 20th century England",
+        "example_prompt": "the time traveller",
+        "notable_works": "The Time Machine, The War of the Worlds, The Invisible Man",
     },
 }
 
 
 def calculate_param_count(config):
     """Calculate total parameter count from config."""
-    vocab_size = config['vocab_size']
-    n_embd = config['n_embd']
-    n_layer = config['n_layer']
-    n_positions = config['n_positions']
+    vocab_size = config["vocab_size"]
+    n_embd = config["n_embd"]
+    n_layer = config["n_layer"]
+    n_positions = config["n_positions"]
 
     # Embedding layers
     wte = vocab_size * n_embd  # Token embeddings
@@ -88,9 +88,9 @@ def calculate_param_count(config):
     # MLP: n_embd * 4*n_embd + 4*n_embd * n_embd
     # LayerNorm: 2 * n_embd (per layer, 2 norms)
     per_layer = (
-        4 * n_embd * n_embd +  # Attention
-        2 * (n_embd * 4 * n_embd) +  # MLP
-        2 * n_embd  # LayerNorm
+        4 * n_embd * n_embd  # Attention
+        + 2 * (n_embd * 4 * n_embd)  # MLP
+        + 2 * n_embd  # LayerNorm
     )
 
     transformer_params = n_layer * per_layer
@@ -105,47 +105,49 @@ def calculate_param_count(config):
 def get_model_stats(model_dir):
     """Extract statistics from trained model."""
     # Load config
-    with open(model_dir / 'config.json') as f:
+    with open(model_dir / "config.json") as f:
         config = json.load(f)
 
     # Load training logs
-    logs = pd.read_csv(model_dir / 'loss_logs.csv')
-    train_logs = logs[logs['loss_dataset'] == 'train']
+    logs = pd.read_csv(model_dir / "loss_logs.csv")
+    train_logs = logs[logs["loss_dataset"] == "train"]
 
-    final_loss = train_logs['loss_value'].iloc[-1]
-    epochs_trained = train_logs['epochs_completed'].max()
+    final_loss = train_logs["loss_value"].iloc[-1]
+    epochs_trained = train_logs["epochs_completed"].max()
 
     # Calculate parameters
     param_count = calculate_param_count(config)
 
     return {
-        'config': config,
-        'final_loss': final_loss,
-        'epochs_trained': epochs_trained,
-        'param_count': param_count
+        "config": config,
+        "final_loss": final_loss,
+        "epochs_trained": epochs_trained,
+        "param_count": param_count,
     }
 
 
 def count_training_books(author):
     """Count number of books in author's corpus."""
-    author_dir = Path(f'data/cleaned/{author}')
+    author_dir = Path(f"data/cleaned/{author}")
 
     if not author_dir.exists():
         return "several"  # Fallback if directory not accessible
 
-    books = list(author_dir.glob('*.txt'))
+    books = list(author_dir.glob("*.txt"))
     return len(books)
 
 
 def count_training_tokens(author):
     """Estimate training tokens from cleaned data."""
-    author_dir = Path(f'data/cleaned/{author}')
+    author_dir = Path(f"data/cleaned/{author}")
 
     if not author_dir.exists():
         return "~640,000"  # Default estimate
 
-    books = list(author_dir.glob('*.txt'))
-    total_chars = sum(len(open(book, encoding='utf-8', errors='ignore').read()) for book in books)
+    books = list(author_dir.glob("*.txt"))
+    total_chars = sum(
+        len(open(book, encoding="utf-8", errors="ignore").read()) for book in books
+    )
 
     # GPT-2 tokenizer: roughly 1 token per 4 characters
     approx_tokens = total_chars // 4
@@ -386,22 +388,21 @@ Explore models for all 8 authors in the study:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate HuggingFace model card for author model'
+        description="Generate HuggingFace model card for author model"
     )
     parser.add_argument(
-        '--author',
+        "--author",
         required=True,
         choices=list(AUTHOR_METADATA.keys()),
-        help='Author name'
+        help="Author name",
     )
     parser.add_argument(
-        '--model-dir',
+        "--model-dir",
         required=True,
-        help='Path to model directory (e.g., models_hf/baum_tokenizer=gpt2)'
+        help="Path to model directory (e.g., models_hf/baum_tokenizer=gpt2)",
     )
     parser.add_argument(
-        '--output',
-        help='Output path for model card (default: {model_dir}/README.md)'
+        "--output", help="Output path for model card (default: {model_dir}/README.md)"
     )
 
     args = parser.parse_args()
@@ -413,11 +414,11 @@ def main():
         return 1
 
     # Verify required files exist
-    if not (model_dir / 'config.json').exists():
+    if not (model_dir / "config.json").exists():
         print(f"ERROR: config.json not found in {model_dir}")
         return 1
 
-    if not (model_dir / 'loss_logs.csv').exists():
+    if not (model_dir / "loss_logs.csv").exists():
         print(f"ERROR: loss_logs.csv not found in {model_dir}")
         return 1
 
@@ -426,10 +427,10 @@ def main():
     card = generate_model_card(args.author, model_dir)
 
     # Determine output path
-    output_path = Path(args.output) if args.output else model_dir / 'README.md'
+    output_path = Path(args.output) if args.output else model_dir / "README.md"
 
     # Write model card
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(card)
 
     print(f"Model card saved to: {output_path}")
@@ -440,4 +441,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

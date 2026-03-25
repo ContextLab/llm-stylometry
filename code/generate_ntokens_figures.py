@@ -15,7 +15,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 
 from llm_stylometry.visualization.t_tests import generate_t_test_ntokens_figure
 
@@ -27,6 +28,7 @@ def main():
         output_path="paper/figs/source/t_test_ntokens.pdf",
     )
     import matplotlib.pyplot as plt
+
     plt.close(fig)
     print("Done.")
 

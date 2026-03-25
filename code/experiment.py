@@ -1,5 +1,5 @@
-from data_utils import sample_book_path
 from constants import AUTHORS, CLEANED_DATA_DIR
+from data_utils import sample_book_path
 
 
 class Experiment:
@@ -30,7 +30,9 @@ class Experiment:
         # Validate variant
         if analysis_variant is not None:
             if analysis_variant not in ANALYSIS_VARIANTS:
-                raise ValueError(f"Invalid variant: {analysis_variant}. Must be one of {ANALYSIS_VARIANTS}")
+                raise ValueError(
+                    f"Invalid variant: {analysis_variant}. Must be one of {ANALYSIS_VARIANTS}"
+                )
 
         # Build model name with variant
         if analysis_variant:
@@ -48,7 +50,10 @@ class Experiment:
         self.data_dir = get_data_dir(analysis_variant)
 
         # Sample eval paths from appropriate directory
-        self.eval_paths = {author: sample_book_path(author, seed, analysis_variant) for author in AUTHORS}
+        self.eval_paths = {
+            author: sample_book_path(author, seed, analysis_variant)
+            for author in AUTHORS
+        }
         self.excluded_train_path = self.eval_paths[train_author]
 
         # Special eval paths for Baum/Thompson (from baseline data only)

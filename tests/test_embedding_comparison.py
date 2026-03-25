@@ -24,9 +24,9 @@ def test_chunk_book_basic():
     expected_chunks = max(1, (len(token_ids) - 128) // (1024 - 128))
 
     assert len(chunks) >= 1, "Should produce at least 1 chunk"
-    assert abs(len(chunks) - expected_chunks) <= 2, (
-        f"Expected ~{expected_chunks} chunks, got {len(chunks)}"
-    )
+    assert (
+        abs(len(chunks) - expected_chunks) <= 2
+    ), f"Expected ~{expected_chunks} chunks, got {len(chunks)}"
 
     # Each chunk should decode to non-empty text
     for chunk in chunks:
@@ -81,7 +81,11 @@ def test_classify_book_chunks_nearest_neighbor():
     # Training chunks: 10 per author, slightly noisy
     train_embs = []
     train_authors = []
-    for center, author in [(author_a_center, "a"), (author_b_center, "b"), (author_c_center, "c")]:
+    for center, author in [
+        (author_a_center, "a"),
+        (author_b_center, "b"),
+        (author_c_center, "c"),
+    ]:
         for _ in range(10):
             noisy = center + rng.normal(0, 0.1, dim)
             noisy /= np.linalg.norm(noisy)
@@ -104,7 +108,9 @@ def test_classify_book_chunks_nearest_neighbor():
 
     assert len(predictions) == 5
     assert all(p == "a" for p in predictions), f"Expected all 'a', got {predictions}"
-    assert all(s > 0.5 for s in similarities), "Similarities should be high for matching author"
+    assert all(
+        s > 0.5 for s in similarities
+    ), "Similarities should be high for matching author"
 
 
 def test_modal_vote_classification():
@@ -137,9 +143,9 @@ def test_modal_vote_tie_breaking():
     result = compute_book_result("austen", chunk_predictions, chunk_similarities)
 
     # austen should win because avg similarity (0.923) > dickens avg (0.700)
-    assert result["modal_author"] == "austen", (
-        f"Expected 'austen' to win tie-break, got '{result['modal_author']}'"
-    )
+    assert (
+        result["modal_author"] == "austen"
+    ), f"Expected 'austen' to win tie-break, got '{result['modal_author']}'"
 
 
 def test_modal_vote_incorrect_prediction():

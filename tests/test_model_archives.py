@@ -10,11 +10,12 @@ These tests verify that:
 NO MOCKS - all tests use real model loading, real PyTorch operations.
 """
 
+import subprocess
+from pathlib import Path
+
 import pytest
 import torch
-from pathlib import Path
-from transformers import GPT2LMHeadModel, GPT2Config
-import subprocess
+from transformers import GPT2Config, GPT2LMHeadModel
 
 
 class TestModelLoading:
@@ -34,7 +35,9 @@ class TestModelLoading:
         # Check if first model has weights
         first_model = baseline_models[0]
         if not (first_model / "model.safetensors").exists():
-            pytest.skip("Model weights not downloaded. Run: ./download_model_weights.sh -b")
+            pytest.skip(
+                "Model weights not downloaded. Run: ./download_model_weights.sh -b"
+            )
 
         return first_model
 
@@ -86,15 +89,15 @@ class TestModelLoading:
         state_path = model_path / "training_state.pt"
 
         # Load training state (weights_only=False required for pickled states)
-        state = torch.load(state_path, map_location='cpu', weights_only=False)
+        state = torch.load(state_path, map_location="cpu", weights_only=False)
 
         # Verify expected keys
-        assert 'optimizer_state_dict' in state
-        assert 'epochs_completed' in state
-        assert 'random_state' in state or 'np_random_state' in state
+        assert "optimizer_state_dict" in state
+        assert "epochs_completed" in state
+        assert "random_state" in state or "np_random_state" in state
 
         # Verify epoch number is reasonable
-        assert 500 <= state['epochs_completed'] <= 10000
+        assert 500 <= state["epochs_completed"] <= 10000
 
     def test_config_files_present(self, ensure_baseline_weights):
         """Verify all required config files are present."""
@@ -117,7 +120,7 @@ class TestModelLoading:
             pytest.skip("Need at least 2 baseline models")
 
         # Test first 3 models (or all if less than 3)
-        models_to_test = baseline_models[:min(3, len(baseline_models))]
+        models_to_test = baseline_models[: min(3, len(baseline_models))]
 
         for model_path in models_to_test:
             # Skip if no weights
@@ -140,14 +143,18 @@ class TestVariantModels:
     def ensure_content_variant(self):
         """Ensure content variant weights are available."""
         models_dir = Path("models")
-        content_models = list(models_dir.glob("*_variant=content_tokenizer=gpt2_seed=*"))
+        content_models = list(
+            models_dir.glob("*_variant=content_tokenizer=gpt2_seed=*")
+        )
 
         if not content_models:
             pytest.skip("No content variant models found")
 
         first_model = content_models[0]
         if not (first_model / "model.safetensors").exists():
-            pytest.skip("Content variant weights not downloaded. Run: ./download_model_weights.sh -co")
+            pytest.skip(
+                "Content variant weights not downloaded. Run: ./download_model_weights.sh -co"
+            )
 
         return first_model
 
@@ -168,10 +175,14 @@ class TestVariantModels:
 
         # Find one model per variant
         variants = {
-            'baseline': list(models_dir.glob("austen_tokenizer=gpt2_seed=0")),
-            'content': list(models_dir.glob("austen_variant=content_tokenizer=gpt2_seed=0")),
-            'function': list(models_dir.glob("austen_variant=function_tokenizer=gpt2_seed=0")),
-            'pos': list(models_dir.glob("austen_variant=pos_tokenizer=gpt2_seed=0"))
+            "baseline": list(models_dir.glob("austen_tokenizer=gpt2_seed=0")),
+            "content": list(
+                models_dir.glob("austen_variant=content_tokenizer=gpt2_seed=0")
+            ),
+            "function": list(
+                models_dir.glob("austen_variant=function_tokenizer=gpt2_seed=0")
+            ),
+            "pos": list(models_dir.glob("austen_variant=pos_tokenizer=gpt2_seed=0")),
         }
 
         configs = {}
@@ -215,12 +226,16 @@ class TestModelCounts:
         """Verify each variant has 80 models."""
         models_dir = Path("models")
 
-        variants = ['content', 'function', 'pos']
+        variants = ["content", "function", "pos"]
         for variant in variants:
-            variant_models = list(models_dir.glob(f"*_variant={variant}_tokenizer=gpt2_seed=*"))
+            variant_models = list(
+                models_dir.glob(f"*_variant={variant}_tokenizer=gpt2_seed=*")
+            )
 
             # Should be 80 per variant
-            assert len(variant_models) == 80, f"Expected 80 {variant} models, found {len(variant_models)}"
+            assert (
+                len(variant_models) == 80
+            ), f"Expected 80 {variant} models, found {len(variant_models)}"
 
     def test_total_model_count(self):
         """Verify 320 total models (baseline + 3 variants)."""
@@ -241,16 +256,18 @@ class TestModelCounts:
             training_state_exists = (model_path / "training_state.pt").exists()
 
             # Both files should exist together or both missing
-            assert safetensors_exists == training_state_exists, \
-                f"Inconsistent weights in {model_path.name}"
+            assert (
+                safetensors_exists == training_state_exists
+            ), f"Inconsistent weights in {model_path.name}"
 
             if safetensors_exists:
                 models_with_weights += 1
 
         # If any models have weights, should be all 320
         if models_with_weights > 0:
-            assert models_with_weights == 320, \
-                f"Expected 0 or 320 models with weights, found {models_with_weights}"
+            assert (
+                models_with_weights == 320
+            ), f"Expected 0 or 320 models with weights, found {models_with_weights}"
 
 
 class TestGitTrackedFiles:
@@ -259,61 +276,61 @@ class TestGitTrackedFiles:
     def test_config_files_in_git(self):
         """Verify config files are tracked by git."""
         result = subprocess.run(
-            ['git', 'ls-files', 'models/*/config.json'],
+            ["git", "ls-files", "models/*/config.json"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
-        config_files = result.stdout.strip().split('\n')
+        config_files = result.stdout.strip().split("\n")
         # Should have 320 config files
         assert len(config_files) == 320
 
     def test_loss_logs_in_git(self):
         """Verify loss logs are tracked by git."""
         result = subprocess.run(
-            ['git', 'ls-files', 'models/*/loss_logs.csv'],
+            ["git", "ls-files", "models/*/loss_logs.csv"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
-        log_files = result.stdout.strip().split('\n')
+        log_files = result.stdout.strip().split("\n")
         # Should have 320 loss log files
         assert len(log_files) == 320
 
     def test_weight_files_not_in_git(self):
         """Verify weight files are gitignored."""
         result = subprocess.run(
-            ['git', 'ls-files', 'models/*/*.safetensors'],
+            ["git", "ls-files", "models/*/*.safetensors"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         # Should be empty (all gitignored)
         safetensors_files = result.stdout.strip()
-        assert safetensors_files == '', "Weight files should be gitignored"
+        assert safetensors_files == "", "Weight files should be gitignored"
 
         result = subprocess.run(
-            ['git', 'ls-files', 'models/*/training_state.pt'],
+            ["git", "ls-files", "models/*/training_state.pt"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         training_state_files = result.stdout.strip()
-        assert training_state_files == '', "Training state files should be gitignored"
+        assert training_state_files == "", "Training state files should be gitignored"
 
     def test_no_uncommitted_changes_in_models(self):
         """Verify no uncommitted changes in models/ directory."""
         result = subprocess.run(
-            ['git', 'status', '--short', 'models/'],
+            ["git", "status", "--short", "models/"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         # Should be empty (no changes to tracked files)
         changes = result.stdout.strip()
-        assert changes == '', "Git-tracked files in models/ should not be modified"
+        assert changes == "", "Git-tracked files in models/ should not be modified"

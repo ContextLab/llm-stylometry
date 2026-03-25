@@ -1,23 +1,21 @@
 """Tests for text classification module (NO MOCKS - Real integration tests)."""
 
-import pytest
+import tempfile
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import tempfile
-import shutil
 
 from llm_stylometry.classification import (
-    load_books_by_author,
-    create_count_vectorizer,
-    vectorize_books,
     OutputCodeClassifier,
+    create_count_vectorizer,
     generate_cv_splits,
-    run_cross_validation,
+    load_books_by_author,
     run_classification_experiment,
-    save_classification_results
+    run_cross_validation,
+    save_classification_results,
+    vectorize_books,
 )
-
 
 # Test fixtures path
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "classification" / "cleaned"
@@ -32,7 +30,7 @@ class TestLoadBooksByAuthor:
 
         # Should have 3 authors
         assert len(books) == 3
-        assert set(books.keys()) == {'baum', 'austen', 'dickens'}
+        assert set(books.keys()) == {"baum", "austen", "dickens"}
 
         # Each author should have 3 books
         for author, book_list in books.items():
@@ -93,7 +91,7 @@ class TestVectorizeBooks:
 
         # Verify structure
         for author, book_id, vector in vectorized:
-            assert author in {'baum', 'austen', 'dickens'}
+            assert author in {"baum", "austen", "dickens"}
             assert isinstance(book_id, str)
             assert isinstance(vector, np.ndarray)
             assert vector.shape == (len(vectorizer.vocabulary_),)
@@ -112,8 +110,9 @@ class TestVectorizeBooks:
             # Each vector should sum to ~100000 (scaled frequencies, not raw counts)
             # Allow 5% tolerance for rounding loss with many features
             total = vector.sum()
-            assert 95000 <= total <= 105000, \
-                f"Vector for {author}/{book_id} sums to {total}, expected ~100000"
+            assert (
+                95000 <= total <= 105000
+            ), f"Vector for {author}/{book_id} sums to {total}, expected ~100000"
 
             # All values should be non-negative integers
             assert (vector >= 0).all()
@@ -140,7 +139,7 @@ class TestOutputCodeClassifier:
         # Verify fitted attributes
         assert clf.classes_ is not None
         assert clf.n_classes_ == 3
-        assert set(clf.classes_) == {'baum', 'austen', 'dickens'}
+        assert set(clf.classes_) == {"baum", "austen", "dickens"}
 
     def test_classifier_predictions(self):
         """Test classifier makes predictions."""
@@ -164,7 +163,7 @@ class TestOutputCodeClassifier:
 
         # Verify predictions
         assert len(predictions) == 3
-        assert all(p in {'baum', 'austen', 'dickens'} for p in predictions)
+        assert all(p in {"baum", "austen", "dickens"} for p in predictions)
 
     def test_feature_weights_extraction(self):
         """Test extracting author-specific feature weights via back-solving."""
@@ -183,18 +182,18 @@ class TestOutputCodeClassifier:
         weights = clf.get_feature_weights(feature_names)
 
         # Verify structure
-        assert 'overall' in weights
-        assert 'baum' in weights
-        assert 'austen' in weights
-        assert 'dickens' in weights
+        assert "overall" in weights
+        assert "baum" in weights
+        assert "austen" in weights
+        assert "dickens" in weights
 
         # Verify all authors have same words but different weights
-        for author in ['baum', 'austen', 'dickens']:
+        for author in ["baum", "austen", "dickens"]:
             assert len(weights[author]) == len(feature_names)
 
         # Verify author weights are different
-        baum_weights = list(weights['baum'].values())
-        austen_weights = list(weights['austen'].values())
+        baum_weights = list(weights["baum"].values())
+        austen_weights = list(weights["austen"].values())
 
         # At least some weights should differ
         assert not np.allclose(baum_weights, austen_weights)
@@ -240,15 +239,22 @@ class TestCrossValidation:
         assert len(results_df) == 5 * 3  # 5 splits × 3 held-out books
 
         # Verify columns
-        required_cols = ['split_id', 'author', 'accuracy', 'held_out_book_id',
-                        'predicted_author', 'true_author', 'classifier']
+        required_cols = [
+            "split_id",
+            "author",
+            "accuracy",
+            "held_out_book_id",
+            "predicted_author",
+            "true_author",
+            "classifier",
+        ]
         assert all(col in results_df.columns for col in required_cols)
 
         # Verify accuracy values
-        assert all(results_df['accuracy'].isin([0.0, 1.0]))
+        assert all(results_df["accuracy"].isin([0.0, 1.0]))
 
         # Verify classifier objects stored
-        assert all(results_df['classifier'].notna())
+        assert all(results_df["classifier"].notna())
 
 
 class TestExperiment:
@@ -262,7 +268,7 @@ class TestExperiment:
                 max_splits=5,
                 seed=42,
                 data_dir=str(FIXTURE_DIR),
-                output_dir=tmpdir
+                output_dir=tmpdir,
             )
 
             # Verify output file exists
@@ -270,27 +276,28 @@ class TestExperiment:
 
             # Load and verify results
             import pickle
-            with open(output_path, 'rb') as f:
+
+            with open(output_path, "rb") as f:
                 data = pickle.load(f)
 
             # Verify structure
-            assert 'results' in data
-            assert 'vectorizer' in data
-            assert 'feature_names' in data
-            assert 'variant' in data
-            assert 'n_splits' in data
-            assert 'seed' in data
+            assert "results" in data
+            assert "vectorizer" in data
+            assert "feature_names" in data
+            assert "variant" in data
+            assert "n_splits" in data
+            assert "seed" in data
 
             # Verify results DataFrame
-            results_df = data['results']
+            results_df = data["results"]
             assert isinstance(results_df, pd.DataFrame)
             assert len(results_df) > 0
 
             # Verify vectorizer works
-            vectorizer = data['vectorizer']
+            vectorizer = data["vectorizer"]
             test_text = "This is a test sentence."
             vec = vectorizer.transform([test_text])
-            assert vec.shape[1] == len(data['feature_names'])
+            assert vec.shape[1] == len(data["feature_names"])
 
     def test_save_and_load_results(self):
         """Test saving and loading results."""
@@ -308,19 +315,20 @@ class TestExperiment:
                 variant=None,
                 n_splits=3,
                 seed=42,
-                output_dir=tmpdir
+                output_dir=tmpdir,
             )
 
             # Load back
             import pickle
-            with open(output_path, 'rb') as f:
+
+            with open(output_path, "rb") as f:
                 data = pickle.load(f)
 
             # Verify all fields match
-            assert data['variant'] is None
-            assert data['n_splits'] == 3
-            assert data['seed'] == 42
-            assert len(data['feature_names']) == len(vectorizer.vocabulary_)
+            assert data["variant"] is None
+            assert data["n_splits"] == 3
+            assert data["seed"] == 42
+            assert len(data["feature_names"]) == len(vectorizer.vocabulary_)
 
 
 class TestReproducibility:
@@ -366,7 +374,7 @@ class TestEdgeCases:
         books = load_books_by_author(data_dir=str(FIXTURE_DIR))
 
         # Remove one book from one author to create imbalance
-        books['baum'] = books['baum'][:2]  # Only 2 books for Baum
+        books["baum"] = books["baum"][:2]  # Only 2 books for Baum
 
         vectorizer = create_count_vectorizer(books)
         vectorized = vectorize_books(books, vectorizer)

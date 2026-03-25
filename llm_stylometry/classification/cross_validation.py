@@ -1,8 +1,9 @@
 """Cross-validation for text classification experiments."""
 
-from typing import List, Tuple
 import itertools
 import random
+from typing import List, Tuple
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -13,7 +14,7 @@ from .classifier import OutputCodeClassifier
 def generate_cv_splits(
     vectorized_books: List[Tuple[str, str, np.ndarray]],
     max_splits: int = 10000,
-    seed: int = 42
+    seed: int = 42,
 ) -> List[Tuple[List[int], List[int]]]:
     """
     Generate leave-one-book-out cross-validation splits.
@@ -66,8 +67,7 @@ def generate_cv_splits(
         while len(test_index_sets) < max_splits:
             # Randomly select one book index from each author
             test_indices = tuple(
-                random.choice(author_book_indices[author])
-                for author in authors
+                random.choice(author_book_indices[author]) for author in authors
             )
             test_index_sets.add(test_indices)
 
@@ -88,7 +88,7 @@ def generate_cv_splits(
 def run_cross_validation(
     vectorized_books: List[Tuple[str, str, np.ndarray]],
     cv_splits: List[Tuple[List[int], List[int]]],
-    random_state: int = 42
+    random_state: int = 42,
 ) -> pd.DataFrame:
     """
     Run cross-validation and return results in long format.
@@ -147,15 +147,17 @@ def run_cross_validation(
             # Accuracy: 1.0 if correct, 0.0 if incorrect
             accuracy = 1.0 if predicted_author == true_author else 0.0
 
-            results.append({
-                'split_id': split_id,
-                'author': true_author,
-                'accuracy': accuracy,
-                'held_out_book_id': book_id,
-                'predicted_author': predicted_author,
-                'true_author': true_author,
-                'classifier': clf  # Store for weight extraction
-            })
+            results.append(
+                {
+                    "split_id": split_id,
+                    "author": true_author,
+                    "accuracy": accuracy,
+                    "held_out_book_id": book_id,
+                    "predicted_author": predicted_author,
+                    "true_author": true_author,
+                    "classifier": clf,  # Store for weight extraction
+                }
+            )
 
     # Convert to DataFrame (long format for seaborn)
     results_df = pd.DataFrame(results)

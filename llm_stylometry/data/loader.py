@@ -1,12 +1,12 @@
 """Data loading utilities for training and evaluation."""
 
+import logging
+import math
+import random
+from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader, Dataset
-import random
-import math
-from pathlib import Path
-import logging
-from ..core.constants import CLEANED_DATA_DIR
 
 logger = logging.getLogger(__name__)
 

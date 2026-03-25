@@ -8,20 +8,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "code"))
 
 import numpy as np
 from fit_sigmoid import (
-    sigmoid,
-    fit_sigmoid,
-    find_threshold_tokens,
-    load_per_author_accuracy,
     bootstrap_sigmoid_ci,
+    find_threshold_tokens,
+    fit_sigmoid,
+    load_per_author_accuracy,
+    sigmoid,
 )
 
 
 def _get_mean_data():
     """Load mean accuracy data for fitting tests."""
     _, mean_acc = load_per_author_accuracy()
-    mean_acc = mean_acc.sort_values('n_tokens')
-    tokens = np.array(mean_acc['n_tokens'].values, dtype=float)
-    accuracy = mean_acc['accuracy'].values
+    mean_acc = mean_acc.sort_values("n_tokens")
+    tokens = np.array(mean_acc["n_tokens"].values, dtype=float)
+    accuracy = mean_acc["accuracy"].values
     log_tokens = np.log10(tokens)
     return log_tokens, accuracy, tokens
 
@@ -54,7 +54,7 @@ def test_sigmoid_fit_residuals():
     popt, _ = fit_sigmoid(log_tokens, accuracy)
     y_pred = sigmoid(log_tokens, *popt)
     residuals = accuracy - y_pred
-    rmse = np.sqrt(np.mean(residuals ** 2))
+    rmse = np.sqrt(np.mean(residuals**2))
     max_residual = np.max(np.abs(residuals))
 
     assert rmse < 5.0, f"RMSE = {rmse:.2f}%, expected < 5%"
@@ -86,7 +86,9 @@ def test_find_threshold_tokens_95():
     assert 30000 < threshold < 70000, f"Threshold = {threshold:,.0f}, expected 30K-70K"
 
     predicted = sigmoid(np.log10(threshold), *popt)
-    assert abs(predicted - 95.0) < 0.1, f"Sigmoid at threshold = {predicted:.2f}%, expected ~95%"
+    assert (
+        abs(predicted - 95.0) < 0.1
+    ), f"Sigmoid at threshold = {predicted:.2f}%, expected ~95%"
 
 
 def test_find_threshold_tokens_above_asymptote():
@@ -97,7 +99,7 @@ def test_find_threshold_tokens_above_asymptote():
     upper = L + K
 
     result = find_threshold_tokens(popt, upper + 5)
-    assert result is None, f"Expected None for target > asymptote"
+    assert result is None, "Expected None for target > asymptote"
 
 
 def test_sigmoid_function_properties():
@@ -119,9 +121,19 @@ def test_per_author_accuracy_loads():
 
     assert len(per_author) > 0, "No per-author data loaded"
     assert len(mean_acc) > 0, "No mean accuracy data loaded"
-    assert set(per_author['author'].unique()) == set([
-        'baum', 'thompson', 'austen', 'dickens',
-        'fitzgerald', 'melville', 'twain', 'wells'
-    ]), "Missing authors"
-    assert len(mean_acc['n_tokens'].unique()) == 19, "Expected 19 token levels"
-    assert all(0 <= a <= 100 for a in per_author['accuracy']), "Accuracy should be 0-100%"
+    assert set(per_author["author"].unique()) == set(
+        [
+            "baum",
+            "thompson",
+            "austen",
+            "dickens",
+            "fitzgerald",
+            "melville",
+            "twain",
+            "wells",
+        ]
+    ), "Missing authors"
+    assert len(mean_acc["n_tokens"].unique()) == 19, "Expected 19 token levels"
+    assert all(
+        0 <= a <= 100 for a in per_author["accuracy"]
+    ), "Accuracy should be 0-100%"

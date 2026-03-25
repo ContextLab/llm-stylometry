@@ -7,11 +7,11 @@ NO MOCKS - all SSH tests use actual connections to test servers.
 """
 
 import json
-import os
-import pytest
 import subprocess
 import time
 from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -27,11 +27,11 @@ def ssh_credentials():
     if not cred_path.exists():
         pytest.skip("SSH credentials file not found at .ssh/credentials.json")
 
-    with open(cred_path, 'r') as f:
+    with open(cred_path, "r") as f:
         credentials = json.load(f)
 
     # Validate required fields
-    required_fields = ['server', 'username', 'password']
+    required_fields = ["server", "username", "password"]
     for field in required_fields:
         if field not in credentials:
             pytest.skip(f"Missing required field '{field}' in credentials file")
@@ -47,24 +47,31 @@ def ssh_connection_test(ssh_credentials):
     Uses sshpass for password authentication.
     Skips tests if connection fails.
     """
-    server = ssh_credentials['server']
-    username = ssh_credentials['username']
-    password = ssh_credentials['password']
+    server = ssh_credentials["server"]
+    username = ssh_credentials["username"]
+    password = ssh_credentials["password"]
 
     # Check if sshpass is installed
     try:
-        subprocess.run(['which', 'sshpass'], check=True, capture_output=True)
+        subprocess.run(["which", "sshpass"], check=True, capture_output=True)
     except subprocess.CalledProcessError:
-        pytest.skip("sshpass not installed. Install with: brew install sshpass (macOS) or apt-get install sshpass (Linux)")
+        pytest.skip(
+            "sshpass not installed. Install with: brew install sshpass (macOS) or apt-get install sshpass (Linux)"
+        )
 
     # Test connection
     try:
         cmd = [
-            'sshpass', '-p', password,
-            'ssh', '-o', 'StrictHostKeyChecking=no',
-            '-o', 'ConnectTimeout=10',
-            f'{username}@{server}',
-            'echo "Connection successful"'
+            "sshpass",
+            "-p",
+            password,
+            "ssh",
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "ConnectTimeout=10",
+            f"{username}@{server}",
+            'echo "Connection successful"',
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
 
@@ -72,7 +79,9 @@ def ssh_connection_test(ssh_credentials):
             pytest.skip(f"SSH connection failed: {result.stderr}")
 
         if "Connection successful" not in result.stdout:
-            pytest.skip(f"SSH connection test did not produce expected output: {result.stdout}")
+            pytest.skip(
+                f"SSH connection test did not produce expected output: {result.stdout}"
+            )
 
     except subprocess.TimeoutExpired:
         pytest.skip("SSH connection timed out")
@@ -90,9 +99,9 @@ def ssh_client(ssh_credentials, ssh_connection_test):
     Returns a function that executes commands via SSH.
     Uses real SSH connection, no mocks.
     """
-    server = ssh_credentials['server']
-    username = ssh_credentials['username']
-    password = ssh_credentials['password']
+    server = ssh_credentials["server"]
+    username = ssh_credentials["username"]
+    password = ssh_credentials["password"]
 
     def run_ssh_command(command, timeout=30):
         """
@@ -106,19 +115,19 @@ def ssh_client(ssh_credentials, ssh_connection_test):
             subprocess.CompletedProcess object
         """
         cmd = [
-            'sshpass', '-p', password,
-            'ssh', '-o', 'StrictHostKeyChecking=no',
-            '-o', 'ConnectTimeout=10',
-            f'{username}@{server}',
-            command
+            "sshpass",
+            "-p",
+            password,
+            "ssh",
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "ConnectTimeout=10",
+            f"{username}@{server}",
+            command,
         ]
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
         return result
 
@@ -148,7 +157,9 @@ def test_workspace(ssh_client):
     ssh_client(f"rm -rf {workspace}")
 
     # Cleanup: Kill any screen sessions from this test
-    ssh_client("screen -ls | grep -o '[0-9]*\\.llm_training' | cut -d. -f1 | xargs -I {} screen -X -S {}.llm_training quit || true")
+    ssh_client(
+        "screen -ls | grep -o '[0-9]*\\.llm_training' | cut -d. -f1 | xargs -I {} screen -X -S {}.llm_training quit || true"
+    )
 
     # Cleanup: Kill any remaining training processes
     ssh_client("pkill -f 'python.*generate_figures.py.*--train' || true")

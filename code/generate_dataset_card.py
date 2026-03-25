@@ -7,74 +7,78 @@ Creates professional README.md files for HuggingFace dataset repositories.
 
 import argparse
 from pathlib import Path
-from book_titles import BOOK_TITLES, get_book_title
 
+from book_titles import get_book_title
 
 # Author metadata (shared with model card generator)
 AUTHOR_METADATA = {
-    'austen': {
-        'full_name': 'Jane Austen',
-        'years': '1775-1817',
-        'period': '19th-century England',
-        'notable_works': 'Pride and Prejudice, Sense and Sensibility, and Emma',
+    "austen": {
+        "full_name": "Jane Austen",
+        "years": "1775-1817",
+        "period": "19th-century England",
+        "notable_works": "Pride and Prejudice, Sense and Sensibility, and Emma",
     },
-    'baum': {
-        'full_name': 'L. Frank Baum',
-        'years': '1856-1919',
-        'period': 'late 19th to early 20th century America',
-        'notable_works': 'The Wonderful Wizard of Oz series (14 books)',
+    "baum": {
+        "full_name": "L. Frank Baum",
+        "years": "1856-1919",
+        "period": "late 19th to early 20th century America",
+        "notable_works": "The Wonderful Wizard of Oz series (14 books)",
     },
-    'dickens': {
-        'full_name': 'Charles Dickens',
-        'years': '1812-1870',
-        'period': 'Victorian England',
-        'notable_works': 'A Tale of Two Cities, Great Expectations, Oliver Twist, and David Copperfield',
+    "dickens": {
+        "full_name": "Charles Dickens",
+        "years": "1812-1870",
+        "period": "Victorian England",
+        "notable_works": "A Tale of Two Cities, Great Expectations, Oliver Twist, and David Copperfield",
     },
-    'fitzgerald': {
-        'full_name': 'F. Scott Fitzgerald',
-        'years': '1896-1940',
-        'period': 'Jazz Age America',
-        'notable_works': 'The Great Gatsby, Tender Is the Night, and This Side of Paradise',
+    "fitzgerald": {
+        "full_name": "F. Scott Fitzgerald",
+        "years": "1896-1940",
+        "period": "Jazz Age America",
+        "notable_works": "The Great Gatsby, Tender Is the Night, and This Side of Paradise",
     },
-    'melville': {
-        'full_name': 'Herman Melville',
-        'years': '1819-1891',
-        'period': '19th-century America',
-        'notable_works': 'Moby-Dick, Bartleby the Scrivener, and Typee',
+    "melville": {
+        "full_name": "Herman Melville",
+        "years": "1819-1891",
+        "period": "19th-century America",
+        "notable_works": "Moby-Dick, Bartleby the Scrivener, and Typee",
     },
-    'thompson': {
-        'full_name': 'Ruth Plumly Thompson',
-        'years': '1891-1976',
-        'period': 'early-to-mid 20th century America',
-        'notable_works': 'The Oz book series (books 15-35, continuing Baum\'s work)',
+    "thompson": {
+        "full_name": "Ruth Plumly Thompson",
+        "years": "1891-1976",
+        "period": "early-to-mid 20th century America",
+        "notable_works": "The Oz book series (books 15-35, continuing Baum's work)",
     },
-    'twain': {
-        'full_name': 'Mark Twain',
-        'years': '1835-1910',
-        'period': '19th-century America',
-        'notable_works': 'Adventures of Huckleberry Finn, The Adventures of Tom Sawyer, and The Innocents Abroad',
+    "twain": {
+        "full_name": "Mark Twain",
+        "years": "1835-1910",
+        "period": "19th-century America",
+        "notable_works": "Adventures of Huckleberry Finn, The Adventures of Tom Sawyer, and The Innocents Abroad",
     },
-    'wells': {
-        'full_name': 'H.G. Wells',
-        'years': '1866-1946',
-        'period': 'late 19th to early 20th century England',
-        'notable_works': 'The Time Machine, The War of the Worlds, and The Invisible Man',
+    "wells": {
+        "full_name": "H.G. Wells",
+        "years": "1866-1946",
+        "period": "late 19th to early 20th century England",
+        "notable_works": "The Time Machine, The War of the Worlds, and The Invisible Man",
     },
 }
 
 
 def get_dataset_stats(data_dir):
     """Calculate dataset statistics."""
-    txt_files = list(data_dir.glob('*.txt'))
-    total_chars = sum(len(f.read_text(encoding='utf-8', errors='ignore')) for f in txt_files)
-    total_words = sum(len(f.read_text(encoding='utf-8', errors='ignore').split()) for f in txt_files)
+    txt_files = list(data_dir.glob("*.txt"))
+    total_chars = sum(
+        len(f.read_text(encoding="utf-8", errors="ignore")) for f in txt_files
+    )
+    total_words = sum(
+        len(f.read_text(encoding="utf-8", errors="ignore").split()) for f in txt_files
+    )
 
     return {
-        'num_books': len(txt_files),
-        'total_chars': total_chars,
-        'total_words': total_words,
-        'avg_chars_per_book': total_chars // len(txt_files) if txt_files else 0,
-        'file_list': sorted([f.name for f in txt_files])
+        "num_books": len(txt_files),
+        "total_chars": total_chars,
+        "total_words": total_words,
+        "avg_chars_per_book": total_chars // len(txt_files) if txt_files else 0,
+        "file_list": sorted([f.name for f in txt_files]),
     }
 
 
@@ -94,14 +98,14 @@ def generate_dataset_card(author, data_dir):
 
     # Build file list table with book titles
     file_list_md = "| File | Title |\n|------|-------|\n"
-    for fname in stats['file_list']:
+    for fname in stats["file_list"]:
         title = get_book_title(fname)
         file_list_md += f"| `{fname}` | {title} |\n"
 
     # Determine size category
-    if stats['num_books'] < 10:
+    if stats["num_books"] < 10:
         size_cat = "n<1K"
-    elif stats['num_books'] < 100:
+    elif stats["num_books"] < 100:
         size_cat = "1K<n<10K"
     else:
         size_cat = "10K<n<100K"
@@ -366,22 +370,21 @@ Explore datasets for all 8 authors in the study:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate HuggingFace dataset card for author corpus'
+        description="Generate HuggingFace dataset card for author corpus"
     )
     parser.add_argument(
-        '--author',
+        "--author",
         required=True,
         choices=list(AUTHOR_METADATA.keys()),
-        help='Author name'
+        help="Author name",
     )
     parser.add_argument(
-        '--data-dir',
+        "--data-dir",
         required=True,
-        help='Path to data directory (e.g., data/cleaned/baum)'
+        help="Path to data directory (e.g., data/cleaned/baum)",
     )
     parser.add_argument(
-        '--output',
-        help='Output path for dataset card (default: {data_dir}/README.md)'
+        "--output", help="Output path for dataset card (default: {data_dir}/README.md)"
     )
 
     args = parser.parse_args()
@@ -393,7 +396,7 @@ def main():
         return 1
 
     # Verify has text files
-    txt_files = list(data_dir.glob('*.txt'))
+    txt_files = list(data_dir.glob("*.txt"))
     if not txt_files:
         print(f"ERROR: No .txt files found in {data_dir}")
         return 1
@@ -406,10 +409,10 @@ def main():
     card = generate_dataset_card(args.author, data_dir)
 
     # Determine output path
-    output_path = Path(args.output) if args.output else data_dir / 'README.md'
+    output_path = Path(args.output) if args.output else data_dir / "README.md"
 
     # Write dataset card
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(card)
 
     print(f"Dataset card saved to: {output_path}")
@@ -419,4 +422,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

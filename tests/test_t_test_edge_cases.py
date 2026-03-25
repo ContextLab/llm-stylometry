@@ -1,22 +1,23 @@
 #!/usr/bin/env python
 """Test t-test visualization edge cases with real data scenarios."""
 
-import pytest
-import sys
-from pathlib import Path
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import tempfile
 import logging
+import sys
+import tempfile
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from llm_stylometry.visualization.t_tests import (
-    generate_t_test_figure,
+    calculate_t_statistics,
     generate_t_test_avg_figure,
-    calculate_t_statistics
+    generate_t_test_figure,
 )
 
 
@@ -46,24 +47,28 @@ class TestTTestEdgeCases:
             for author in authors:
                 for epoch in range(1, 6):
                     # Only 1 sample per group - insufficient for t-test
-                    data.append({
-                        "train_author": author.lower(),
-                        "loss_dataset": author.lower(),
-                        "epochs_completed": epoch,
-                        "loss_value": 2.5,
-                        "model_name": f"{author.lower()}_seed=1",
-                        "seed": 1
-                    })
+                    data.append(
+                        {
+                            "train_author": author.lower(),
+                            "loss_dataset": author.lower(),
+                            "epochs_completed": epoch,
+                            "loss_value": 2.5,
+                            "model_name": f"{author.lower()}_seed=1",
+                            "seed": 1,
+                        }
+                    )
                     # Other author - also only 1 sample
                     other = "thompson" if author == "Baum" else "baum"
-                    data.append({
-                        "train_author": author.lower(),
-                        "loss_dataset": other,
-                        "epochs_completed": epoch,
-                        "loss_value": 3.0,
-                        "model_name": f"{author.lower()}_seed=1",
-                        "seed": 1
-                    })
+                    data.append(
+                        {
+                            "train_author": author.lower(),
+                            "loss_dataset": other,
+                            "epochs_completed": epoch,
+                            "loss_value": 3.0,
+                            "model_name": f"{author.lower()}_seed=1",
+                            "seed": 1,
+                        }
+                    )
             return pd.DataFrame(data)
 
         elif scenario == "mixed_nan":
@@ -74,23 +79,27 @@ class TestTTestEdgeCases:
                     # Early epochs: Only 1 sample (will produce NaN)
                     n_samples = 1 if epoch <= 2 else 3
                     for seed in range(1, n_samples + 1):
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": 2.5 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": 2.5 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": 3.0 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": 3.0 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         elif scenario == "all_infinite":
@@ -100,23 +109,27 @@ class TestTTestEdgeCases:
                 for epoch in range(1, 6):
                     for seed in range(1, 4):
                         # Identical values - zero variance
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": 2.5,  # Exactly identical
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": 2.5,  # Exactly identical
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": 3.0,  # Exactly identical
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": 3.0,  # Exactly identical
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         elif scenario == "mixed_infinite":
@@ -133,23 +146,27 @@ class TestTTestEdgeCases:
                             loss_true = 2.5 + np.random.normal(0, 0.1)
                             loss_other = 3.0 + np.random.normal(0, 0.1)
 
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": loss_true,
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": loss_true,
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": loss_other,
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": loss_other,
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         elif scenario == "empty_data":
@@ -159,23 +176,27 @@ class TestTTestEdgeCases:
                 # Only epochs 1, 3, 5 have data; epochs 2, 4 are missing
                 for epoch in [1, 3, 5]:
                     for seed in range(1, 4):
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": 2.5 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": 2.5 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": 3.0 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": 3.0 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         elif scenario == "extreme_outliers":
@@ -192,23 +213,27 @@ class TestTTestEdgeCases:
                             loss_true = 2.5 + np.random.normal(0, 0.1)
                             loss_other = 3.0 + np.random.normal(0, 0.1)
 
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": loss_true,
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": loss_true,
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": loss_other,
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": loss_other,
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         elif scenario == "small_samples":
@@ -218,23 +243,27 @@ class TestTTestEdgeCases:
                 for epoch in range(1, 6):
                     # Exactly 2 samples - minimum required
                     for seed in range(1, 3):
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": 2.5 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": 2.5 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": 3.0 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": 3.0 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         elif scenario == "normal":
@@ -243,23 +272,27 @@ class TestTTestEdgeCases:
             for author in authors:
                 for epoch in range(1, 101):  # More epochs
                     for seed in range(1, 11):  # 10 seeds
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": author.lower(),
-                            "epochs_completed": epoch,
-                            "loss_value": 2.5 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": author.lower(),
+                                "epochs_completed": epoch,
+                                "loss_value": 2.5 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
                         other = "thompson" if author == "Baum" else "baum"
-                        data.append({
-                            "train_author": author.lower(),
-                            "loss_dataset": other,
-                            "epochs_completed": epoch,
-                            "loss_value": 3.0 + np.random.normal(0, 0.1),
-                            "model_name": f"{author.lower()}_seed={seed}",
-                            "seed": seed
-                        })
+                        data.append(
+                            {
+                                "train_author": author.lower(),
+                                "loss_dataset": other,
+                                "epochs_completed": epoch,
+                                "loss_value": 3.0 + np.random.normal(0, 0.1),
+                                "model_name": f"{author.lower()}_seed={seed}",
+                                "seed": seed,
+                            }
+                        )
             return pd.DataFrame(data)
 
         else:
@@ -275,9 +308,7 @@ class TestTTestEdgeCases:
 
         # Should not raise ValueError
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should be created even with all NaN values"
@@ -300,9 +331,7 @@ class TestTTestEdgeCases:
         output_path = Path(self.temp_dir) / "test_mixed_nan.pdf"
 
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should be created with mixed NaN/valid"
@@ -326,9 +355,7 @@ class TestTTestEdgeCases:
 
         # Should not raise ValueError
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should be created even with all Inf values"
@@ -351,9 +378,7 @@ class TestTTestEdgeCases:
         output_path = Path(self.temp_dir) / "test_mixed_inf.pdf"
 
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should handle mixed Inf/valid"
@@ -375,9 +400,7 @@ class TestTTestEdgeCases:
         output_path = Path(self.temp_dir) / "test_empty.pdf"
 
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should handle missing epochs"
@@ -399,9 +422,7 @@ class TestTTestEdgeCases:
         output_path = Path(self.temp_dir) / "test_outliers.pdf"
 
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should handle extreme outliers"
@@ -424,9 +445,7 @@ class TestTTestEdgeCases:
         output_path = Path(self.temp_dir) / "test_small_n.pdf"
 
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Figure should handle minimum sample size"
@@ -449,9 +468,7 @@ class TestTTestEdgeCases:
 
         # Should not raise ValueError
         fig = generate_t_test_avg_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Average figure should handle all NaN"
@@ -473,9 +490,7 @@ class TestTTestEdgeCases:
         output_path = Path(self.temp_dir) / "test_avg_mixed.pdf"
 
         fig = generate_t_test_avg_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None, "Average figure should handle mixed data"
@@ -503,17 +518,20 @@ class TestTTestEdgeCases:
 
             # Should have debug messages about insufficient data
             insufficient_data_logs = [
-                msg for msg in log_messages
+                msg
+                for msg in log_messages
                 if "Insufficient data for t-test" in msg or "n_true=1" in msg
             ]
 
-            assert len(insufficient_data_logs) > 0, \
-                "Should log warnings about insufficient sample sizes"
+            assert (
+                len(insufficient_data_logs) > 0
+            ), "Should log warnings about insufficient sample sizes"
 
             # Verify log message format
             for msg in insufficient_data_logs:
-                assert "need at least 2 samples per group" in msg or "n_true=1" in msg, \
-                    f"Log message should explain minimum sample requirement: {msg}"
+                assert (
+                    "need at least 2 samples per group" in msg or "n_true=1" in msg
+                ), f"Log message should explain minimum sample requirement: {msg}"
 
     def test_normal_data_baseline(self):
         """Test 11: Verify normal data still works correctly."""
@@ -525,19 +543,21 @@ class TestTTestEdgeCases:
 
         # Should work without issues
         fig = generate_t_test_figure(
-            data_path=str(data_path),
-            output_path=str(output_path),
-            show_legend=False
+            data_path=str(data_path), output_path=str(output_path), show_legend=False
         )
 
         assert fig is not None
         assert output_path.exists()
-        assert output_path.stat().st_size > 1000, "Normal data should produce reasonable plot"
+        assert (
+            output_path.stat().st_size > 1000
+        ), "Normal data should produce reasonable plot"
 
         # Should have many valid t-statistics
         t_raws_df, _ = calculate_t_statistics(df, max_epochs=100)
-        valid_t_values = t_raws_df['t_raw'].replace([np.inf, -np.inf], np.nan).dropna()
-        assert len(valid_t_values) > 100, "Should have many valid t-statistics with normal data"
+        valid_t_values = t_raws_df["t_raw"].replace([np.inf, -np.inf], np.nan).dropna()
+        assert (
+            len(valid_t_values) > 100
+        ), "Should have many valid t-statistics with normal data"
 
         plt.close(fig)
 
@@ -545,7 +565,8 @@ class TestTTestEdgeCases:
     def teardown_class(cls):
         """Clean up temporary directory."""
         import shutil
-        if hasattr(cls, 'temp_dir') and Path(cls.temp_dir).exists():
+
+        if hasattr(cls, "temp_dir") and Path(cls.temp_dir).exists():
             shutil.rmtree(cls.temp_dir)
 
 

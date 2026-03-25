@@ -1,8 +1,9 @@
-from tokenizer_utils import get_tokenizer
-from pathlib import Path
-from scipy.stats import entropy
 from collections import Counter
+from pathlib import Path
+
 from constants import AUTHORS
+from scipy.stats import entropy
+from tokenizer_utils import get_tokenizer
 from tqdm import tqdm
 
 

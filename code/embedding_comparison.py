@@ -23,9 +23,7 @@ import argparse
 import csv
 import json
 import logging
-import os
 import sys
-import warnings
 from collections import Counter
 from pathlib import Path
 
@@ -39,20 +37,21 @@ logger = logging.getLogger(__name__)
 
 # Models to evaluate (MTEB leaderboard selections)
 MODELS = [
-    "nomic-ai/nomic-embed-text-v1.5",   # 137M params, MTEB 44.1
-    "BAAI/bge-m3",                        # 568M params, MTEB 59.6
-    "Qwen/Qwen3-Embedding-4B",           # 4.0B params, MTEB 69.5
+    "nomic-ai/nomic-embed-text-v1.5",  # 137M params, MTEB 44.1
+    "BAAI/bge-m3",  # 568M params, MTEB 59.6
+    "Qwen/Qwen3-Embedding-4B",  # 4.0B params, MTEB 69.5
 ]
 
-CHUNK_SIZE = 1024       # tokens per chunk
-CHUNK_OVERLAP = 128     # token overlap between chunks
-MIN_CHUNKS = 3          # minimum chunks per book (warn if fewer)
+CHUNK_SIZE = 1024  # tokens per chunk
+CHUNK_OVERLAP = 128  # token overlap between chunks
+MIN_CHUNKS = 3  # minimum chunks per book (warn if fewer)
 RESULTS_DIR = Path("data/embedding_results")
 
 
 def get_tokenizer():
     """Get GPT-2 tokenizer for consistent chunking."""
     from transformers import GPT2Tokenizer
+
     return GPT2Tokenizer.from_pretrained("gpt2")
 
 
@@ -105,12 +104,14 @@ def load_books():
             continue
         for txt_file in sorted(author_dir.glob("*.txt")):
             text = txt_file.read_text(encoding="utf-8")
-            books.append({
-                "author": author,
-                "book_id": txt_file.stem,
-                "text": text,
-                "path": str(txt_file),
-            })
+            books.append(
+                {
+                    "author": author,
+                    "book_id": txt_file.stem,
+                    "text": text,
+                    "path": str(txt_file),
+                }
+            )
     return books
 
 
@@ -153,7 +154,9 @@ def classify_book_chunks(held_out_embeddings, train_embeddings, train_authors):
 
     nearest_idx = np.argmax(similarities, axis=1)
     predicted_authors = [train_authors[i] for i in nearest_idx]
-    similarity_scores = [similarities[i, nearest_idx[i]] for i in range(len(nearest_idx))]
+    similarity_scores = [
+        similarities[i, nearest_idx[i]] for i in range(len(nearest_idx))
+    ]
 
     return predicted_authors, similarity_scores
 
@@ -186,7 +189,9 @@ def compute_book_result(true_author, chunk_predictions, chunk_similarities):
         modal_author = max(avg_sims, key=avg_sims.get)
 
     purity = counts[modal_author] / len(chunk_predictions)
-    chunk_accuracy = sum(1 for p in chunk_predictions if p == true_author) / len(chunk_predictions)
+    chunk_accuracy = sum(1 for p in chunk_predictions if p == true_author) / len(
+        chunk_predictions
+    )
 
     # Runner-up
     if len(counts) > 1:
@@ -261,17 +266,23 @@ def run_embedding_comparison(model_name, books=None, tokenizer=None):
             emb = np.load(cache_file)
             book_embeddings.append(emb)
             if i % 10 == 0:
-                logger.info(f"  Book {i+1}/{len(books)} ({books[i]['author']}/{books[i]['book_id']}) — loaded from cache")
+                logger.info(
+                    f"  Book {i+1}/{len(books)} ({books[i]['author']}/{books[i]['book_id']}) — loaded from cache"
+                )
             continue
 
         if i % 10 == 0:
-            logger.info(f"  Embedding book {i+1}/{len(books)} ({books[i]['author']}/{books[i]['book_id']}, {len(chunks)} chunks)")
+            logger.info(
+                f"  Embedding book {i+1}/{len(books)} ({books[i]['author']}/{books[i]['book_id']}, {len(chunks)} chunks)"
+            )
         try:
             emb = embed_chunks(chunks, model)
             np.save(cache_file, emb)
             book_embeddings.append(emb)
         except Exception as e:
-            logger.error(f"OOM or error embedding {books[i]['author']}/{books[i]['book_id']}: {e}")
+            logger.error(
+                f"OOM or error embedding {books[i]['author']}/{books[i]['book_id']}: {e}"
+            )
             book_embeddings.append(None)
 
     # Leave-one-out classification
@@ -301,9 +312,7 @@ def run_embedding_comparison(model_name, books=None, tokenizer=None):
         )
 
         # Compute book-level result
-        result = compute_book_result(
-            held_out_book["author"], chunk_preds, chunk_sims
-        )
+        result = compute_book_result(held_out_book["author"], chunk_preds, chunk_sims)
         result["book_id"] = held_out_book["book_id"]
         result["model"] = model_name
         results.append(result)
@@ -326,8 +335,16 @@ def save_results(results, model_name):
     # Save book-level results
     csv_path = model_dir / "book_results.csv"
     fieldnames = [
-        "model", "book_id", "true_author", "modal_author", "correct",
-        "purity", "chunk_accuracy", "runner_up", "margin", "n_chunks",
+        "model",
+        "book_id",
+        "true_author",
+        "modal_author",
+        "correct",
+        "purity",
+        "chunk_accuracy",
+        "runner_up",
+        "margin",
+        "n_chunks",
     ]
     with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
@@ -351,6 +368,7 @@ def load_cached_results(model_name):
         return None
 
     import pandas as pd
+
     df = pd.read_csv(csv_path)
     results = df.to_dict("records")
     # Convert string booleans
@@ -401,29 +419,52 @@ def print_summary(summary):
     print(f"\n{'='*60}")
     print(f"Model: {summary['model']}")
     print(f"{'='*60}")
-    print(f"Overall accuracy: {summary['correct']}/{summary['total']} ({summary['overall_accuracy']:.1f}%)")
+    print(
+        f"Overall accuracy: {summary['correct']}/{summary['total']} ({summary['overall_accuracy']:.1f}%)"
+    )
     print(f"Average purity:   {summary['avg_purity']:.3f}")
-    print(f"\nPer-author results:")
-    print(f"{'Author':<12} {'Accuracy':>10} {'Correct':>8} {'Total':>6} {'Avg Purity':>12}")
+    print("\nPer-author results:")
+    print(
+        f"{'Author':<12} {'Accuracy':>10} {'Correct':>8} {'Total':>6} {'Avg Purity':>12}"
+    )
     print("-" * 50)
     for author in AUTHORS:
         if author in summary["per_author"]:
             a = summary["per_author"][author]
-            print(f"{author.capitalize():<12} {a['accuracy']:>9.1f}% {a['correct']:>8}/{a['total']:<6} {a['avg_purity']:>11.3f}")
+            print(
+                f"{author.capitalize():<12} {a['accuracy']:>9.1f}% {a['correct']:>8}/{a['total']:<6} {a['avg_purity']:>11.3f}"
+            )
 
     # Show misclassifications
-    misclassifications = {k: v for k, v in summary["confusion"].items() if k.split("→")[0] != k.split("→")[1]}
+    misclassifications = {
+        k: v
+        for k, v in summary["confusion"].items()
+        if k.split("→")[0] != k.split("→")[1]
+    }
     if misclassifications:
-        print(f"\nMisclassifications:")
+        print("\nMisclassifications:")
         for k, v in sorted(misclassifications.items(), key=lambda x: -x[1]):
             print(f"  {k}: {v}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Embedding-based authorship attribution comparison")
-    parser.add_argument("--model", type=str, default=None, help="Run a single model (HuggingFace name)")
-    parser.add_argument("--figures-only", action="store_true", help="Generate figures from cached results only")
-    parser.add_argument("--output", type=str, default="paper/figs/source", help="Output directory for figures")
+    parser = argparse.ArgumentParser(
+        description="Embedding-based authorship attribution comparison"
+    )
+    parser.add_argument(
+        "--model", type=str, default=None, help="Run a single model (HuggingFace name)"
+    )
+    parser.add_argument(
+        "--figures-only",
+        action="store_true",
+        help="Generate figures from cached results only",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="paper/figs/source",
+        help="Output directory for figures",
+    )
     args = parser.parse_args()
 
     models_to_run = [args.model] if args.model else MODELS
@@ -434,7 +475,9 @@ def main():
         for model_name in models_to_run:
             results = load_cached_results(model_name)
             if results is None:
-                logger.error(f"No cached results for {model_name}. Run without --figures-only first.")
+                logger.error(
+                    f"No cached results for {model_name}. Run without --figures-only first."
+                )
                 continue
             summary = compute_summary(results, model_name)
             all_results[model_name] = {"results": results, "summary": summary}
@@ -482,8 +525,8 @@ def generate_figures(all_results, output_dir):
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from llm_stylometry.visualization.embedding_comparison import (
         generate_embedding_comparison_figure,
-        generate_embedding_purity_figure,
         generate_embedding_confusion_figure,
+        generate_embedding_purity_figure,
     )
 
     summaries = [v["summary"] for v in all_results.values()]

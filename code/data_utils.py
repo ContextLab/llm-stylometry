@@ -1,11 +1,12 @@
-import torch
-from torch.utils.data import DataLoader, Dataset
-import random
-import math
-from pathlib import Path
 import logging
-from constants import CLEANED_DATA_DIR, AUTHORS
+import math
+import random
+from pathlib import Path
+
+import torch
+from constants import AUTHORS, CLEANED_DATA_DIR
 from tokenizer_utils import get_tokenizer
+from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
 
