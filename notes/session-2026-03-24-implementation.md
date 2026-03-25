@@ -106,12 +106,25 @@
 5. Finalize response letter (remove placeholders)
 6. Final verification pass (tests, formatting, paper compile)
 
-### Git log (6 commits on 001-paper-revision-analyses)
+### All tests pass: 15/15 (sigmoid 7, embedding 7, ntokens 1)
+
+### Git log (8 commits on 001-paper-revision-analyses)
 1. Merge PR #51 feature/vary-dataset-size
 2. Add dataset-size analysis, sigmoid fit, embedding comparison, and paper updates
 3. Add remote scripts for ntokens dataset-size sweep
 4. Update session notes, speckit artifacts, and constitution
 5. Update CLI, stats script, and README for new analyses
+6. Update session notes with final status
+7. Update paper text with embedding results (nomic 81%, bge-m3 76.2%)
+
+### WHEN QWEN3-4B FINISHES (process is checkpointed):
+1. Check results: cat data/embedding_results/Qwen_Qwen3-Embedding-4B/summary.json | python3 -m json.tool
+2. Fill PLACEHOLDER in paper/main.tex line ~546 (Qwen accuracy %)
+3. Fill PLACEHOLDER in paper/supplement.tex line ~324 (Qwen accuracy + purity)
+4. Regenerate figures: python code/embedding_comparison.py --figures-only
+5. PI review of embedding figures
+6. Verify paper compiles: cd paper && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
+7. Final commit and push
 
 ### Key files created/modified this session
 - code/fit_sigmoid.py — sigmoid fit (redesigned: per-author dots, bootstrap CI over authors)
