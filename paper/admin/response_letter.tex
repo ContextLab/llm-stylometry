@@ -1,174 +1,266 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
-\usepackage{xcolor}
 \usepackage{enumitem}
 
-\newcommand{\response}[1]{\textcolor{blue}{#1}}
-
-\title{Point-by-Point Response to Reviews\\
-\large ``A Stylometric Application of Large Language Models''\\
-Computational Linguistics}
-\author{Harrison F. Stropkay, Jiayi Chen, Mohammad J. Latifi,\\
-Daniel N. Rockmore, Jeremy R. Manning}
-\date{\today}
-
 \begin{document}
-\maketitle
 
-We thank the editor, action editor, and reviewers for their thoughtful and
-constructive feedback. We have substantially revised the manuscript to address
-the points raised, including two new analyses and expanded discussion. Below we
-respond to each point in detail. Our responses are shown in \response{blue}.
+\begin{flushright}
+Jeremy R. Manning \\
+Dartmouth College \\
+Department of Psychological \& Brain Sciences \\
+Hanover, NH~~03755 \\[1em]
+\today
+\end{flushright}
 
-\textbf{Note on citation:} Several reviews reference ``Huang et al.\ (2024).''
-This paper has since been published as Huang et al.\ (2025) in \textit{PLoS
-ONE} (doi:10.1371/journal.pone.0327081). We use the 2025 citation throughout.
+\noindent To the editors of \textit{Computational Linguistics}:
 
-\section*{Response to the Editor and Action Editor}
+\bigskip
 
-The action editor suggested several possible analyses, including: (a) how much
-data is needed to train the model; (b) evaluation on existing benchmarks; (c)
-the effect of varying training corpus sizes across authors; (d) robustness to
-different genres/topics; and other directions.
+\noindent We have enclosed our revised manuscript entitled \textit{A Stylometric Application of Large Language Models}. We appreciate the thoughtful and constructive feedback from the editor, action editor, and reviewers.
 
-\begin{enumerate}[label=\textbf{(\alph*)}]
-\item \textbf{How much data is needed?}
+The primary concerns raised by the reviewers centered on (a) the relationship between our approach and concurrent work by Huang et al.\ (2025; referred to as Huang et al.\ 2024 in the reviewer comments, now published in \textit{PLoS ONE}), (b) the lack of evaluation on standard authorship attribution benchmarks, and (c) the suggestion to use more modern or larger language models. We have substantially revised the manuscript to address these concerns, including two new analyses:
 
-\response{We have added a new analysis systematically varying the number of
-training tokens per author from 2,500 to 643,041 (new Section ``Training data requirements,'' new Figure). We
-fit a four-parameter sigmoid to attribution accuracy as a function of
-$\log_{10}$ training tokens ($R^2 = 0.979$) and estimated that $\geq 95\%$
-expected accuracy requires approximately 51,000 tokens per author (bootstrap
-95\% CI: 12,000--70,000 tokens). This analysis is based on 1,520 newly trained
-models (8 authors $\times$ 10 seeds $\times$ 19 token levels).}
-
-\item \textbf{Evaluation on existing benchmarks.}
-
-\response{We respectfully note that the data requirements of our approach make
-standard authorship attribution benchmarks infeasible. Our dataset-size
-analysis shows that approximately 51,000 tokens per author are needed for
-reliable attribution when training models from scratch. The benchmarks used by
-Huang et al.\ (2025)---Blogs50 (avg.\ 112 tokens/text), CCAT50 (avg.\ 506
-tokens/text), Guardian (avg.\ 1,052 tokens/text), and IMDB62 (avg.\ 349
-tokens/text)---provide orders of magnitude less text per author than our method
-requires. This is not a limitation of our method \textit{per se}, but rather a
-consequence of the fundamental difference between fine-tuning pre-trained
-models (which inherit general language representations) and training from
-scratch (which must learn all patterns from the author's text alone).}
-
-\item \textbf{Varying training corpus sizes across authors.}
-
-\response{Our new dataset-size analysis addresses this directly. We found
-substantial variability across authors: some (e.g., Austen, Baum) were
-reliably attributed even with 2,500 tokens, while others (e.g., Melville,
-Twain) required considerably more data. These differences are captured in
-the new figures.}
-
-\item \textbf{Robustness to different genres/topics.}
-
-\response{Our existing Oz book analysis provides some evidence of cross-topic
-robustness (models trained on fantasy correctly attribute a contested text),
-and we have expanded our discussion of this limitation. Systematic
-cross-domain evaluation is an important direction for future work, but is
-beyond the scope of the current study given that it would require collecting
-and curating new multi-genre corpora for the same authors.}
+\begin{enumerate}
+\item A systematic dataset-size analysis characterizing the relationship between training corpus size and attribution accuracy (1,520 newly trained models), including a formal sigmoid fit estimating that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author.
+\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) do not match the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models.
 \end{enumerate}
 
-\response{Additionally, we have added a comparison with pre-trained text
-embedding models to contextualize our approach relative to existing text
-representation methods. Using three models from the MTEB leaderboard (137M to
-4.0B parameters), embedding-based nearest-neighbor classification achieved at
-most 81\% book-level accuracy on our 84-book corpus, compared to 100\% for our
-approach using much smaller models (0.8M parameters each). This demonstrates
-that author-specific language models capture stylistic patterns that generic
-text embeddings do not.}
+We have carefully addressed each of the comments from the reviewers, and we provide detailed point-by-point responses on the following pages.  The reviewers' comments are \textit{italicized} and our responses are in \textbf{bold}.
 
-\section*{Response to Reviewer 1}
+\bigskip
 
-\textbf{R1 Main concern:} Incremental novelty relative to Huang et al.\ (2025).
+\noindent Thank you for considering our revised manuscript.
 
-\response{We have substantially expanded our discussion of the relationship
-to Huang et al.\ (2025) and clarified the key methodological distinction:
-we train models entirely from scratch, whereas Huang et al.\ fine-tune
-pre-trained GPT-2. This distinction has important implications for data
-purity. Fine-tuning inherits representations learned during pre-training on
-WebText (a 40 GB web corpus), meaning that the ``held-out'' evaluation data
-may have been seen during pre-training. Training from scratch eliminates this
-contamination risk entirely, because the only text the model has ever seen is
-the author's own corpus. This is particularly important for forensic
-applications.}
+\bigskip
 
-\response{The two approaches also operate in fundamentally different data
-regimes. Our dataset-size analysis shows that training from scratch requires
-approximately 51,000 tokens per author for $\geq 95\%$ accuracy, whereas
-fine-tuning leverages pre-trained representations and can work with much
-shorter texts. We view these as complementary contributions: Huang et al.\
-demonstrate that fine-tuning is effective for short-text benchmarks, while we
-demonstrate that training from scratch---with its stronger data purity
-guarantees---is effective for longer texts.}
+\noindent Sincerely,
 
-\textbf{R1:} No comparison to standard authorship benchmarks (Blogs50, CCAT50,
-Guardian, IMDB62).
+\noindent Jeremy R. Manning
 
-\response{As detailed above, these benchmarks are infeasible for our approach
-due to their short text lengths (112--1,052 tokens per text vs.\ our
-requirement of $\sim$51,000 tokens per author). Rather than force our method
-into an unsuitable evaluation regime, we have instead: (a) formally
-characterized the data requirements of our approach (the new figures), and (b) added
-a comparison with text embedding methods that can operate on the same data as
-our approach.}
+\newpage
 
-\section*{Response to Reviewer 2}
+%% ============================================================
+%% ACTION EDITOR
+%% ============================================================
 
-\textbf{R2:} Should evaluate using more modern models (LLaMA, Qwen, DeepSeek)
-or use continued pretraining/LoRA.
+\noindent\textbf{\large Response to the Action Editor}
 
-\response{We respectfully push back on this suggestion for two reasons.
-First, if we fine-tune a pre-trained model (whether GPT-2, LLaMA, or any
-other), we are essentially adopting the same approach as Huang et al.\ (2025),
-with the same data contamination concerns described above. The value of our
-approach lies specifically in training from scratch.
+\bigskip
 
-Second, our method already achieves 100\% attribution accuracy on our
-8-author corpus using a small GPT-2 architecture (0.8M non-embedding
-parameters). If the goal is reliable authorship attribution, a more powerful
-model is unnecessary---the bottleneck is not model capacity but the amount of
-author-specific training data available (as demonstrated by our dataset-size
-analysis). Using a larger model would increase computational cost without
-improving attribution accuracy for our evaluation setting.
+\noindent\textit{This submission proposes to utilize large language models as kind of stylometric measure for applications such as author attribution. For each studied author, this method will train a GPT-2 model from scratch using books of the author, and then uses cross-entropy loss on held-out texts as a proxy for stylistic similarity. The underlying assumption is that the model trained on author A's books should assign lower loss to A's text than others'. This is a simple but effective method, which is supported by experiments on 8 English-language writers during 19th--20th century, with 100\% attribution accuracy.}
 
-That said, we acknowledge that for more challenging settings (e.g., hundreds of
-authors with similar styles), larger models might offer benefits, and we
-mention this as a future direction.}
+\noindent\textit{As indicated by the reviewers, the proposed method is very close to the Authorial Language Models (ALMs, Huang et al., 2024), which fine-tune GPT-2 per author and attribute authorship via perplexity. This makes the main contribution of this submission not as novel as expected, in terms of methodology and associated analysis. Although the authors briefly discussed Huang et al.\ (2024) in section 4.1, there is no explicit discussion about why the proposed method/study is novel given existing works.}
 
-\section*{Response to Reviewer 3}
+\noindent\textit{If the authors want to establish their contributions in the ground of using LLMs to analyze authorship attributions, then it would be necessary to tell a different story.}
 
-\textbf{R3 Main concern:} Novelty relative to existing work, and lack of
-benchmarks and baselines.
+\noindent\textit{Possible analyses would include:}
+\begin{itemize}[leftmargin=2em]
+\item \textit{how much data one should have at least to train the GPT-2 model?}
+\item \textit{comprehensive evaluation over existing benchmarks with competitive methods}
+\item \textit{what will happen if different comparing authors have different amount of books available for training?}
+\item \textit{what will happen if authors have quite different writing styles, genres, occasions (formal writing v.s.\ on X) during their careers? or, with quite different writing topics.}
+\end{itemize}
 
-\response{We have addressed the novelty concern through expanded discussion
-of the differences from Huang et al.\ (2025) (see our response to R1 above).
-Regarding benchmarks, our new dataset-size analysis provides a principled
-explanation for why standard short-text benchmarks are not applicable to our
-from-scratch training approach.}
+\noindent\textit{That may make the submission more useful for the community.}
 
-\textbf{R3:} Limited scope (8 authors from Project Gutenberg).
+\bigskip
 
-\response{We agree that the current scope is limited, and we have been
-transparent about this as a limitation. However, we note that (a) we achieve
-perfect accuracy within this scope, (b) our new dataset-size analysis provides
-quantitative guidance for how much data would be needed to extend to new
-authors, and (c) our embedding comparison provides an additional baseline.
-Extending to larger author sets is an important direction for future work, and
-our dataset-size analysis provides the foundation for estimating the
-computational resources required.}
+\textbf{We thank the action editor for these helpful suggestions.  We address each in turn:}
 
-\textbf{R3:} Lack of demonstration of generalization ability across genres.
+\textbf{``How much data one should have at least to train the GPT-2 model?''  We have added a new dataset-size analysis (new Section ``Training data requirements'') in which we systematically varied the number of training tokens per author from 2,500 to 643,041. This required training 1,520 new models (8 authors $\times$ 10 seeds $\times$ 19 token levels). We fit a four-parameter sigmoid to the resulting accuracy curve ($R^2 = 0.979$) and estimated that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author (bootstrap 95\% CI: 12,000--70,000 tokens). These results are presented in a new figure in the revised manuscript.}
 
-\response{Our Oz book analysis provides some evidence of within-author
-cross-topic robustness. We have expanded our discussion of this point and
-identified systematic cross-genre evaluation as an important direction for
-future work.}
+\textbf{``Comprehensive evaluation over existing benchmarks with competitive methods.''  We respectfully note that the data requirements of our approach make standard authorship attribution benchmarks infeasible for models trained from scratch.  Our dataset-size analysis shows that approximately 51,000 tokens per author are needed for reliable attribution. The benchmarks used by Huang et al.\ (2025)---Blogs50 (avg.\ 112 tokens/text), CCAT50 (avg.\ 506 tokens/text), Guardian (avg.\ 1,052 tokens/text), and IMDB62 (avg.\ 349 tokens/text)---provide orders of magnitude less text per author than our method requires. This reflects a fundamental difference between fine-tuning pre-trained models (which inherit general language representations and thus require less author-specific data) and training from scratch (which must learn all patterns from the author's text alone). Rather than force our method into an unsuitable evaluation regime, we have instead added a comparison with pre-trained text embedding models (new Section ``Comparison with text embedding methods'').  Using three models from the MTEB leaderboard spanning 137M to 4.0B parameters, we find that embedding-based nearest-neighbor classification achieves at most 81\% book-level accuracy on our 84-book corpus---compared to 100\% for our approach using models with just 0.8M parameters each.}
+
+\textbf{``What will happen if different comparing authors have different amount of books available for training?''  Our new dataset-size analysis directly addresses this: we found substantial variability across authors. Some authors (e.g., Austen, Baum) were reliably attributed even with 2,500 tokens, while others (e.g., Melville, Twain) required considerably more data.  These per-author differences are visible in the new figure.}
+
+\textbf{``What will happen if authors have quite different writing styles, genres, occasions (formal writing v.s.\ on X) during their careers? or, with quite different writing topics.''  Our existing Oz book analysis provides some evidence of cross-topic robustness (models trained on fantasy correctly attribute a contested text). We have expanded our discussion of this point and identified systematic cross-domain evaluation as an important direction for future work. However, constructing new multi-genre corpora for the same authors is beyond the scope of the current study.}
+
+\newpage
+
+%% ============================================================
+%% REVIEWER 1
+%% ============================================================
+
+\noindent\textbf{\large Reviewer 1}
+
+\noindent\textit{Recommendation: Decline Submission}
+
+\bigskip
+
+\noindent\textit{2. What is this paper about?}
+
+\noindent\textit{The paper proposes ``predictive comparison'' as an LLM-based stylometric measure. For each author, the paper trains a small GPT-2 model from scratch on that author's books, then uses cross-entropy loss on held-out text as a proxy for stylistic similarity: a model should assign lower loss to its own author's text than to others'.}
+
+\noindent\textit{They demonstrate: On eight 19th--20th century English-language authors, each author-specific model assigns the lowest loss to its own held-out book, giving 100\% attribution accuracy in this closed set. The cross-entropy matrix over (model, test-author) is used to define a stylometric distance and visualized via MDS to explore relationships between authors.}
+
+\noindent\textit{Conceptually, this is very close to Huang et al.'s Authorial Language Models (ALMs), which fine-tune GPT-2 per author and attribute authorship via perplexity on benchmark datasets (Blogs50, CCAT50, Guardian, IMDB62), also analyzing token-level contributions and the relative informativeness of content vs function words.}
+
+\bigskip
+
+\noindent\textit{3. Strengths:}
+
+\noindent\textit{Clear and intuitive core idea. Training a separate LM per author and using cross-entropy as a relative stylometric measure is conceptually simple and easy to understand.}
+
+\noindent\textit{Strong case studies. Perfect classification of held-out books across eight authors is impressive and shows that even relatively small GPT-2 models can encode robust author-specific patterns.}
+
+\noindent\textit{The Oz-book experiment nicely connects the method to a classical attribution problem, replicating prior stylometric conclusions in an LLM framework and demonstrating robustness across within-author topical variation.}
+
+\noindent\textit{Thoughtful ablations. The content-only, function-only, and POS-only conditions give insight into what the models are actually using, contributing to the broader debate about content vs function words in authorship attribution.}
+
+\bigskip
+
+\textbf{We thank the reviewer for their positive assessment of the core idea, case studies, and ablation analyses!}
+
+\bigskip
+
+\noindent\textit{4. Weaknesses:}
+
+\noindent\textit{Incremental novelty given existing publication Huang et al.\ 2025. Methodologically, predictive comparison is extremely close to Huang et al.\ 2025: both train one causal LM per author (from-scratch vs fine-tuned) and attribute authorship via perplexity / cross-entropy on candidate texts.}
+
+\noindent\textit{Moreover, it is hard to consider the paper as an independent work of Huang et al.\ 2025, because the latter has been posted on ArXiv in Feb.\ 2024 and published in July 2025.}
+
+\noindent\textit{The paper does not argue for their main technical advances (training from scratch, one specific distance definition) given existing literature. No comparison to standard authorship benchmarks (Blogs50, CCAT50, Guardian, IMDB62) used in Huang et al.\ 2025.}
+
+\bigskip
+
+\textbf{We have substantially expanded our discussion of the relationship to Huang et al.\ (2025) in the revised ``Relationship to prior work'' section. A critical methodological distinction separates the two approaches: we train models entirely from scratch, whereas Huang et al.\ fine-tune a pre-trained GPT-2 model. Fine-tuning inherits the representations learned during pre-training on WebText (a 40~GB web corpus), meaning that ``held-out'' evaluation data may have been seen during pre-training. Training from scratch eliminates this data contamination risk entirely, because the only text the model has ever seen is the author's own corpus. This is particularly important for forensic applications where the provenance of model knowledge must be established.}
+
+\textbf{The two approaches also operate in fundamentally different data regimes. Our dataset-size analysis shows that training from scratch requires approximately 51,000 tokens per author for $\geq 95\%$ accuracy, whereas fine-tuning leverages pre-trained representations and can work with much shorter texts. We view these as complementary contributions: Huang et al.\ demonstrate that fine-tuning is effective for short-text benchmarks, while we demonstrate that training from scratch---with its stronger data purity guarantees---is effective for longer texts.}
+
+\textbf{Regarding the timeline: our work was developed independently and concurrently with Huang et al.\ Both manuscripts were posted as preprints in early-to-mid 2024. We view this convergent development as evidence that predictive modeling may be a natural framework for computational stylometry.}
+
+\textbf{Beyond the methodological distinction, our paper contributes: (1) the stylometric distance measure and its MDS visualization, (2) the application to the contested Oz authorship problem, (3) ablation studies decomposing the contributions of content words, function words, and parts of speech, (4) the new dataset-size analysis characterizing data requirements, and (5) the comparison with text embedding methods.}
+
+\bigskip
+
+\noindent\textit{5. Substantive Revisions to be Required:}
+
+\noindent\textit{Clarify the novelty claims relative to Huang et al.\ 2025 and prior information-theoretic stylometry.}
+
+\noindent\textit{Explicitly explain what is genuinely new here beyond Huang et al.\ (2025): e.g., the focus on long-form literary texts, the definition and use of the stylometric distance d(i,j), the Oz case study, or methodological differences (from-scratch vs fine-tuning).}
+
+\bigskip
+
+\textbf{Done.  We have expanded the ``Relationship to prior work'' section as described above, explicitly articulating the five contributions that distinguish our work from Huang et al.\ (2025).}
+
+\bigskip
+
+\noindent\textit{Strengthen empirical evaluation. Add at least one experiment that goes beyond the eight-author, long-book setting---for example: A subset of a standard benchmark (e.g., Blogs50 or IMDB62) using predictive comparison, to show behavior on many authors and short texts.}
+
+\bigskip
+
+\textbf{As detailed in our response to the action editor, the standard benchmarks are infeasible for our approach because they provide far fewer tokens per author than our method requires when training from scratch. Rather than applying our method in a regime where it cannot be expected to succeed, we have (a) formally characterized the data requirements of our approach, providing a principled explanation for why these benchmarks are unsuitable, and (b) added a comparison with text embedding methods that operate on the same data as our approach, providing empirical context for our results.}
+
+\newpage
+
+%% ============================================================
+%% REVIEWER 2
+%% ============================================================
+
+\noindent\textbf{\large Reviewer 2}
+
+\noindent\textit{Recommendation: Revisions Required (Accept with minor revisions)}
+
+\bigskip
+
+\noindent\textit{2. What is this paper about?}
+
+\noindent\textit{This paper introduced predictive comparison. It is a stylometric method which leverages LLMs to quantify the style by using predictive performance instead of / rather than explicit classification. The main idea is to train GPT-2 language model from scratch on each author's work, and use the cross-entropy loss on the held-out texts to measure the stylistic wise similarity. The proposed approach shows the power via the evaluation on the corpus, where the books from 8 great authors achieve the perfect attribution accuracy.}
+
+\bigskip
+
+\noindent\textit{3. Strengths:}
+
+\noindent\textit{The paper figures out the authorship attribution problem / question via LLMs problem instead of / rather than using a classifier. The cross-entropy loss is intuitive to align with the stylometric signal. Further more, the proposed method achieves perfect attribution accuracy on the books from 8 authors.}
+
+\bigskip
+
+\textbf{We thank the reviewer for their positive assessment!}
+
+\bigskip
+
+\noindent\textit{4. Weaknesses:}
+
+\noindent\textit{A key problem is the current study only relies on training on the small GPT-2 model from scratch. The work did NOT evaluate any recent / widely used open-source models (e.g., LLaMA, Qwen, DeepSeek). It also did NOT use any other training frames, such as continued pretraining or LoRA, instead of training from scratch.}
+
+\bigskip
+
+\noindent\textit{6. Minor Revisions to be Required:}
+
+\noindent\textit{I would suggest using the off-the-shelf widely used open-source models (e.g., LLaMA, Qwen, DeepSeek) to enhance the experiments (including the comparisons among different models). In addition, we can do some studies by using the continued pretraining or LoRA based on those SOTA open-source models instead of training from scratch.}
+
+\bigskip
+
+\textbf{We appreciate this suggestion but respectfully push back for two reasons.}
+
+\textbf{First, if we fine-tune a pre-trained model---whether GPT-2, LLaMA, or any other---we are essentially adopting the same approach as Huang et al.\ (2025), with the same data contamination concerns we described above. The methodological contribution of our work lies specifically in training from scratch, which guarantees that the only text the model has ever seen is the author's own corpus.}
+
+\textbf{Second, our method already achieves 100\% attribution accuracy on our 8-author corpus using a small GPT-2 architecture with just 0.8M non-embedding parameters. If the goal is reliable authorship attribution, a more powerful model is unnecessary---the bottleneck is not model capacity but the amount of author-specific training data available (as demonstrated by our new dataset-size analysis). Using a larger model would increase computational cost without improving attribution accuracy in our evaluation setting.}
+
+\textbf{That said, we acknowledge that for more challenging settings (e.g., hundreds of authors with similar styles), larger models or parameter-efficient fine-tuning might offer benefits. We discuss this as a future direction in the revised manuscript.}
+
+\newpage
+
+%% ============================================================
+%% REVIEWER 3
+%% ============================================================
+
+\noindent\textbf{\large Reviewer 3}
+
+\noindent\textit{Recommendation: Revisions Required (Revise and resubmit for review: Needs more than minor changes. Further Work Required. Presentational Revisions Required.)}
+
+\bigskip
+
+\noindent\textit{2. What is this paper about?}
+
+\noindent\textit{This paper introduces ``predictive comparison,'' a stylometric method that utilizes Large Language Models (LLMs) trained from scratch on specific authors to determine authorship attribution. The authors train GPT-2 models on the corpora of eight classic authors and measure the cross-entropy loss on held-out texts. The core premise is that a model trained on Author A will yield lower loss on unseen text by Author A than a model trained on Author B.}
+
+\bigskip
+
+\noindent\textit{3. Strengths:}
+
+\noindent\textit{The authors implement controls including standardizing the token budget across authors and using bootstrapping with 10 random seeds to estimate confidence intervals.
+The breakdown of performance using Content-only, Function-only, and POS-only corpora provides insight.}
+
+\bigskip
+
+\textbf{We thank the reviewer for recognizing these methodological contributions.}
+
+\bigskip
+
+\noindent\textit{4. Weaknesses:}
+
+\noindent\textit{There are several weaknesses that require further revisement:}
+
+\noindent\textit{The novelty of this work: You mentioned Huang et al.'s work for using perplexity for authorship analysis, however, there are many existing works utilizing cross-entropy for authorship analysis. You should also compare it with those works.}
+
+\bigskip
+
+\textbf{We have expanded the ``Relationship to prior work'' section to more thoroughly discuss prior work using cross-entropy and relative entropy for stylometry, including Juola \& Baayen (2005) and Zhao et al.\ (2006). We clarify how our approach extends this line of reasoning to large language models, which can learn sequential dependencies implicitly rather than requiring explicit feature engineering. We have also clarified the key distinctions from Huang et al.\ (2025), as described in our response to Reviewer~1.}
+
+\bigskip
+
+\noindent\textit{Limited scope: The paper only implements experiments on 8 authors from Project Gutenberg. While this is understandable for a ``Short Paper'' involving computationally expensive training loops, it limits the generalizability of the claims regarding scalability to open-set problems.}
+
+\bigskip
+
+\textbf{We agree that the current scope is limited, and we have been transparent about this as a limitation. However, we note that (a) we achieve perfect accuracy within this scope, (b) our new dataset-size analysis provides quantitative guidance for how much data would be needed to extend to new authors (approximately 51,000 tokens per author for $\geq 95\%$ accuracy), and (c) our embedding comparison provides an additional baseline against which to evaluate the method's effectiveness. Extending to larger author sets is an important direction for future work.}
+
+\bigskip
+
+\noindent\textit{Lack of benchmarks and baselines: You should also compare your method to some baselines or on popular benchmarks to demonstrate the strength.}
+
+\bigskip
+
+\textbf{We have addressed this in two ways. First, our new dataset-size analysis provides a principled explanation for why standard short-text benchmarks (Blogs50, CCAT50, Guardian, IMDB62) are not applicable to our from-scratch training approach: they provide only 112--1,052 tokens per text, whereas our method requires approximately 51,000 tokens per author. Second, we have added a comparison with text embedding methods using three models from the MTEB leaderboard, providing empirical context by evaluating an alternative approach on the same data as our method.}
+
+\bigskip
+
+\noindent\textit{Lack of demonstration on generalization ability: The authors acknowledge that the selected authors are all English-language writers from overlapping historical periods (public domain). The robustness of this method across distinct genres remains untested.}
+
+\bigskip
+
+\textbf{Our Oz book analysis provides some evidence of within-author cross-topic robustness: models trained on an author's general works correctly attribute a contested text from a different series. We have expanded our discussion of this point. Systematic cross-genre evaluation is an important direction for future work, but requires collecting and curating new multi-genre corpora for the same authors, which is beyond the scope of the current study.}
 
 \end{document}
