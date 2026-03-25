@@ -321,7 +321,7 @@ predictions.
 \midrule
 nomic-embed-text-v1.5 & 137M & 81.0\% (68/84) & 0.666 \\
 bge-m3 & 568M & 76.2\% (64/84) & 0.694 \\
-Qwen3-Embedding-4B & 4.0B & \texttt{[PLACEHOLDER]} & \texttt{[PLACEHOLDER]} \\
+Qwen3-Embedding-4B & 4.0B & 70.2\% (59/84) & 0.703 \\
 \midrule
 Predictive comparison (ours) & 0.8M $\times$ 8 & 100\% (84/84) & --- \\
 \bottomrule
@@ -339,19 +339,20 @@ held-out book's chunks assigned to the winning author) in
 Supplementary Figures~\ref{fig:embedding-purity}
 and~\ref{fig:embedding-confusion}.
 
-% TODO: Update interpretation after Qwen3-4B results are in.
-% All observations below are verified for nomic and bge-m3 only.
-% After Qwen completes: (a) fill table above, (b) check if patterns hold for 3rd model,
-% (c) update "outperformed" claim if Qwen changes the ranking.
+% VERIFIED: All 3 models complete. Findings confirmed.
 Notable patterns included: (1) authors with the most distinctive styles
-(Austen, Baum, Dickens) were reliably attributed by all models, whereas
-authors with fewer books or less distinctive styles (Twain, Melville) were
-frequently misclassified; (2) the \texttt{bge-m3} model showed a strong bias
-toward classifying chunks as Dickens, likely because Dickens had the most books
-(14) and thus the most chunks in the training pool; and (3) the smaller
-\texttt{nomic-embed-text-v1.5} model outperformed the larger \texttt{bge-m3},
-suggesting that general MTEB ranking does not directly predict performance on
-this specialized task.
+(Austen, Baum, Dickens) were reliably attributed by all three models at 100\%
+accuracy, whereas authors with fewer books or less distinctive styles (Twain,
+Melville, Fitzgerald) were frequently misclassified; (2) the largest model
+(\texttt{Qwen3-Embedding-4B}, 4.0B parameters) performed worst overall at
+70.2\%, completely failing on Fitzgerald (0/8 books correct) and achieving only
+38.5\% on Thompson---suggesting that larger embedding models may conflate
+content similarity with stylistic similarity more than smaller ones; (3) the
+smallest model (\texttt{nomic-embed-text-v1.5}, 137M parameters) performed
+best at 81.0\%, indicating that general MTEB ranking does not predict
+performance on this specialized task; and (4) an inverse relationship between
+model size and attribution accuracy was observed (81.0\%, 76.2\%, 70.2\% for
+137M, 568M, and 4.0B parameters, respectively).
 
 \begin{figure}[h]
   \centering

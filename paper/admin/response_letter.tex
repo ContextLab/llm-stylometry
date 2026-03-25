@@ -32,7 +32,7 @@ The primary concerns raised by the reviewers centered on (a) the relationship be
 
 \begin{enumerate}
 \item A systematic dataset-size analysis characterizing the relationship between training corpus size and attribution accuracy (1,520 newly trained models), including a formal sigmoid fit estimating that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author (new Section ``Training data requirements,'' \pref{XX}).
-\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) \colorbox{yellow}{do not match} the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models (new Section ``Comparison with text embedding methods,'' \pref{XX}).
+\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) do not match the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models (new Section ``Comparison with text embedding methods,'' \pref{XX}).
 \end{enumerate}
 
 We have carefully addressed each of the comments from the reviewers, and we provide detailed point-by-point responses on the following pages. The reviewers' comments are \textit{italicized} and our responses are in \textbf{bold}.
@@ -102,7 +102,7 @@ IMDB62 & 349 & 12,000--70,000) \\
 
 \textbf{Our existing Oz book analysis provides some evidence of cross-topic robustness: models trained on an author's general works correctly attribute a contested text from a different series. We have expanded our discussion of this limitation (\pref{XX}) and identified systematic cross-domain evaluation as an important direction for future work. However, constructing new multi-genre corpora for the same authors is beyond the scope of the current study.}
 
-Additionally, we have added a comparison with pre-trained text embedding models. Using three models from the MTEB leaderboard spanning 137M to 4.0B parameters, embedding-based nearest-neighbor classification achieved at most \colorbox{yellow}{81\%} book-level accuracy on our 84-book corpus---compared to 100\% for our approach using models with just 0.8M parameters each. \colorbox{yellow}{This demonstrates that author-specific language models capture stylistic patterns that generic text embeddings do not.}
+Additionally, we have added a comparison with pre-trained text embedding models. Using three models from the MTEB leaderboard spanning 137M to 4.0B parameters, embedding-based nearest-neighbor classification achieved at most 81\% book-level accuracy on our 84-book corpus---compared to 100\% for our approach using models with just 0.8M parameters each. This demonstrates that author-specific language models capture stylistic patterns that generic text embeddings do not.
 
 \newpage
 
@@ -198,7 +198,7 @@ Additionally, we have added a comparison with pre-trained text embedding models.
 
 \textit{I would suggest using the off-the-shelf widely used open-source models (e.g., LLaMA, Qwen, DeepSeek) to enhance the experiments (including the comparisons among different models). In addition, we can do some studies by using the continued pretraining or LoRA based on those SOTA open-source models instead of training from scratch.}
 
-\textbf{Rather than fine-tuning larger pre-trained models (which would replicate Huang et al.'s approach), we have instead compared our method against pre-trained text embedding models. These models---including Qwen3-Embedding-4B (4.0 billion parameters)---represent the state of the art in general-purpose text representations. Despite being orders of magnitude larger than our author-specific models, even the best embedding model achieved only \colorbox{yellow}{81\%} book-level accuracy versus our 100\%. This suggests that the value of our approach lies not in model size but in the author-specific training objective.}
+\textbf{Rather than fine-tuning larger pre-trained models (which would replicate Huang et al.'s approach), we have instead compared our method against pre-trained text embedding models. These models---including Qwen3-Embedding-4B (4.0 billion parameters)---represent the state of the art in general-purpose text representations. Despite being orders of magnitude larger than our author-specific models, even the best embedding model achieved only 81\% book-level accuracy versus our 100\%. This suggests that the value of our approach lies not in model size but in the author-specific training objective.}
 
 \textbf{We acknowledge that for more challenging settings (e.g., hundreds of authors with similar styles), larger models or parameter-efficient fine-tuning might offer benefits. We discuss this as a future direction in the revised manuscript (\pref{XX}).}
 
@@ -249,14 +249,14 @@ Additionally, we have added a comparison with pre-trained text embedding models.
 \midrule
 nomic-embed-text-v1.5 & 137M & 81.0\% \\
 bge-m3 & 568M & 76.2\% \\
-Qwen3-Embedding-4B & 4.0B & \colorbox{yellow}{TBD}\% \\
+Qwen3-Embedding-4B & 4.0B & 70.2\% \\
 \midrule
 Predictive comparison (ours) & 0.8M $\times$ 8 & 100\% \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{These results demonstrate that even state-of-the-art text embedding models \colorbox{yellow}{do not fully capture} the stylistic patterns learned by author-specific language models trained from scratch.}
+\textbf{These results demonstrate that even state-of-the-art text embedding models do not fully capture the stylistic patterns learned by author-specific language models trained from scratch.}
 
 \textit{Lack of demonstration on generalization ability: The authors acknowledge that the selected authors are all English-language writers from overlapping historical periods (public domain). The robustness of this method across distinct genres remains untested.}
 

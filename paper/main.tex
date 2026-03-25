@@ -543,17 +543,17 @@ nearest-neighbor classification using pre-trained text embeddings (see
 \nameref{subsec:embedding-comparison}). Using leave-one-out evaluation on the
 same 84-book corpus, book-level attribution accuracy was 81.0\% for
 \texttt{nomic-embed-text-v1.5} (137M parameters), 76.2\% for \texttt{bge-m3}
-(568M parameters), and \texttt{[PLACEHOLDER]}\% for
+(568M parameters), and 70.2\% for
 \texttt{Qwen3-Embedding-4B} (4.0B parameters)---compared to 100\% for our
 predictive comparison approach using models with just 0.8M parameters each
 (see Appendix for detailed results including chunk-level purity and
 cross-author confusion patterns).
-% NOTE: entire interpretation below assumes Qwen3-4B also underperforms 100%; verify and update after results
+% VERIFIED: Qwen3-4B achieved 70.2% (worst of 3 models). All models underperform 100%.
 These results indicate that even
 state-of-the-art text embedding models, despite being orders of magnitude
 larger than our author-specific models, do not fully capture the stylistic
 patterns that emerge from training a language model on an individual author's
-works. % VERIFY: "do not fully capture" depends on Qwen result
+works. % VERIFIED: confirmed — Qwen3-4B achieved only 70.2%
 
 \section{Discussion}
 
@@ -639,7 +639,7 @@ may be introduced without retraining existing models. However, classification
 approaches may be more computationally efficient when dealing with fixed author
 sets, as they require training only a single model.
 
-% NOTE: "at most 81%" assumes Qwen3-4B also underperforms; verify after results
+% VERIFIED: Qwen3-4B achieved 70.2%. "at most 81%" confirmed (nomic was best).
 Our comparison with pre-trained text embedding models further highlights the
 value of author-specific training. Despite using models with up to 4 billion
 parameters, embedding-based nearest-neighbor classification achieved at most
