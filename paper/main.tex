@@ -536,26 +536,33 @@ with training corpus size for all authors (Fig.~\ref{fig:ntokens}B).
 
 \subsection{Comparison with text embedding methods}
 
-To evaluate the value of training author-specific language models relative to
-using generic text representations, we compared our approach against
-nearest-neighbor classification using pre-trained text embeddings (see
-Section~\ref{subsec:embedding-comparison}). Using leave-one-out evaluation on
-the same 84-book corpus, book-level attribution accuracy was 81.0\% for
-\texttt{nomic-embed-text-v1.5} (137M parameters), 76.2\% for \texttt{bge-m3}
-(568M parameters), and 70.2\% for \texttt{Qwen3-Embedding-4B} (4.0B
-parameters)---compared to 100\% for our predictive comparison approach using
-models with just 0.8M parameters each (Supplementary Table~1).
-Strikingly, accuracy exhibited an inverse relationship with model size: the
-smallest embedding model outperformed the largest by over 10 percentage points.
-All three models correctly attributed the works of the most stylistically
-distinctive authors (Austen, Baum, and Dickens) at 100\%, but struggled with
-authors whose styles are less distinctive or whose works overlap thematically
-with other authors in the corpus. The largest model (\texttt{Qwen3-Embedding-4B})
-failed entirely on Fitzgerald (0/8 books correct) and achieved only 38.5\% on
-Thompson, suggesting that larger embedding spaces may amplify content-level
-similarities at the expense of stylistic distinctions. Detailed chunk-level
-purity distributions and cross-author confusion patterns are provided in
-the Supplementary Materials.
+We compared predictive comparison against nearest-neighbor classification using
+pre-trained text embeddings (Section~\ref{subsec:embedding-comparison}).
+Book-level attribution accuracy was 81.0\% for \texttt{nomic-embed-text-v1.5}
+(137M parameters), 76.2\% for \texttt{bge-m3} (568M parameters), and 70.2\%
+for \texttt{Qwen3-Embedding-4B} (4.0B parameters)---well below the 100\%
+achieved by our approach using models with just 0.8M parameters each
+(Fig.~\ref{fig:embedding-comparison}). Strikingly, accuracy exhibited an
+inverse relationship with model size. All three models correctly attributed the
+most stylistically distinctive authors (Austen, Baum, and Dickens) at 100\%,
+but struggled with less distinctive authors---particularly the largest model,
+which failed entirely on Fitzgerald (0/8) and achieved only 38.5\% on
+Thompson. Per-author accuracy, chunk-level purity distributions, and
+cross-author confusion patterns are provided in the Supplementary Materials.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\columnwidth]{figs/source/embedding_comparison.pdf}
+  \caption{\textbf{Comparison of embedding-based and predictive comparison
+  approaches.} Book-level attribution accuracy for three pre-trained text
+  embedding models from the MTEB leaderboard, compared with our predictive
+  comparison approach (rightmost bar). Embedding models are ordered by size
+  (137M to 4.0B parameters). Despite being orders of magnitude larger than our
+  author-specific models (0.8M parameters each), none of the embedding models
+  matched the 100\% accuracy of predictive comparison. Accuracy exhibited an
+  inverse relationship with model size.}
+  \label{fig:embedding-comparison}
+\end{figure}
 
 \section{Discussion}
 
@@ -642,21 +649,18 @@ approaches may be more computationally efficient when dealing with fixed author
 sets, as they require training only a single model.
 
 Our comparison with pre-trained text embedding models further highlights the
-value of author-specific training. Despite using models with up to 4 billion
-parameters, embedding-based nearest-neighbor classification achieved at most
-81\% book-level accuracy on our corpus---well below the 100\% achieved by our
-approach using models with just 0.8M parameters each. Moreover, accuracy
-exhibited an inverse relationship with embedding model size (81.0\%, 76.2\%,
-and 70.2\% for 137M, 568M, and 4.0B parameters, respectively), suggesting
-that larger models may encode richer content representations that actually
-\textit{increase} cross-author similarity, making stylistic distinctions harder
-to detect. This is consistent with the observation that the most common
-misclassification pattern involved attributing texts to Dickens---the author
-with the largest corpus and thus the most chunks in the nearest-neighbor
-pool---particularly for authors whose works overlap thematically (e.g.,
-Melville and Wells). In contrast, author-specific language models trained from
-scratch learn to predict an individual author's sequential word choices,
-capturing precisely those patterns that distinguish one author from another,
+value of author-specific training. Even the largest embedding model tested
+(4.0B parameters) fell well short of the 100\% accuracy achieved by our much
+smaller author-specific models (0.8M parameters each), and the observed inverse
+relationship between embedding model size and accuracy suggests that larger
+models may encode richer content representations that actually
+\textit{increase} cross-author similarity at the expense of stylistic
+distinctions. The most common misclassification pattern involved attributing
+texts to Dickens---the author with the largest corpus and thus the most chunks
+in the nearest-neighbor pool---particularly for authors whose works overlap
+thematically (e.g., Melville and Wells). By contrast, author-specific language
+models trained from scratch learn to predict an individual author's sequential
+word choices, capturing the patterns that distinguish one author from another
 regardless of topical overlap.
 
 Our reliance on books as training data contrasts with most contemporary
