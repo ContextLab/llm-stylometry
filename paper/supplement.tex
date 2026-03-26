@@ -293,24 +293,8 @@ to the other authors' randomly sampled texts.}
 \clearpage
 
 %% ============================================================
-%% Embedding Comparison Appendix
+%% Embedding Comparison
 %% ============================================================
-
-\subsection*{Embedding-based authorship attribution comparison}
-
-To contextualize the performance of our predictive comparison approach, we
-conducted a comparison using pre-trained text embedding models from the Massive
-Text Embedding Benchmark~(MTEB) leaderboard. We selected three models spanning
-a range of sizes: \texttt{nomic-embed-text-v1.5} (137M parameters),
-\texttt{bge-m3} (568M parameters), and \texttt{Qwen3-Embedding-4B} (4.0
-billion parameters).
-
-For each model, we chunked each book into 1,024-token windows with 128-token
-overlap using the GPT-2 tokenizer (yielding 12,164 total chunks across 84
-books). For each held-out book, every chunk was classified by its nearest
-neighbor (cosine similarity) among all chunks from the remaining 83 books. The
-book-level author prediction was determined by majority vote across chunk-level
-predictions.
 
 \begin{figure}[h]
   \centering
@@ -332,6 +316,8 @@ predictions.
   \label{fig:embedding-confusion}
 \end{figure}
 
+\clearpage
+
 \begin{table}[h]
 \centering
 \begin{tabular}{lccc}
@@ -352,21 +338,6 @@ Purity denotes the fraction of held-out chunks assigned to the modal
 scratch; embedding methods use a single pre-trained model for all authors.}
 \label{tab:embedding-comparison}
 \end{table}
-
-Notable patterns included: (1) authors with the most distinctive styles
-(Austen, Baum, Dickens) were reliably attributed by all three models at 100\%
-accuracy, whereas authors with fewer books or less distinctive styles (Twain,
-Melville, Fitzgerald) were frequently misclassified
-(Supplementary Fig.~\ref{fig:embedding-confusion}); (2) the largest model
-(\texttt{Qwen3-Embedding-4B}, 4.0B parameters) performed worst overall at
-70.2\%, completely failing on Fitzgerald (0/8 books correct) and achieving only
-38.5\% on Thompson---suggesting that larger embedding models may conflate
-content similarity with stylistic similarity more than smaller ones; (3) the
-smallest model (\texttt{nomic-embed-text-v1.5}, 137M parameters) performed
-best at 81.0\%, indicating that general MTEB ranking does not predict
-performance on this specialized task; and (4) an inverse relationship between
-model size and attribution accuracy was observed (81.0\%, 76.2\%, 70.2\% for
-137M, 568M, and 4.0B parameters, respectively).
 
 
 \end{document}

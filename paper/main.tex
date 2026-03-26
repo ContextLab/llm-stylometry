@@ -547,7 +547,9 @@ Book-level attribution accuracy was 81.0\% for \texttt{nomic-embed-text-v1.5}
 for \texttt{Qwen3-Embedding-4B} (4.0B parameters)---well below the 100\%
 achieved by our approach using models with just 0.8M parameters each
 (Fig.~\ref{fig:embedding-comparison}). Strikingly, accuracy exhibited an
-inverse relationship with model size. All three models correctly attributed the
+inverse relationship with model size, indicating that general-purpose embedding
+quality (as measured by the MTEB benchmark) does not predict performance on
+this specialized task. All three models correctly attributed the
 most stylistically distinctive authors (Austen, Baum, and Dickens) at 100\%,
 but struggled with less distinctive authors---particularly the largest model,
 which failed entirely on Fitzgerald (0/8) and achieved only 38.5\% on
