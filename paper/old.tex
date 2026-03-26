@@ -20,8 +20,6 @@
 \newcommand{\ttestsPOS}{{6}}
 \newcommand{\confusion}{{7}}
 \newcommand{\mds}{{8}}
-\newcommand{\embeddingpurity}{{9}}
-\newcommand{\embeddingconfusion}{{10}}
 
 \newcommand{\authortableContent}{{1}}
 \newcommand{\authortableFunction}{{2}}
@@ -36,8 +34,6 @@ Daniel N. Rockmore, and Jeremy R. Manning\\
 Dartmouth College \\
 Hanover, NH 03755, USA \\
 \texttt{\{harrison.f.stropkay.25, jiayi.chen.gr, mohammad.javad.latifi.jebelli}\\\texttt{daniel.n.rockmore, jeremy.r.manning\}@dartmouth.edu}}
-
-\date{}
 
 \begin{document}
 \maketitle
@@ -190,47 +186,6 @@ token. Finally, we created part-of-speech-only corpora by using the Natural
 Language Toolkit~\citep[NLTK; ][]{BirdLope04} to replace each word with its
 corresponding part-of-speech tag. We then re-trained our models on each of
 these modified corpora, following the same methodology as described above.
-
-\subsection{Training data requirements\label{subsec:data-requirements}}
-
-To characterize the relationship between training corpus size and attribution
-accuracy, we conducted an additional set of experiments in which we varied the
-number of training tokens per author. We trained models using subsets of each
-author's corpus ranging from 2,500 to 643,041 tokens (the full corpus), using
-the same architecture, hyperparameters, and evaluation protocol described
-above. We evaluated 19 training token levels: 2,500; 5,000; 10,000; 20,000;
-40,000; 45,000; 50,000; 55,000; 60,000; 65,000; 70,000; 75,000; 80,000;
-128,608; 160,000; 257,216; 385,825; 514,433; and 643,041 tokens. For each
-token level, we trained models for all 8 authors using 10 random seeds each
-(1,520 models total).
-
-We modeled the relationship between training tokens and attribution accuracy
-using a four-parameter sigmoid function: $y = L + K / (1 + e^{-b(\log_{10} x
-- m)})$, where $L$ is the lower asymptote, $K$ is the range, $b$ controls the
-steepness, and $m$ is the midpoint on the $\log_{10}$ scale. We fit this model
-to the mean accuracy across authors at each token level using bounded nonlinear
-least squares (\texttt{scipy.optimize.curve\_fit}). We estimated the minimum
-number of tokens required to achieve $\geq 95\%$ expected attribution accuracy
-via the inverse sigmoid, with a 95\% confidence interval obtained by bootstrap
-resampling over authors (1,000 iterations).
-
-\subsection{Comparison with text embedding methods\label{subsec:embedding-comparison}}
-
-To contextualize the performance of predictive comparison relative to existing
-text representation methods, we conducted a comparison using pre-trained text
-embedding models. We selected three models from the Massive Text Embedding
-Benchmark~\citep[MTEB; ][]{MuenEtal23} leaderboard spanning a range of sizes:
-\texttt{nomic-embed-text-v1.5} (137M parameters), \texttt{bge-m3} (568M
-parameters), and \texttt{Qwen3-Embedding-4B} (4.0B parameters).
-
-For each embedding model, we chunked each book into 1,024-token windows with
-128-token overlap (using the GPT-2 tokenizer for consistency), embedded each
-chunk, and performed leave-one-out classification. For each held-out book,
-every chunk was classified by its nearest neighbor (cosine similarity) among
-all chunks from the remaining books. The book-level author prediction was
-determined by majority vote across chunk-level predictions. We report
-book-level accuracy, chunk-level purity (the fraction of chunks assigned to the
-modal author), and cross-author confusion patterns.
 
 \begin{figure*}[t]
   \centering
@@ -498,77 +453,6 @@ training and evaluation losses. This indicates that all four corpora contain
 sufficient statistical regularities for GPT-2 models to learn to reliably
 and accurately make next-token predictions.
 
-\subsection{Training data requirements}
-
-We systematically varied the number of training tokens per author from 2,500
-to 643,041 to characterize the data requirements for reliable authorship
-attribution (Fig.~\ref{fig:ntokens}A). Attribution accuracy followed a
-sigmoidal trajectory on the $\log_{10}$-token scale. A four-parameter sigmoid
-fit to the mean accuracy across authors yielded $R^2 = 0.979$, with a lower
-asymptote of $L = 69.8\%$, range $K = 30.9\%$, steepness $b = 5.43$, and
-midpoint at $10^{4.43} \approx 27{,}000$ tokens. Inverting the fitted sigmoid,
-we estimated that $\geq 95\%$ expected attribution accuracy requires
-approximately 51,000 tokens per author (bootstrap 95\% CI: 12,000--70,000
-tokens). At the lowest token count tested (2,500 tokens), accuracy was
-$66.2\%$, rising to $100\%$ at 80,000 tokens and above
-(Fig.~\ref{fig:ntokens}A). Individual authors showed substantial variability:
-some authors (e.g., Austen, Baum) were reliably attributed even at low token
-counts, while others (e.g., Melville, Twain) required considerably more data
-(Fig.~\ref{fig:ntokens}A). These per-author differences were also reflected in
-the $t$-statistics at the final training epoch, which increased monotonically
-with training corpus size for all authors (Fig.~\ref{fig:ntokens}B).
-
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figs/n_tokens.pdf}
-  \caption{\textbf{Training data requirements for authorship attribution.}
-  \textbf{A.} Attribution accuracy as a function of training tokens per
-  author. Small colored dots show per-author accuracy (averaged over 10
-  seeds); black squares show the mean across all authors. The black curve is
-  a fitted sigmoid ($R^2 = 0.979$); the gray ribbon denotes the
-  bootstrap-estimated 95\% confidence interval (resampled over authors). The
-  dotted vertical line marks the estimated minimum tokens for $\geq 95\%$
-  expected accuracy ($\approx 51{,}000$ tokens). \textbf{B.}
-  Final-epoch (epoch 500) $t$-statistics comparing same-author versus
-  other-author cross-entropy losses, plotted as a function of training
-  tokens. Each curve denotes one author; ribbons show bootstrap 95\%
-  confidence intervals (resampled over seeds). The dashed horizontal line
-  marks the $p < 0.001$ significance threshold. The dotted vertical line
-  marks the same token threshold as in Panel A.}
-  \label{fig:ntokens}
-\end{figure*}
-
-\subsection{Comparison with text embedding methods}
-
-We compared predictive comparison against nearest-neighbor classification using
-pre-trained text embeddings (Section~\ref{subsec:embedding-comparison}).
-Book-level attribution accuracy was 81.0\% for \texttt{nomic-embed-text-v1.5}
-(137M parameters), 76.2\% for \texttt{bge-m3} (568M parameters), and 70.2\%
-for \texttt{Qwen3-Embedding-4B} (4.0B parameters)---well below the 100\%
-achieved by our approach using models with just 0.8M parameters each
-(Fig.~\ref{fig:embedding-comparison}). Strikingly, accuracy exhibited an
-inverse relationship with model size. All three models correctly attributed the
-most stylistically distinctive authors (Austen, Baum, and Dickens) at 100\%,
-but struggled with less distinctive authors---particularly the largest model,
-which failed entirely on Fitzgerald (0/8) and achieved only 38.5\% on
-Thompson. Per-author accuracy, chunk-level purity distributions (Supp.
-Fig.~\embeddingpurity), and cross-author confusion patterns (Supp.
-Fig.~\embeddingconfusion) are provided in the Supplementary Materials.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.8\columnwidth]{figs/source/embedding_comparison.pdf}
-  \caption{\textbf{Comparison of embedding-based and predictive comparison
-  approaches.} Book-level attribution accuracy for three pre-trained text
-  embedding models from the MTEB leaderboard, compared with our predictive
-  comparison approach (rightmost bar). Embedding models are ordered by size
-  (137M to 4.0B parameters). Despite being orders of magnitude larger than our
-  author-specific models (0.8M parameters each), none of the embedding models
-  matched the 100\% accuracy of predictive comparison. Accuracy exhibited an
-  inverse relationship with model size.}
-  \label{fig:embedding-comparison}
-\end{figure}
-
 \section{Discussion}
 
 We introduced predictive comparison, a method for stylometric analysis that
@@ -612,30 +496,6 @@ language modeling problem rather than a classification task. This convergent
 development suggests that predictive modeling may be a natural framework for
 capturing authorial style.
 
-A critical methodological distinction separates the two approaches.
-\citet{HuanEtal25} fine-tune a pre-trained GPT-2 model for each author,
-whereas we train models entirely from scratch. Fine-tuning inherits the
-representations learned during pre-training on WebText, a 40 GB corpus of web
-text. Although \citet{HuanEtal25} argue that their training data is unlikely to
-appear in WebText, this cannot be guaranteed for all evaluation corpora---a
-concern that extends to any approach based on fine-tuning pre-trained models.
-Training from scratch eliminates this data contamination risk entirely, because
-the only text the model has ever seen is the author's corpus. This distinction
-is particularly important for forensic applications where the provenance of
-model knowledge must be established.
-
-The data requirements of training from scratch also differ fundamentally from
-fine-tuning. Our dataset-size analysis (Fig.~\ref{fig:ntokens}A) shows that
-approximately 51,000 tokens per author are needed for $\geq 95\%$ expected
-attribution accuracy when training from scratch. This is substantially more
-than the text lengths used in standard authorship attribution benchmarks: for
-example, Blogs50 averages 112 tokens per text, CCAT50 averages 506 tokens,
-and Guardian averages 1,052 tokens~\citep{HuanEtal25}. These benchmarks were
-designed for methods that leverage pre-trained representations and thus require
-far less author-specific data. The data requirements of our approach reflect a
-fundamentally different regime---one in which the model must learn
-author-specific patterns entirely from the author's own text.
-
 The information-theoretic foundations of our approach connect to earlier work
 using cross-entropy~\citep{JuolBaay05} and relative entropy~\citep{ZhaoEtal06}
 for stylometry. These methods recognized that authorial style manifests not
@@ -652,21 +512,6 @@ approach naturally extends to open-set attribution problems where new authors
 may be introduced without retraining existing models. However, classification
 approaches may be more computationally efficient when dealing with fixed author
 sets, as they require training only a single model.
-
-Our comparison with pre-trained text embedding models further highlights the
-value of author-specific training. Even the largest embedding model tested
-(4.0B parameters) fell well short of the 100\% accuracy achieved by our much
-smaller author-specific models (0.8M parameters each), and the observed inverse
-relationship between embedding model size and accuracy suggests that larger
-models may encode richer content representations that actually
-\textit{increase} cross-author similarity at the expense of stylistic
-distinctions. The most common misclassification pattern involved attributing
-texts to Dickens---the author with the largest corpus and thus the most chunks
-in the nearest-neighbor pool---particularly for authors whose works overlap
-thematically (e.g., Melville and Wells). By contrast, author-specific language
-models trained from scratch learn to predict an individual author's sequential
-word choices, capturing the patterns that distinguish one author from another
-regardless of topical overlap.
 
 Our reliance on books as training data contrasts with most contemporary
 stylometry research, which typically uses shorter texts to enable larger author
@@ -879,7 +724,6 @@ The Scarecrow of Oz & 59,593 & & \\
 
 
 \begin{center}
-\small
 \begin{tabular}{@{}ll|ll@{}}
 \toprule
 \textbf{Jane Austen} & \textbf{Tokens} & \textbf{Mark Twain} & \textbf{Tokens} \\
@@ -897,7 +741,6 @@ Persuasion & 106,027 & & \\
 
 \newpage
 
-\small
 \begin{tabular}{@{}ll|ll@{}}
 \toprule
 \textbf{F. Scott Fitzgerald} & \textbf{Tokens} & \textbf{H. G. Wells} & \textbf{Tokens} \\

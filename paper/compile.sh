@@ -3,9 +3,11 @@
 # Compile the LLM Stylometry paper and supplement
 #
 # Usage:
-#   ./paper/compile.sh           # Compile both main paper and supplement
+#   ./paper/compile.sh           # Compile all (main + supplement + response + diff)
 #   ./paper/compile.sh main      # Compile main paper only
 #   ./paper/compile.sh supplement # Compile supplement only
+#   ./paper/compile.sh response  # Compile response letter only
+#   ./paper/compile.sh diff      # Generate latexdiff markup PDF
 #   ./paper/compile.sh clean     # Remove build artifacts
 
 set -e
@@ -45,7 +47,6 @@ compile_tex() {
         echo -e "${GREEN}[OK]${NC} ${NAME}.pdf (${PAGES} pages, ${SIZE})"
     else
         echo -e "${RED}[ERROR]${NC} Failed to compile ${TEX_FILE}"
-        # Show errors
         grep "^!" "${NAME}.log" 2>/dev/null || true
         exit 1
     fi
@@ -57,9 +58,28 @@ compile_tex() {
     fi
 }
 
+compile_diff() {
+    echo -e "${BLUE}[INFO]${NC} Generating latexdiff..."
+
+    if [ ! -f old.tex ]; then
+        echo -e "${RED}[ERROR]${NC} old.tex not found. Generate with: git show main:paper/main.tex > paper/old.tex"
+        return 1
+    fi
+
+    if ! command -v latexdiff &> /dev/null; then
+        echo -e "${RED}[ERROR]${NC} latexdiff not installed. Install with: brew install latexdiff (or tlmgr install latexdiff)"
+        return 1
+    fi
+
+    latexdiff old.tex main.tex > diff.tex 2>/dev/null
+    echo -e "${BLUE}[INFO]${NC} Compiling diff.tex..."
+    compile_tex diff.tex
+}
+
 clean() {
     echo -e "${BLUE}[INFO]${NC} Cleaning build artifacts..."
     rm -f *.aux *.bbl *.blg *.log *.out *.fls *.fdb_latexmk *.synctex.gz
+    rm -f diff.tex
     rm -f admin/*.aux admin/*.log admin/*.out
     echo -e "${GREEN}[OK]${NC} Clean complete"
 }
@@ -75,6 +95,9 @@ case "${1:-all}" in
         cd admin
         compile_tex response_letter.tex
         ;;
+    diff)
+        compile_diff
+        ;;
     clean)
         clean
         ;;
@@ -83,9 +106,11 @@ case "${1:-all}" in
         compile_tex supplement.tex
         cd admin
         compile_tex response_letter.tex
+        cd ..
+        compile_diff
         ;;
     *)
-        echo "Usage: $0 [main|supplement|response|clean|all]"
+        echo "Usage: $0 [main|supplement|response|diff|clean|all]"
         exit 1
         ;;
 esac

@@ -312,7 +312,26 @@ neighbor (cosine similarity) among all chunks from the remaining 83 books. The
 book-level author prediction was determined by majority vote across chunk-level
 predictions.
 
-% All results finalized: nomic 81.0%, bge-m3 76.2%, Qwen3-4B 70.2%
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/source/embedding_purity.pdf}
+  \caption{\textbf{Chunk-level purity for embedding-based attribution.}
+  Distribution of purity scores (fraction of chunks voting for the modal
+  author) across books, grouped by author and model. Higher purity indicates
+  stronger consensus among chunk-level predictions.}
+  \label{fig:embedding-purity}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figs/source/embedding_confusion.pdf}
+  \caption{\textbf{Confusion matrices for embedding-based attribution.}
+  Each panel shows the percentage of books by each true author (rows) that
+  were classified as each predicted author (columns). Diagonal entries
+  represent correct attributions.}
+  \label{fig:embedding-confusion}
+\end{figure}
+
 \begin{table}[h]
 \centering
 \begin{tabular}{lccc}
@@ -334,16 +353,11 @@ scratch; embedding methods use a single pre-trained model for all authors.}
 \label{tab:embedding-comparison}
 \end{table}
 
-We report per-author accuracy and chunk-level purity (the fraction of a
-held-out book's chunks assigned to the winning author) in
-Supplementary Figures~\ref{fig:embedding-purity}
-and~\ref{fig:embedding-confusion}.
-
-% VERIFIED: All 3 models complete. Findings confirmed.
 Notable patterns included: (1) authors with the most distinctive styles
 (Austen, Baum, Dickens) were reliably attributed by all three models at 100\%
 accuracy, whereas authors with fewer books or less distinctive styles (Twain,
-Melville, Fitzgerald) were frequently misclassified; (2) the largest model
+Melville, Fitzgerald) were frequently misclassified
+(Supplementary Fig.~\ref{fig:embedding-confusion}); (2) the largest model
 (\texttt{Qwen3-Embedding-4B}, 4.0B parameters) performed worst overall at
 70.2\%, completely failing on Fitzgerald (0/8 books correct) and achieving only
 38.5\% on Thompson---suggesting that larger embedding models may conflate
@@ -353,26 +367,6 @@ best at 81.0\%, indicating that general MTEB ranking does not predict
 performance on this specialized task; and (4) an inverse relationship between
 model size and attribution accuracy was observed (81.0\%, 76.2\%, 70.2\% for
 137M, 568M, and 4.0B parameters, respectively).
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\textwidth]{figs/source/embedding_purity.pdf}
-  \caption{\textbf{Chunk-level purity for embedding-based attribution.}
-  Distribution of purity scores (fraction of chunks voting for the modal
-  author) across books, grouped by author and model. Higher purity indicates
-  stronger consensus among chunk-level predictions.}
-  \label{fig:embedding-purity}
-\end{figure}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\textwidth]{figs/source/embedding_confusion.pdf}
-  \caption{\textbf{Confusion matrices for embedding-based attribution.}
-  Each panel shows the percentage of books by each true author (rows) that
-  were classified as each predicted author (columns). Diagonal entries
-  represent correct attributions.}
-  \label{fig:embedding-confusion}
-\end{figure}
 
 
 \end{document}
