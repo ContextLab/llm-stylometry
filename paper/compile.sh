@@ -3,11 +3,11 @@
 # Compile the LLM Stylometry paper and supplement
 #
 # Usage:
-#   ./paper/compile.sh           # Compile all (main + supplement + response + diff)
+#   ./paper/compile.sh           # Compile all (main + supplement + response + diffs)
 #   ./paper/compile.sh main      # Compile main paper only
 #   ./paper/compile.sh supplement # Compile supplement only
 #   ./paper/compile.sh response  # Compile response letter only
-#   ./paper/compile.sh diff      # Generate latexdiff markup PDF
+#   ./paper/compile.sh diff      # Generate latexdiff markup PDFs (main + supplement)
 #   ./paper/compile.sh clean     # Remove build artifacts
 
 set -e
@@ -59,27 +59,34 @@ compile_tex() {
 }
 
 compile_diff() {
-    echo -e "${BLUE}[INFO]${NC} Generating latexdiff..."
-
-    if [ ! -f old.tex ]; then
-        echo -e "${RED}[ERROR]${NC} old.tex not found. Generate with: git show main:paper/main.tex > paper/old.tex"
-        return 1
-    fi
-
     if ! command -v latexdiff &> /dev/null; then
-        echo -e "${RED}[ERROR]${NC} latexdiff not installed. Install with: brew install latexdiff (or tlmgr install latexdiff)"
+        echo -e "${RED}[ERROR]${NC} latexdiff not installed. Install with: brew install latexdiff"
         return 1
     fi
 
-    latexdiff old.tex main.tex > diff.tex 2>/dev/null
-    echo -e "${BLUE}[INFO]${NC} Compiling diff.tex..."
-    compile_tex diff.tex
+    # Main paper diff
+    if [ -f old.tex ]; then
+        echo -e "${BLUE}[INFO]${NC} Generating main paper diff..."
+        latexdiff old.tex main.tex > diff.tex 2>/dev/null
+        compile_tex diff.tex
+    else
+        echo -e "${RED}[ERROR]${NC} old.tex not found. Generate with: git show main:paper/main.tex > paper/old.tex"
+    fi
+
+    # Supplement diff
+    if [ -f old_supplement.tex ]; then
+        echo -e "${BLUE}[INFO]${NC} Generating supplement diff..."
+        latexdiff old_supplement.tex supplement.tex > diff_supplement.tex 2>/dev/null
+        compile_tex diff_supplement.tex
+    else
+        echo -e "${BLUE}[INFO]${NC} old_supplement.tex not found, skipping supplement diff"
+    fi
 }
 
 clean() {
     echo -e "${BLUE}[INFO]${NC} Cleaning build artifacts..."
     rm -f *.aux *.bbl *.blg *.log *.out *.fls *.fdb_latexmk *.synctex.gz
-    rm -f diff.tex
+    rm -f diff.tex diff_supplement.tex
     rm -f admin/*.aux admin/*.log admin/*.out
     echo -e "${GREEN}[OK]${NC} Clean complete"
 }
@@ -106,7 +113,7 @@ case "${1:-all}" in
         compile_tex supplement.tex
         cd admin
         compile_tex response_letter.tex
-        cd ..
+        cd "$SCRIPT_DIR"
         compile_diff
         ;;
     *)
