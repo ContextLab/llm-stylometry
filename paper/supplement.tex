@@ -10,6 +10,8 @@
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{placeins}
+\usepackage{float}
+\usepackage{caption}
 \usepackage{booktabs}
 \usepackage{longtable}
 
@@ -296,25 +298,23 @@ to the other authors' randomly sampled texts.}
 %% Embedding Comparison
 %% ============================================================
 
-\begin{figure}[h]
-  \centering
+\begin{center}
   \includegraphics[width=\textwidth]{figs/source/embedding_purity.pdf}
-  \caption{\textbf{Chunk-level purity for embedding-based attribution.}
+  \captionof{figure}{\textbf{Chunk-level purity for embedding-based attribution.}
   Distribution of purity scores (fraction of chunks voting for the modal
   author) across books, grouped by author and model. Higher purity indicates
   stronger consensus among chunk-level predictions.}
   \label{fig:embedding-purity}
-\end{figure}
+\end{center}
 
-\begin{figure}[h]
-  \centering
+\begin{center}
   \includegraphics[width=\textwidth]{figs/source/embedding_confusion.pdf}
-  \caption{\textbf{Confusion matrices for embedding-based attribution.}
+  \captionof{figure}{\textbf{Confusion matrices for embedding-based attribution.}
   Each panel shows the percentage of books by each true author (rows) that
   were classified as each predicted author (columns). Diagonal entries
   represent correct attributions.}
   \label{fig:embedding-confusion}
-\end{figure}
+\end{center}
 
 \clearpage
 
