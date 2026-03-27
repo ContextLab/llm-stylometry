@@ -1,7 +1,7 @@
 \documentclass[11pt]{article}
 %DIF LATEXDIFF DIFFERENCE FILE
 %DIF DEL old.tex    Thu Mar 26 16:11:26 2026
-%DIF ADD main.tex   Thu Mar 26 23:45:05 2026
+%DIF ADD main.tex   Thu Mar 26 23:57:22 2026
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage[font=small,labelfont=bf]{caption}
@@ -597,8 +597,7 @@ and accurately make next-token predictions.
 \DIFaddbegin \DIFadd{Having established that our models capture author-specific stylometric
 patterns, we next sought to characterize the data requirements for reliable
 authorship attribution. We systematically varied the number of training tokens
-per author from 2,500 to 643,041 to characterize the data requirements for
-reliable authorship attribution (Fig.~\ref{fig:ntokens}A; see
+per author from 2,500 to 643,041 (Fig.~\ref{fig:ntokens}A; see
 Section~\ref{subsec:data-requirements}). We found that, for the range of token
 counts tested, attribution accuracy followed a roughly sigmoidal trajectory on
 the $\log_{10}$-token scale. A four-parameter sigmoid fit to the mean accuracy
@@ -636,7 +635,7 @@ token threshold as in Panel A.}} \label{fig:ntokens}
 
 \DIFadd{We also wondered how the performance of our predictive comparison approach
 might compare to alternative methods based on pre-trained text embeddings. For
-example, since GPT-2 implicitly learn to embed each author's text, perhaps more
+example, since GPT-2 implicitly learns to embed each author's text, perhaps more
 recent embedding models, which are trained on much larger corpora and have more
 parameters, might be able to capture author-specific stylistic patterns without
 the need for training separate models for each author. To investigate this
@@ -745,7 +744,7 @@ fine-tuning. Our dataset-size analysis (Fig.~\ref{fig:ntokens}A) shows that
 approximately 51,000 tokens per author are needed for $\geq 95\%$ expected
 attribution accuracy when training from scratch. This is substantially more
 than the text lengths used in standard authorship attribution benchmarks: for
-example, Blogs50 averages 112 tokens per text, CCAT50 averages 506 tokens, and
+example, Blogs50 averages 112 tokens per text; CCAT50 averages 506 tokens; and
 Guardian averages 1,052 tokens~\mbox{%DIFAUXCMD
 \citep{HuanEtal25}}\hskip0pt%DIFAUXCMD
 . These benchmarks were
@@ -762,7 +761,7 @@ provides stronger guarantees that the model's knowledge is derived solely from
 the author's text. Our approach also enabled us to perform ablation studies to
 investigate the contributions of different aspects of writing style, along with
 a systematic analysis of the data requirements for reliable attribution. These
-would not have been possible using fine-tuned models that had already learned
+analyses would not have been possible using fine-tuned models that had already learned
 general linguistic patterns during pre-training. Maintaining a pure training
 corpus enables us to make stronger claims about specifically what the models
 are learning.

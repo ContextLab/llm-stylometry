@@ -70,3 +70,4 @@ data/embedding_results/
 # Parquet data files (regenerable from models/)
 data/model_results_ntokens.parquet
 data/t_test_ntokens_cache/
+notes/paper-review-plan.md
