@@ -58,6 +58,12 @@ start_gpu_workspace.sh
 .specify/
 specs/
 
+# Oh My Claude Code artifacts
+.omc/
+
+# Claude Code artifacts
+.claude/
+
 # Embedding comparison results (large cached embeddings)
 data/embedding_results/
 
