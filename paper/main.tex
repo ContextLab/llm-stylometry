@@ -637,7 +637,7 @@ fine-tuning. Our dataset-size analysis (Fig.~\ref{fig:ntokens}A) shows that
 approximately 51,000 tokens per author are needed for $\geq 95\%$ expected
 attribution accuracy when training from scratch. This is substantially more
 than the text lengths used in standard authorship attribution benchmarks: for
-example, Blogs50 averages 112 tokens per text, CCAT50 averages 506 tokens, and
+example, Blogs50 averages 112 tokens per text; CCAT50 averages 506 tokens; and
 Guardian averages 1,052 tokens~\citep{HuanEtal25}. These benchmarks were
 designed for methods that leverage pre-trained representations and thus require
 far less author-specific data. The data requirements of our approach reflect a
@@ -650,7 +650,7 @@ provides stronger guarantees that the model's knowledge is derived solely from
 the author's text. Our approach also enabled us to perform ablation studies to
 investigate the contributions of different aspects of writing style, along with
 a systematic analysis of the data requirements for reliable attribution. These
-would not have been possible using fine-tuned models that had already learned
+analyses would not have been possible using fine-tuned models that had already learned
 general linguistic patterns during pre-training. Maintaining a pure training
 corpus enables us to make stronger claims about specifically what the models
 are learning.
