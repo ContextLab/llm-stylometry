@@ -39,8 +39,8 @@ models. We have substantially revised the manuscript to address these concerns,
 including two new analyses:
 
 \begin{enumerate}
-\item A systematic dataset-size analysis characterizing the relationship between training corpus size and attribution accuracy (1,520 newly trained models), including a formal sigmoid fit estimating that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author (new Section ``Corpus size analysis,'' \pref{XX}).
-\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) do not match the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models (new Section ``Comparisons between predictive comparison and text embedding matching,'' \pref{XX}).
+\item A systematic dataset-size analysis characterizing the relationship between training corpus size and attribution accuracy (1,520 newly trained models), including a formal sigmoid fit estimating that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author (new Section ``Corpus size analysis,'' \pref{6}).
+\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) do not match the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models (new Section ``Comparisons between predictive comparison and text embedding matching,'' \pref{7}).
 \end{enumerate}
 
 We have carefully addressed each of the comments from the reviewers, and we
@@ -82,7 +82,7 @@ the proposed method/study is novel given existing works.}
 
 \textbf{We have substantially expanded our discussion of the relationship to
 Huang et al.\ (2025) in the revised Section ``Relationship to prior work''
-(\pref{XX}). We now explicitly articulate the key methodological
+(\pref{18}). We now explicitly articulate the key methodological
 distinction---training from scratch versus fine-tuning---and its implications
 for data purity, as well as several additional contributions unique to our
 work. We discuss this in detail in our responses to Reviewers 1 and 3 below.}
@@ -94,7 +94,7 @@ tell a different story. Possible analyses would include:}
 \textit{$\bullet$ how much data one should have at least to train the GPT-2 model?}
 
 \textbf{We have added a new dataset-size analysis (Section ``Training data
-requirements,'' \pref{XX}) in which we systematically varied the number of
+requirements,'' \pref{6}) in which we systematically varied the number of
 training tokens per author from 2,500 to 643,041. This required training 1,520
 new models (8 authors $\times$ 10 seeds $\times$ 19 token levels). We fit a
 four-parameter sigmoid to the resulting accuracy curve ($R^2 = 0.979$) and
@@ -140,12 +140,12 @@ models (which inherit general language representations and thus require less
 author-specific data) and training from scratch (which must learn all patterns
 from the author's text alone). Rather than force our method into an unsuitable
 evaluation regime, we have instead added a comparison with pre-trained text
-embedding models (see below and \pref{XX}).}
+embedding models (see below and \pref{7}).}
 
 \textit{$\bullet$ what will happen if different comparing authors have
 different amount of books available for training?}
 
-\textbf{Our new dataset-size analysis directly addresses this. As visible in the figure above (Panel A), we found substantial variability across authors. Some authors (e.g., Austen, Baum) were reliably attributed even with 2,500 tokens, while others (e.g., Melville, Twain) required considerably more data. From the revised manuscript (\pref{XX}):}
+\textbf{Our new dataset-size analysis directly addresses this. As visible in the figure above (Panel A), we found substantial variability across authors. Some authors (e.g., Austen, Baum) were reliably attributed even with 2,500 tokens, while others (e.g., Melville, Twain) required considerably more data. From the revised manuscript (\pref{15}):}
 
 \textbf{\begin{quote}
 ``Individual authors showed substantial variability: some authors (e.g., Austen, Baum) were reliably attributed even at low token counts, while others (e.g., Melville, Twain) required considerably more data.''
@@ -156,7 +156,7 @@ different amount of books available for training?}
 \textbf{Our existing Oz book analysis provides some evidence of cross-topic
 robustness: models trained on an author's general works correctly attribute a
 contested text from a different series. We have substantially expanded our
-discussion of cross-domain robustness (\pref{XX}), reviewing prior work
+discussion of cross-domain robustness (\pref{22}), reviewing prior work
 showing that attribution performance degrades across genres and topics
 (Stamatatos, 2009; Barlas \& Stamatatos, 2020), and that separating stylistic
 signal from topical content remains an active challenge (Stamatatos, 2018;
@@ -233,7 +233,7 @@ evaluation data may have been seen during pre-training. Training from scratch
 eliminates this data contamination risk entirely, because the only text the
 model has ever seen is the author's own corpus. This is particularly important
 for forensic applications where the provenance of model knowledge must be
-established. From the revised manuscript (\pref{XX}):}
+established. From the revised manuscript (\pref{19}):}
 
 \textbf{\begin{quote} ``A critical methodological distinction separates the two
 approaches. [Huang et al.] fine-tune a pre-trained GPT-2 model for each author,
@@ -263,7 +263,7 @@ contested Oz authorship problem, (3) ablation studies decomposing the
 contributions of content words, function words, and parts of speech, (4) the
 new dataset-size analysis characterizing data requirements for training from
 scratch, and (5) the comparison with text embedding methods. We have made these
-contributions explicit in the revised Discussion (\pref{XX}).}
+contributions explicit in the revised Discussion (\pref{18}).}
 
 \textit{5. Substantive Revisions to be Required:}
 
@@ -271,7 +271,7 @@ contributions explicit in the revised Discussion (\pref{XX}).}
 
 \textit{Explicitly explain what is genuinely new here beyond Huang et al.\ (2025): e.g., the focus on long-form literary texts, the definition and use of the stylometric distance d(i,j), the Oz case study, or methodological differences (from-scratch vs fine-tuning).}
 
-\textbf{We have expanded the ``Relationship to prior work'' section (\pref{XX})
+\textbf{We have expanded the ``Relationship to prior work'' section (\pref{18})
 as described above, explicitly articulating the five contributions that
 distinguish our work from Huang et al.\ (2025).}
 
@@ -344,7 +344,7 @@ author's own corpus.}
 small GPT-2 architecture with just 0.8M non-embedding parameters. A more
 powerful model is unnecessary---the bottleneck is not model capacity but the
 amount of author-specific training data available. Our new dataset-size
-analysis (\pref{XX}) demonstrates this directly: accuracy is determined by
+analysis (\pref{15}) demonstrates this directly: accuracy is determined by
 training corpus size, not model size.}
 
 \textit{6. Minor Revisions to be Required:}
@@ -363,7 +363,7 @@ approach lies not in model size but in the author-specific training objective.}
 \textbf{We acknowledge that for more challenging settings (e.g., hundreds of
 authors with similar styles), larger models or parameter-efficient fine-tuning
 might offer benefits. We discuss this as a future direction in the revised
-manuscript (\pref{XX}).}
+manuscript (\pref{23}).}
 
 \newpage
 
@@ -405,7 +405,7 @@ perplexity for authorship analysis, however, there are many existing works
 utilizing cross-entropy for authorship analysis. You should also compare it
 with those works.}
 
-\textbf{We have expanded the ``Relationship to prior work'' section (\pref{XX})
+\textbf{We have expanded the ``Relationship to prior work'' section (\pref{18})
 to more thoroughly discuss prior work using cross-entropy and relative entropy
 for stylometry, including Juola \& Baayen (2005) and Zhao et al.\ (2006). From
 the revised manuscript:}
@@ -425,7 +425,7 @@ computationally expensive training loops, it limits the generalizability of the
 claims regarding scalability to open-set problems.}
 
 \textbf{We agree that the current scope is limited, and we are transparent
-about this as a limitation (\pref{XX}). However, our new dataset-size analysis
+about this as a limitation (\pref{21}). However, our new dataset-size analysis
 now provides quantitative guidance for scaling: approximately 51,000 tokens per
 author are needed for $\geq 95\%$ accuracy. This gives researchers a concrete
 estimate of the resources required to extend to new author sets.}
@@ -467,7 +467,7 @@ across distinct genres remains untested.}
 \textbf{Our Oz book analysis provides some evidence of within-author
 cross-topic robustness: models trained on an author's general works correctly
 attribute a contested text from a different series. We have substantially
-expanded our discussion of cross-domain robustness (\pref{XX}), reviewing
+expanded our discussion of cross-domain robustness (\pref{22}), reviewing
 prior work on how genre and topic variation degrade attribution performance
 and identifying this as an important direction for future work.
 Systematic cross-genre evaluation requires collecting and curating new
