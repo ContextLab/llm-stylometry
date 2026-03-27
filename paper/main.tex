@@ -499,8 +499,7 @@ and accurately make next-token predictions.
 Having established that our models capture author-specific stylometric
 patterns, we next sought to characterize the data requirements for reliable
 authorship attribution. We systematically varied the number of training tokens
-per author from 2,500 to 643,041 to characterize the data requirements for
-reliable authorship attribution (Fig.~\ref{fig:ntokens}A; see
+per author from 2,500 to 643,041 (Fig.~\ref{fig:ntokens}A; see
 Section~\ref{subsec:data-requirements}). We found that, for the range of token
 counts tested, attribution accuracy followed a roughly sigmoidal trajectory on
 the $\log_{10}$-token scale. A four-parameter sigmoid fit to the mean accuracy
@@ -537,7 +536,7 @@ token threshold as in Panel A.} \label{fig:ntokens}
 
 We also wondered how the performance of our predictive comparison approach
 might compare to alternative methods based on pre-trained text embeddings. For
-example, since GPT-2 implicitly learn to embed each author's text, perhaps more
+example, since GPT-2 implicitly learns to embed each author's text, perhaps more
 recent embedding models, which are trained on much larger corpora and have more
 parameters, might be able to capture author-specific stylistic patterns without
 the need for training separate models for each author. To investigate this

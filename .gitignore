@@ -54,6 +54,10 @@ models_hf/
 runai_notes.md
 start_gpu_workspace.sh
 
+# Speckit artifacts
+.specify/
+specs/
+
 # Embedding comparison results (large cached embeddings)
 data/embedding_results/
 
