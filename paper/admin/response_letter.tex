@@ -39,8 +39,8 @@ models. We have substantially revised the manuscript to address these concerns,
 including two new analyses:
 
 \begin{enumerate}
-\item A systematic dataset-size analysis characterizing the relationship between training corpus size and attribution accuracy (1,520 newly trained models), including a formal sigmoid fit estimating that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author (new Section ``Training data requirements,'' \pref{XX}).
-\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) do not match the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models (new Section ``Comparison with text embedding methods,'' \pref{XX}).
+\item A systematic dataset-size analysis characterizing the relationship between training corpus size and attribution accuracy (1,520 newly trained models), including a formal sigmoid fit estimating that $\geq 95\%$ expected accuracy requires approximately 51,000 tokens per author (new Section ``Corpus size analysis,'' \pref{XX}).
+\item A comparison with pre-trained text embedding models from the MTEB leaderboard, demonstrating that even state-of-the-art embedding models (up to 4 billion parameters) do not match the 100\% accuracy achieved by our approach using much smaller (0.8M parameter) author-specific models (new Section ``Comparisons between predictive comparison and text embedding matching,'' \pref{XX}).
 \end{enumerate}
 
 We have carefully addressed each of the comments from the reviewers, and we
@@ -242,7 +242,8 @@ representations learned during pre-training on WebText, a 40 GB corpus of web
 text. Although [Huang et al.] argue that their training data is unlikely to
 appear in WebText, this cannot be guaranteed for all evaluation corpora---a
 concern that extends to any approach based on fine-tuning pre-trained models.
-Training from scratch eliminates this data contamination risk entirely.''
+Training from scratch eliminates this data contamination risk entirely, because
+the only text the model has ever seen is the author's corpus.''
 \end{quote}}
 
 \textbf{We were unaware of Huang et al.'s paper when we initially carried out
