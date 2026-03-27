@@ -1,4 +1,7 @@
 \documentclass[10pt]{article}
+%DIF LATEXDIFF DIFFERENCE FILE
+%DIF DEL old_supplement.tex   Thu Mar 26 19:56:32 2026
+%DIF ADD supplement.tex       Thu Mar 26 22:51:30 2026
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage[font=small,labelfont=bf]{caption}
@@ -10,8 +13,10 @@
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{placeins}
-\usepackage{float}
-\usepackage{caption}
+%DIF 13a13-14
+\usepackage{float} %DIF > 
+\usepackage{caption} %DIF > 
+%DIF -------
 \usepackage{booktabs}
 \usepackage{longtable}
 
@@ -27,6 +32,89 @@ Hanover, NH 03755, USA \\
 \texttt{\{harrison.f.stropkay.25, jiayi.chen.gr, mohammad.javad.latifi.jebelli}\\\texttt{daniel.n.rockmore, jeremy.r.manning\}@dartmouth.edu}}
 
 \date{}
+%DIF PREAMBLE EXTENSION ADDED BY LATEXDIFF
+%DIF UNDERLINE PREAMBLE %DIF PREAMBLE
+\RequirePackage[normalem]{ulem} %DIF PREAMBLE
+\RequirePackage{color}\definecolor{RED}{rgb}{1,0,0}\definecolor{BLUE}{rgb}{0,0,1} %DIF PREAMBLE
+\providecommand{\DIFaddtex}[1]{{\protect\color{blue}\uwave{#1}}} %DIF PREAMBLE
+\providecommand{\DIFdeltex}[1]{{\protect\color{red}\sout{#1}}} %DIF PREAMBLE
+%DIF SAFE PREAMBLE %DIF PREAMBLE
+\providecommand{\DIFaddbegin}{} %DIF PREAMBLE
+\providecommand{\DIFaddend}{} %DIF PREAMBLE
+\providecommand{\DIFdelbegin}{} %DIF PREAMBLE
+\providecommand{\DIFdelend}{} %DIF PREAMBLE
+\providecommand{\DIFmodbegin}{} %DIF PREAMBLE
+\providecommand{\DIFmodend}{} %DIF PREAMBLE
+%DIF FLOATSAFE PREAMBLE %DIF PREAMBLE
+\providecommand{\DIFaddFL}[1]{\DIFadd{#1}} %DIF PREAMBLE
+\providecommand{\DIFdelFL}[1]{\DIFdel{#1}} %DIF PREAMBLE
+\providecommand{\DIFaddbeginFL}{} %DIF PREAMBLE
+\providecommand{\DIFaddendFL}{} %DIF PREAMBLE
+\providecommand{\DIFdelbeginFL}{} %DIF PREAMBLE
+\providecommand{\DIFdelendFL}{} %DIF PREAMBLE
+%DIF HYPERREF PREAMBLE %DIF PREAMBLE
+\providecommand{\DIFadd}[1]{\texorpdfstring{\DIFaddtex{#1}}{#1}} %DIF PREAMBLE
+\providecommand{\DIFdel}[1]{\texorpdfstring{\DIFdeltex{#1}}{}} %DIF PREAMBLE
+\newcommand{\DIFscaledelfig}{0.5}
+%DIF HIGHLIGHTGRAPHICS PREAMBLE %DIF PREAMBLE
+\RequirePackage{settobox} %DIF PREAMBLE
+\RequirePackage{letltxmacro} %DIF PREAMBLE
+\newsavebox{\DIFdelgraphicsbox} %DIF PREAMBLE
+\newlength{\DIFdelgraphicswidth} %DIF PREAMBLE
+\newlength{\DIFdelgraphicsheight} %DIF PREAMBLE
+% store original definition of \includegraphics %DIF PREAMBLE
+\LetLtxMacro{\DIFOincludegraphics}{\includegraphics} %DIF PREAMBLE
+\newcommand{\DIFaddincludegraphics}[2][]{{\color{blue}\fbox{\DIFOincludegraphics[#1]{#2}}}} %DIF PREAMBLE
+\newcommand{\DIFdelincludegraphics}[2][]{% %DIF PREAMBLE
+\sbox{\DIFdelgraphicsbox}{\DIFOincludegraphics[#1]{#2}}% %DIF PREAMBLE
+\settoboxwidth{\DIFdelgraphicswidth}{\DIFdelgraphicsbox} %DIF PREAMBLE
+\settoboxtotalheight{\DIFdelgraphicsheight}{\DIFdelgraphicsbox} %DIF PREAMBLE
+\scalebox{\DIFscaledelfig}{% %DIF PREAMBLE
+\parbox[b]{\DIFdelgraphicswidth}{\usebox{\DIFdelgraphicsbox}\\[-\baselineskip] \rule{\DIFdelgraphicswidth}{0em}}\llap{\resizebox{\DIFdelgraphicswidth}{\DIFdelgraphicsheight}{% %DIF PREAMBLE
+\setlength{\unitlength}{\DIFdelgraphicswidth}% %DIF PREAMBLE
+\begin{picture}(1,1)% %DIF PREAMBLE
+\thicklines\linethickness{2pt} %DIF PREAMBLE
+{\color[rgb]{1,0,0}\put(0,0){\framebox(1,1){}}}% %DIF PREAMBLE
+{\color[rgb]{1,0,0}\put(0,0){\line( 1,1){1}}}% %DIF PREAMBLE
+{\color[rgb]{1,0,0}\put(0,1){\line(1,-1){1}}}% %DIF PREAMBLE
+\end{picture}% %DIF PREAMBLE
+}\hspace*{3pt}}} %DIF PREAMBLE
+} %DIF PREAMBLE
+\LetLtxMacro{\DIFOaddbegin}{\DIFaddbegin} %DIF PREAMBLE
+\LetLtxMacro{\DIFOaddend}{\DIFaddend} %DIF PREAMBLE
+\LetLtxMacro{\DIFOdelbegin}{\DIFdelbegin} %DIF PREAMBLE
+\LetLtxMacro{\DIFOdelend}{\DIFdelend} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFaddbegin}{\DIFOaddbegin \let\includegraphics\DIFaddincludegraphics} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFaddend}{\DIFOaddend \let\includegraphics\DIFOincludegraphics} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFdelbegin}{\DIFOdelbegin \let\includegraphics\DIFdelincludegraphics} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFdelend}{\DIFOaddend \let\includegraphics\DIFOincludegraphics} %DIF PREAMBLE
+\LetLtxMacro{\DIFOaddbeginFL}{\DIFaddbeginFL} %DIF PREAMBLE
+\LetLtxMacro{\DIFOaddendFL}{\DIFaddendFL} %DIF PREAMBLE
+\LetLtxMacro{\DIFOdelbeginFL}{\DIFdelbeginFL} %DIF PREAMBLE
+\LetLtxMacro{\DIFOdelendFL}{\DIFdelendFL} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFaddbeginFL}{\DIFOaddbeginFL \let\includegraphics\DIFaddincludegraphics} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFaddendFL}{\DIFOaddendFL \let\includegraphics\DIFOincludegraphics} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFdelbeginFL}{\DIFOdelbeginFL \let\includegraphics\DIFdelincludegraphics} %DIF PREAMBLE
+\DeclareRobustCommand{\DIFdelendFL}{\DIFOaddendFL \let\includegraphics\DIFOincludegraphics} %DIF PREAMBLE
+%DIF COLORLISTINGS PREAMBLE %DIF PREAMBLE
+\RequirePackage{listings} %DIF PREAMBLE
+\RequirePackage{color} %DIF PREAMBLE
+\lstdefinelanguage{DIFcode}{ %DIF PREAMBLE
+%DIF DIFCODE_UNDERLINE %DIF PREAMBLE
+  moredelim=[il][\color{red}\sout]{\%DIF\ <\ }, %DIF PREAMBLE
+  moredelim=[il][\color{blue}\uwave]{\%DIF\ >\ } %DIF PREAMBLE
+} %DIF PREAMBLE
+\lstdefinestyle{DIFverbatimstyle}{ %DIF PREAMBLE
+	language=DIFcode, %DIF PREAMBLE
+	basicstyle=\ttfamily, %DIF PREAMBLE
+	columns=fullflexible, %DIF PREAMBLE
+	keepspaces=true %DIF PREAMBLE
+} %DIF PREAMBLE
+\lstnewenvironment{DIFverbatim}{\lstset{style=DIFverbatimstyle}}{} %DIF PREAMBLE
+\lstnewenvironment{DIFverbatim*}{\lstset{style=DIFverbatimstyle,showspaces=true}}{} %DIF PREAMBLE
+\lstset{extendedchars=\true,inputencoding=utf8}
+
+%DIF END PREAMBLE EXTENSION ADDED BY LATEXDIFF
 
 \begin{document}
 
@@ -158,7 +246,10 @@ denote bootstrap-estimated 95\% confidence intervals across authors.}
 
 \begin{figure*}[h]
   \centering
-  \includegraphics[width=\textwidth]{figs/t_stats_pos.pdf}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=\textwidth]{figs/t_stats_content_only.pdf}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=\textwidth]{figs/t_stats_pos.pdf}
+\DIFaddendFL 
 
 
 \caption{\textbf{Same vs. other author comparisons, by model, using only parts
@@ -209,7 +300,7 @@ words (A), only function words (B), and only parts of speech (C).}
 
 
 
-\begin{center}
+\DIFaddbegin \begin{center}
   \includegraphics[width=\textwidth]{figs/source/embedding_purity.pdf}
   \captionof{figure}{\textbf{Chunk-level purity for embedding-based attribution.}
   Distribution of purity scores (fraction of chunks voting for the modal
@@ -229,7 +320,7 @@ words (A), only function words (B), and only parts of speech (C).}
 
 \clearpage
 
-\begin{table}[h]
+\DIFaddend \begin{table}[h]
 \centering
 \small
 \begin{tabular}{lccc}
@@ -311,28 +402,28 @@ author's model (after training is complete) to the author's held-out text and
 to the other authors' randomly sampled texts.}
 
 \label{tab:t-tests-pos}
-\end{table}
+\DIFaddbeginFL \end{table}
 
 \begin{table}[h]
 \centering
 \begin{tabular}{lccc}
 \toprule
-\textbf{Model} & \textbf{Parameters} & \textbf{Book accuracy} & \textbf{Avg.\ purity} \\
+\textbf{\DIFaddFL{Model}} & \textbf{\DIFaddFL{Parameters}} & \textbf{\DIFaddFL{Book accuracy}} & \textbf{\DIFaddFL{Avg.\ purity}} \\
 \midrule
-nomic-embed-text-v1.5 & 137M & 81.0\% (68/84) & 0.666 \\
-bge-m3 & 568M & 76.2\% (64/84) & 0.694 \\
-Qwen3-Embedding-4B & 4.0B & 70.2\% (59/84) & 0.703 \\
+\DIFaddFL{nomic-embed-text-v1.5 }& \DIFaddFL{137M }& \DIFaddFL{81.0\% (68/84) }& \DIFaddFL{0.666 }\\
+\DIFaddFL{bge-m3 }& \DIFaddFL{568M }& \DIFaddFL{76.2\% (64/84) }& \DIFaddFL{0.694 }\\
+\DIFaddFL{Qwen3-Embedding-4B }& \DIFaddFL{4.0B }& \DIFaddFL{70.2\% (59/84) }& \DIFaddFL{0.703 }\\
 \midrule
-Predictive comparison (ours) & 0.8M $\times$ 8 & 100\% (84/84) & --- \\
+\DIFaddFL{Predictive comparison (ours) }& \DIFaddFL{0.8M $\times$ 8 }& \DIFaddFL{100\% (84/84) }& \DIFaddFL{--- }\\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Book-level attribution accuracy for embedding-based
-nearest-neighbor classification versus our predictive comparison approach.}
-Purity denotes the fraction of held-out chunks assigned to the modal
+\caption{\textbf{\DIFaddFL{Book-level attribution accuracy for embedding-based
+nearest-neighbor classification versus our predictive comparison approach.}}
+\DIFaddFL{Purity denotes the fraction of held-out chunks assigned to the modal
 (predicted) author. Our approach trains one small GPT-2 model per author from
-scratch; embedding methods use a single pre-trained model for all authors.}
+scratch; embedding methods use a single pre-trained model for all authors.}}
 \label{tab:embedding-comparison}
-\end{table}
+\DIFaddendFL \end{table}
 
 
 \end{document}
