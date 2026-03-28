@@ -1,10 +1,8 @@
-import requests
-from tqdm import tqdm
-from scipy import stats
-from tokenizer_utils import get_tokenizer
-from constants import AUTHORS, CLEANED_DATA_DIR, DATA_DIR
 import pandas as pd
-
+import requests
+from constants import AUTHORS, CLEANED_DATA_DIR, DATA_DIR
+from tokenizer_utils import get_tokenizer
+from tqdm import tqdm
 
 tokenizer = get_tokenizer("gpt2")
 tokenizer.model_max_length = 1e8

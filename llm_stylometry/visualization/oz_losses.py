@@ -1,8 +1,8 @@
 """Generate Oz losses figure from the paper."""
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 
@@ -11,9 +11,9 @@ def generate_oz_losses_figure(
     output_path=None,
     figsize=(12, 8),
     show_legend=False,
-    font='Helvetica',
+    font="Helvetica",
     variant=None,
-    apply_fairness=True
+    apply_fairness=True,
 ):
     """
     Generate Figure 5: Oz losses analysis.
@@ -31,12 +31,13 @@ def generate_oz_losses_figure(
         matplotlib figure object
     """
     # Set font
-    plt.rcParams['font.family'] = font
-    plt.rcParams['font.sans-serif'] = [font]
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
 
     # Oz analysis is only performed for baseline models
     if variant is not None:
         import warnings
+
         warnings.warn(
             f"Skipping Figure 5 (Oz losses) for variant '{variant}': "
             f"This analysis is only performed for baseline models."
@@ -47,15 +48,22 @@ def generate_oz_losses_figure(
     df = pd.read_pickle(data_path)
 
     # Filter by variant (baseline only - we already returned above for variants)
-    if 'variant' in df.columns:
-        df = df[df['variant'].isna()].copy()
+    if "variant" in df.columns:
+        df = df[df["variant"].isna()].copy()
 
     # Filter for Baum and Thompson models and relevant datasets
-    oz_datasets = ["baum", "thompson", "contested", "non_oz_baum", "non_oz_thompson", "train"]
+    oz_datasets = [
+        "baum",
+        "thompson",
+        "contested",
+        "non_oz_baum",
+        "non_oz_thompson",
+        "train",
+    ]
 
     oz_df = df[
-        (df["train_author"].isin(["baum", "thompson"])) &
-        (df["loss_dataset"].isin(oz_datasets))
+        (df["train_author"].isin(["baum", "thompson"]))
+        & (df["loss_dataset"].isin(oz_datasets))
     ].copy()
 
     # Capitalize names for display
@@ -76,7 +84,14 @@ def generate_oz_losses_figure(
     palette = {"Baum": "#1f77b4", "Thompson": "#ff7f0e"}
 
     # Define subplot order
-    subplot_order = ["Train", "Baum", "Thompson", "Contested", "Non-Oz Baum", "Non-Oz Thompson"]
+    subplot_order = [
+        "Train",
+        "Baum",
+        "Thompson",
+        "Contested",
+        "Non-Oz Baum",
+        "Non-Oz Thompson",
+    ]
 
     # Create figure with 2x3 subplots
     fig, axes = plt.subplots(2, 3, figsize=figsize, sharex=True, sharey=True)
@@ -120,13 +135,17 @@ def generate_oz_losses_figure(
 
     if show_legend:
         # Add legend
-        handles = [Line2D([0], [0], color=palette["Baum"], lw=2, label="Baum"),
-                  Line2D([0], [0], color=palette["Thompson"], lw=2, label="Thompson")]
-        fig.legend(handles=handles,
-                  loc='upper center',
-                  ncol=2,
-                  fontsize=12,
-                  bbox_to_anchor=(0.5, 1.02))
+        handles = [
+            Line2D([0], [0], color=palette["Baum"], lw=2, label="Baum"),
+            Line2D([0], [0], color=palette["Thompson"], lw=2, label="Thompson"),
+        ]
+        fig.legend(
+            handles=handles,
+            loc="upper center",
+            ncol=2,
+            fontsize=12,
+            bbox_to_anchor=(0.5, 1.02),
+        )
 
     # Remove title as requested
     # fig.suptitle("Cross-entropy loss across models and Oz authors",

@@ -11,34 +11,35 @@ Creates 320 models total:
 This provides enough data for all statistical tests in compute_stats.py to work.
 """
 
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 # Add code to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'code'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "code"))
 
 from constants import AUTHORS
 
+
 def main():
     """Train all test models."""
-    print("="*60)
+    print("=" * 60)
     print("Training Comprehensive Test Suite")
-    print("="*60)
+    print("=" * 60)
     print(f"Authors: {len(AUTHORS)} - {AUTHORS}")
-    print(f"Seeds: 10 (0-9)")
-    print(f"Variants: 4 (baseline, content, function, pos)")
+    print("Seeds: 10 (0-9)")
+    print("Variants: 4 (baseline, content, function, pos)")
     print(f"Total models: {len(AUTHORS) * 10 * 4} = 320")
-    print(f"Estimated time: ~640 minutes (~10.7 hours)")
-    print("="*60)
+    print("Estimated time: ~640 minutes (~10.7 hours)")
+    print("=" * 60)
 
     response = input("\nThis will take ~11 hours. Proceed? [y/N]: ")
-    if response.lower() != 'y':
+    if response.lower() != "y":
         print("Cancelled.")
         return 1
 
     # Use create_test_models.py with all combinations
-    variants = ['baseline', 'content', 'function', 'pos']
+    variants = ["baseline", "content", "function", "pos"]
     seeds = list(range(10))
 
     models_trained = 0
@@ -54,14 +55,18 @@ def main():
                 print(f"\nTraining: {author}, seed={seed}, variant={variant}")
 
                 # Build command to train this model
-                variant_flag = f"--variant={variant}" if variant != 'baseline' else ""
+                variant_flag = f"--variant={variant}" if variant != "baseline" else ""
                 cmd = [
                     sys.executable,
-                    'tests/create_test_models.py',
-                    '--author', author,
-                    '--seed', str(seed),
-                    '--epochs', '50',
-                    '--tokens', '5000'
+                    "tests/create_test_models.py",
+                    "--author",
+                    author,
+                    "--seed",
+                    str(seed),
+                    "--epochs",
+                    "50",
+                    "--tokens",
+                    "5000",
                 ]
                 if variant_flag:
                     cmd.append(variant_flag)
@@ -71,7 +76,7 @@ def main():
                         cmd,
                         capture_output=True,
                         text=True,
-                        timeout=300  # 5 min timeout per model
+                        timeout=300,  # 5 min timeout per model
                     )
 
                     if result.returncode == 0:
@@ -82,39 +87,39 @@ def main():
                         print(f"  ✗ Failed: {result.stderr[:200]}")
                 except subprocess.TimeoutExpired:
                     models_failed += 1
-                    print(f"  ✗ Timeout")
+                    print("  ✗ Timeout")
                 except Exception as e:
                     models_failed += 1
                     print(f"  ✗ Error: {e}")
 
     print(f"\n{'='*60}")
-    print(f"Training Complete")
+    print("Training Complete")
     print(f"{'='*60}")
     print(f"Models trained: {models_trained}")
     print(f"Models failed: {models_failed}")
 
     # Consolidate
-    print(f"\nConsolidating results...")
+    print("\nConsolidating results...")
     result = subprocess.run(
-        [sys.executable, 'code/consolidate_model_results.py'],
+        [sys.executable, "code/consolidate_model_results.py"],
         capture_output=True,
-        text=True
+        text=True,
     )
 
     if result.returncode == 0:
         print("✓ Consolidation successful")
-        print(f"  Output: data/model_results.pkl")
+        print("  Output: data/model_results.pkl")
     else:
         print(f"✗ Consolidation failed: {result.stderr}")
         return 1
 
     # Test stats
-    print(f"\nTesting statistics...")
+    print("\nTesting statistics...")
     result = subprocess.run(
-        [sys.executable, 'code/compute_stats.py'],
+        [sys.executable, "code/compute_stats.py"],
         capture_output=True,
         text=True,
-        timeout=60
+        timeout=60,
     )
 
     if result.returncode == 0:
@@ -127,5 +132,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

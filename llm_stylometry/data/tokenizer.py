@@ -1,7 +1,8 @@
 """Tokenizer utilities for text processing."""
 
-from transformers import GPT2TokenizerFast
 import logging
+
+from transformers import GPT2TokenizerFast
 
 logger = logging.getLogger(__name__)
 

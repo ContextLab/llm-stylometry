@@ -1,6 +1,7 @@
 """Naive Bayes classifier for author attribution."""
 
 from typing import Dict, List
+
 import numpy as np
 from sklearn.naive_bayes import MultinomialNB
 
@@ -63,7 +64,9 @@ class OutputCodeClassifier:
         """
         return self.classifier.predict(X)
 
-    def get_feature_weights(self, feature_names: List[str]) -> Dict[str, Dict[str, float]]:
+    def get_feature_weights(
+        self, feature_names: List[str]
+    ) -> Dict[str, Dict[str, float]]:
         """
         Extract author-specific feature weights from Naive Bayes.
 
@@ -110,4 +113,4 @@ class OutputCodeClassifier:
             avg_weight = np.mean(feature_probs[:, feature_idx])
             overall_weights[feature_name] = float(avg_weight)
 
-        return {**author_weights, 'overall': overall_weights}
+        return {**author_weights, "overall": overall_weights}

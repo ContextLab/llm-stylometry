@@ -49,3 +49,25 @@ model_weights_*.tar.gz
 
 # HuggingFace models (uploaded to HuggingFace, not needed in git)
 models_hf/
+
+# Harrison's infra artifacts
+runai_notes.md
+start_gpu_workspace.sh
+
+# Speckit artifacts
+.specify/
+specs/
+
+# Oh My Claude Code artifacts
+.omc/
+
+# Claude Code artifacts
+.claude/
+
+# Embedding comparison results (large cached embeddings)
+data/embedding_results/
+
+# Cached data (regenerable)
+data/model_results_ntokens.parquet
+data/t_test_ntokens_cache/
+notes/paper-review-plan.md

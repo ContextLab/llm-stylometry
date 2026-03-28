@@ -6,21 +6,21 @@ Uses same logic as test_variant_training.py but keeps models for consolidation t
 
 import os
 import sys
-import shutil
 from pathlib import Path
 
 # Add code to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'code'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "code"))
 
+from constants import MODELS_DIR, get_data_dir
 from experiment import Experiment
-from constants import AUTHORS, MODELS_DIR, get_data_dir, ANALYSIS_VARIANTS
+
 
 def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup=False):
     """Train a single test model on specified variant (or None for baseline)."""
     variant_name = variant or "baseline"
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(f"Creating test model: {variant_name} variant")
-    print("="*60)
+    print("=" * 60)
 
     # Verify variant data exists
     variant_dir = get_data_dir(variant)
@@ -34,16 +34,16 @@ def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup
         tokenizer_name="gpt2",
         analysis_variant=variant,
         n_train_tokens=10000,  # Much smaller dataset for testing
-        n_positions=128,       # Smaller context
-        n_embd=64,            # Tiny model
-        n_layer=2,            # Just 2 layers
-        n_head=2,             # 2 attention heads
-        batch_size=4,         # Smaller batch
+        n_positions=128,  # Smaller context
+        n_embd=64,  # Tiny model
+        n_layer=2,  # Just 2 layers
+        n_head=2,  # 2 attention heads
+        batch_size=4,  # Smaller batch
         stop_criteria={
             "train_loss": 2.0,  # Realistic threshold that won't trigger early
-            "min_epochs": 3,    # Run all 3 epochs
-            "max_epochs": 3,    # Only 3 epochs for testing
-        }
+            "min_epochs": 3,  # Run all 3 epochs
+            "max_epochs": 3,  # Only 3 epochs for testing
+        },
     )
 
     model_dir = MODELS_DIR / exp.name
@@ -54,25 +54,30 @@ def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup
         return model_dir
 
     # Set environment variable to prevent main.py from running at import time
-    os.environ['NO_MULTIPROCESSING'] = '1'
+    os.environ["NO_MULTIPROCESSING"] = "1"
 
     # Import required modules
-    import torch
+    import logging
     import random
+
     import numpy as np
-    from transformers import GPT2Config, GPT2LMHeadModel
-    from data_utils import get_train_data_loader, get_eval_data_loader
-    from model_utils import init_model, save_checkpoint, count_non_embedding_params
-    from tokenizer_utils import get_tokenizer
+    import torch
+    from data_utils import get_eval_data_loader, get_train_data_loader
     from eval_utils import evaluate_model
     from logging_utils import update_loss_log
-    import logging
+    from model_utils import count_non_embedding_params, init_model, save_checkpoint
+    from tokenizer_utils import get_tokenizer
+    from transformers import GPT2Config, GPT2LMHeadModel
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
     # Determine device
-    device_type = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    device_type = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
     device = torch.device(device_type)
     device_label = device_type.upper()
 
@@ -129,7 +134,9 @@ def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup
 
     # Initial evaluation
     for name, eval_dataloader in eval_dataloaders.items():
-        eval_loss = evaluate_model(model=model, eval_dataloader=eval_dataloader, device=device)
+        eval_loss = evaluate_model(
+            model=model, eval_dataloader=eval_dataloader, device=device
+        )
         update_loss_log(
             log_file_path=MODELS_DIR / exp.name / "loss_logs.csv",
             epochs_completed=0,
@@ -172,7 +179,9 @@ def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup
         # Evaluate
         eval_losses = {}
         for name, eval_dataloader in eval_dataloaders.items():
-            eval_loss = evaluate_model(model=model, eval_dataloader=eval_dataloader, device=device)
+            eval_loss = evaluate_model(
+                model=model, eval_dataloader=eval_dataloader, device=device
+            )
             eval_losses[name] = eval_loss
             update_loss_log(
                 log_file_path=MODELS_DIR / exp.name / "loss_logs.csv",
@@ -189,11 +198,21 @@ def train_variant_model(variant, test_author="fitzgerald", test_seed=42, cleanup
         logger.info(log_message)
 
         # Save checkpoint
-        save_checkpoint(model=model, optimizer=optimizer, model_name=exp.name, epochs_completed=epochs_completed)
+        save_checkpoint(
+            model=model,
+            optimizer=optimizer,
+            model_name=exp.name,
+            epochs_completed=epochs_completed,
+        )
 
         # Early stopping
-        if train_loss <= exp.stop_criteria["train_loss"] and epochs_completed >= exp.stop_criteria["min_epochs"]:
-            logger.info(f"Stopping: train loss {train_loss:.4f} <= {exp.stop_criteria['train_loss']}")
+        if (
+            train_loss <= exp.stop_criteria["train_loss"]
+            and epochs_completed >= exp.stop_criteria["min_epochs"]
+        ):
+            logger.info(
+                f"Stopping: train loss {train_loss:.4f} <= {exp.stop_criteria['train_loss']}"
+            )
             break
 
     logger.info(f"Training complete for {exp.name}")
@@ -206,33 +225,48 @@ def main():
     """Create test models for all variants with multiple authors and seeds."""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Create test models for variant testing')
-    parser.add_argument('--authors', nargs='+', default=['fitzgerald', 'twain', 'austen'],
-                       help='Authors to create models for (default: fitzgerald, twain, austen)')
-    parser.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44],
-                       help='Seeds to use (default: 42, 43, 44)')
-    parser.add_argument('--variants', nargs='+', default=['baseline', 'content', 'function', 'pos'],
-                       help='Variants to create (default: all)')
+    parser = argparse.ArgumentParser(
+        description="Create test models for variant testing"
+    )
+    parser.add_argument(
+        "--authors",
+        nargs="+",
+        default=["fitzgerald", "twain", "austen"],
+        help="Authors to create models for (default: fitzgerald, twain, austen)",
+    )
+    parser.add_argument(
+        "--seeds",
+        nargs="+",
+        type=int,
+        default=[42, 43, 44],
+        help="Seeds to use (default: 42, 43, 44)",
+    )
+    parser.add_argument(
+        "--variants",
+        nargs="+",
+        default=["baseline", "content", "function", "pos"],
+        help="Variants to create (default: all)",
+    )
 
     args = parser.parse_args()
 
     # Convert 'baseline' to None in variants list
-    variants_to_create = [None if v == 'baseline' else v for v in args.variants]
+    variants_to_create = [None if v == "baseline" else v for v in args.variants]
 
     total_models = len(args.authors) * len(args.seeds) * len(variants_to_create)
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Creating Comprehensive Test Models for Variant Testing")
-    print("="*60)
+    print("=" * 60)
     print(f"Authors: {', '.join(args.authors)}")
     print(f"Seeds: {', '.join(map(str, args.seeds))}")
     print(f"Variants: {', '.join(args.variants)}")
     print(f"Total models to create: {total_models}")
     print(f"Estimated time: ~{total_models * 2.5:.0f} minutes (2-3 min per model)")
-    print("="*60)
+    print("=" * 60)
 
     response = input("\nProceed? [y/N]: ")
-    if response.lower() != 'y':
+    if response.lower() != "y":
         print("Cancelled.")
         return
 
@@ -242,26 +276,30 @@ def main():
     for author in args.authors:
         for seed in args.seeds:
             for variant in variants_to_create:
-                variant_name = variant or 'baseline'
-                print(f"\n[{len(models_created)+len(models_skipped)+1}/{total_models}] {author}, seed={seed}, variant={variant_name}")
+                variant_name = variant or "baseline"
+                print(
+                    f"\n[{len(models_created)+len(models_skipped)+1}/{total_models}] {author}, seed={seed}, variant={variant_name}"
+                )
 
                 try:
-                    model_dir = train_variant_model(variant, test_author=author, test_seed=seed)
+                    model_dir = train_variant_model(
+                        variant, test_author=author, test_seed=seed
+                    )
                     models_created.append(model_dir)
                 except Exception as e:
                     print(f"✗ ERROR: {e}")
                     models_skipped.append((author, seed, variant_name))
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✓ MODEL CREATION COMPLETE")
-    print("="*60)
+    print("=" * 60)
     print(f"Successfully created: {len(models_created)} models")
     if models_skipped:
         print(f"Skipped (errors): {len(models_skipped)} models")
         for author, seed, variant in models_skipped:
             print(f"  - {author}, seed={seed}, variant={variant}")
     print("\nThese models are ready for consolidation and testing.")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

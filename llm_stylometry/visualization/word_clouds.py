@@ -2,12 +2,14 @@
 
 import pickle
 from pathlib import Path
-from typing import Optional, Dict
-import numpy as np
+from typing import Dict, Optional
+
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
+import numpy as np
+
+matplotlib.use("Agg")  # Use non-interactive backend
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
 
@@ -15,9 +17,7 @@ from llm_stylometry.core.constants import AUTHORS
 
 
 def extract_average_weights(
-    results_df,
-    feature_names,
-    author: Optional[str] = None
+    results_df, feature_names, author: Optional[str] = None
 ) -> Dict[str, float]:
     """
     Extract and average feature weights across all CV splits.
@@ -31,18 +31,18 @@ def extract_average_weights(
         Dictionary mapping word → weight
     """
     # Get unique classifiers (one per split)
-    unique_splits = results_df['split_id'].unique()
+    unique_splits = results_df["split_id"].unique()
 
     # Extract weights from each split's classifier
     all_weights = []
 
     for split_id in unique_splits:
         # Get classifier from this split (all rows in same split have same classifier)
-        split_rows = results_df[results_df['split_id'] == split_id]
+        split_rows = results_df[results_df["split_id"] == split_id]
         if len(split_rows) == 0:
             continue
 
-        clf = split_rows.iloc[0]['classifier']
+        clf = split_rows.iloc[0]["classifier"]
 
         # Extract feature weights
         try:
@@ -50,7 +50,7 @@ def extract_average_weights(
 
             if author is None:
                 # Overall weights
-                split_weights = weights_dict['overall']
+                split_weights = weights_dict["overall"]
             else:
                 # Author-specific weights
                 split_weights = weights_dict[author]
@@ -78,9 +78,9 @@ def generate_word_cloud_figure(
     author: Optional[str] = None,
     output_path: Optional[str] = None,
     figsize: tuple = (12, 8),
-    font: str = 'Helvetica',
+    font: str = "Helvetica",
     variant: Optional[str] = None,
-    max_words: int = 100
+    max_words: int = 100,
 ):
     """
     Generate word cloud figure using wordcloud library.
@@ -110,15 +110,15 @@ def generate_word_cloud_figure(
         ... )
     """
     # Set font
-    plt.rcParams['font.family'] = font
-    plt.rcParams['font.sans-serif'] = [font]
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
 
     # Load results
-    with open(data_path, 'rb') as f:
+    with open(data_path, "rb") as f:
         data = pickle.load(f)
 
-    results_df = data['results']
-    feature_names = data['feature_names']
+    results_df = data["results"]
+    feature_names = data["feature_names"]
 
     # Extract averaged weights
     weights = extract_average_weights(results_df, feature_names, author)
@@ -126,8 +126,9 @@ def generate_word_cloud_figure(
     # Filter out placeholder tokens (CONTENT, FUNC) - no angle brackets (stripped during preprocessing)
     # These are not real words and shouldn't appear in word clouds
     filtered_weights = {
-        word: weight for word, weight in weights.items()
-        if word not in ['CONTENT', 'FUNC']
+        word: weight
+        for word, weight in weights.items()
+        if word not in ["CONTENT", "FUNC"]
     }
 
     # Use absolute values for word cloud (magnitude matters)
@@ -148,7 +149,7 @@ def generate_word_cloud_figure(
 
     # Define color based on author
     if author is None:
-        color = 'black'
+        color = "black"
     else:
         # Use same color palette as all_losses figure
         author_idx = AUTHORS.index(author.lower())
@@ -167,7 +168,7 @@ def generate_word_cloud_figure(
     wc = WordCloud(
         width=1600,
         height=1000,
-        background_color='white',
+        background_color="white",
         max_words=min(max_words, n_words),  # Don't request more words than available
         max_font_size=max_font_size,
         min_font_size=min_font_size,
@@ -175,7 +176,7 @@ def generate_word_cloud_figure(
         color_func=color_func,
         prefer_horizontal=0.6,  # More rotation variety
         random_state=42,
-        collocations=False  # Don't try to find bigrams
+        collocations=False,  # Don't try to find bigrams
     )
 
     # Generate from frequencies
@@ -183,8 +184,8 @@ def generate_word_cloud_figure(
 
     # Display using matplotlib (recommended approach from wordcloud documentation)
     fig, ax = plt.subplots(figsize=figsize)
-    ax.imshow(wc, interpolation='bilinear')
-    ax.axis('off')
+    ax.imshow(wc, interpolation="bilinear")
+    ax.axis("off")
     plt.tight_layout(pad=0)
 
     # Save if output path provided
@@ -203,6 +204,6 @@ def generate_word_cloud_figure(
     # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
-    fig.savefig(output_path, format='pdf', bbox_inches='tight')
+    fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig

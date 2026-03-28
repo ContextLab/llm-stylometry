@@ -2,13 +2,16 @@
 
 from pathlib import Path
 from typing import Dict, List, Tuple
+
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 
 from llm_stylometry.core.constants import AUTHORS
 
 
-def load_books_by_author(data_dir: str = "data/cleaned", variant: str = None) -> Dict[str, List[Tuple[str, str]]]:
+def load_books_by_author(
+    data_dir: str = "data/cleaned", variant: str = None
+) -> Dict[str, List[Tuple[str, str]]]:
     """
     Load all text files from author directories.
 
@@ -42,9 +45,9 @@ def load_books_by_author(data_dir: str = "data/cleaned", variant: str = None) ->
             continue
 
         books = []
-        for txt_file in sorted(author_dir.glob('*.txt')):
+        for txt_file in sorted(author_dir.glob("*.txt")):
             book_id = txt_file.stem  # Filename without extension
-            with open(txt_file, 'r', encoding='utf-8') as f:
+            with open(txt_file, "r", encoding="utf-8") as f:
                 text = f.read()
             books.append((book_id, text))
 
@@ -54,7 +57,9 @@ def load_books_by_author(data_dir: str = "data/cleaned", variant: str = None) ->
     return books_by_author
 
 
-def create_count_vectorizer(books_dict: Dict[str, List[Tuple[str, str]]]) -> CountVectorizer:
+def create_count_vectorizer(
+    books_dict: Dict[str, List[Tuple[str, str]]],
+) -> CountVectorizer:
     """
     Create and fit a CountVectorizer on all books.
 
@@ -82,9 +87,9 @@ def create_count_vectorizer(books_dict: Dict[str, List[Tuple[str, str]]]) -> Cou
     # CRITICAL: stop_words=None to preserve all words
     vectorizer = CountVectorizer(
         lowercase=False,  # Text already preprocessed
-        token_pattern=r'(?u)\b\w+\b',  # Default word tokenization
+        token_pattern=r"(?u)\b\w+\b",  # Default word tokenization
         stop_words=None,  # DO NOT filter stop words
-        max_features=None  # Use all unique words
+        max_features=None,  # Use all unique words
     )
 
     # Fit on all texts
@@ -96,7 +101,7 @@ def create_count_vectorizer(books_dict: Dict[str, List[Tuple[str, str]]]) -> Cou
 def vectorize_books(
     books_dict: Dict[str, List[Tuple[str, str]]],
     vectorizer: CountVectorizer,
-    scale_factor: int = 100000
+    scale_factor: int = 100000,
 ) -> List[Tuple[str, str, np.ndarray]]:
     """
     Transform books into scaled frequency vectors.

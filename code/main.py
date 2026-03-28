@@ -1,31 +1,32 @@
-import torch
 import logging
 import sys
 import warnings
+
+import torch
+from data_utils import get_eval_data_loader, get_train_data_loader
 from transformers import GPT2Config, GPT2LMHeadModel
-from data_utils import get_train_data_loader, get_eval_data_loader
 
 # Suppress the loss_type warning from transformers
 warnings.filterwarnings("ignore", message=".*loss_type.*unrecognized.*")
+import os
+import random
+
+import numpy as np
+import torch.multiprocessing as mp
+from constants import AUTHORS, MODELS_DIR
+from eval_utils import evaluate_model
+from experiment import Experiment
+from logging_utils import update_loss_log
 from model_utils import (
-    save_checkpoint,
-    load_checkpoint,
-    init_model,
     count_non_embedding_params,
+    init_model,
+    load_checkpoint,
+    save_checkpoint,
 )
 from tokenizer_utils import get_tokenizer
-from eval_utils import evaluate_model
-from logging_utils import update_loss_log
-import random
-import numpy as np
-import torch.backends.cudnn as cudnn
-from experiment import Experiment
-import torch.multiprocessing as mp
-from constants import MODELS_DIR, AUTHORS, CLEANED_DATA_DIR
-import os
 
 # Disable tqdm if running in subprocess or if explicitly disabled
-USE_TQDM = os.environ.get('DISABLE_TQDM', '0') != '1' and sys.stdout.isatty()
+USE_TQDM = os.environ.get("DISABLE_TQDM", "0") != "1" and sys.stdout.isatty()
 if USE_TQDM:
     from tqdm import tqdm
 else:
@@ -33,8 +34,10 @@ else:
     def tqdm(iterable, *args, **kwargs):
         return iterable
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def check_model_complete(model_name, stop_train_loss=3.0, min_epochs=0):
     """
@@ -52,7 +55,9 @@ def check_model_complete(model_name, stop_train_loss=3.0, min_epochs=0):
     weights_file = model_dir / "model.safetensors"
     config_file = model_dir / "config.json"
     training_state_file = model_dir / "training_state.pt"
-    has_weights = weights_file.exists() and config_file.exists() and training_state_file.exists()
+    has_weights = (
+        weights_file.exists() and config_file.exists() and training_state_file.exists()
+    )
 
     # Check loss logs
     loss_log_file = model_dir / "loss_logs.csv"
@@ -61,26 +66,30 @@ def check_model_complete(model_name, stop_train_loss=3.0, min_epochs=0):
 
     # Read loss logs to check training status
     import pandas as pd
+
     try:
         df = pd.read_csv(loss_log_file)
         if df.empty:
             return False, has_weights, 0
 
         # Get the last training loss for this model
-        train_losses = df[df['loss_dataset'] == 'train'].sort_values('epochs_completed')
+        train_losses = df[df["loss_dataset"] == "train"].sort_values("epochs_completed")
         if train_losses.empty:
             return False, has_weights, 0
 
-        last_epoch = train_losses['epochs_completed'].max()
-        last_train_loss = train_losses[train_losses['epochs_completed'] == last_epoch]['loss_value'].iloc[0]
+        last_epoch = train_losses["epochs_completed"].max()
+        last_train_loss = train_losses[train_losses["epochs_completed"] == last_epoch][
+            "loss_value"
+        ].iloc[0]
 
         # Check if model has met stop criteria
-        is_complete = (last_train_loss <= stop_train_loss and last_epoch >= min_epochs)
+        is_complete = last_train_loss <= stop_train_loss and last_epoch >= min_epochs
 
         return is_complete, has_weights, int(last_epoch)
     except Exception as e:
         logger.warning(f"Error reading loss logs for {model_name}: {e}")
         return False, has_weights, 0
+
 
 # Detect available devices
 def get_device_info():
@@ -94,22 +103,28 @@ def get_device_info():
     else:
         return "cpu", 1
 
+
 device_type, device_count = get_device_info()
 logger.info(f"Device type: {device_type}, Count: {device_count}")
 
 # Check if we're in resume mode
-resume_mode = os.environ.get('RESUME_TRAINING', '0') == '1'
+resume_mode = os.environ.get("RESUME_TRAINING", "0") == "1"
 
 # Check for analysis variant
-variant = os.environ.get('ANALYSIS_VARIANT', None)
-if variant == '':
+variant = os.environ.get("ANALYSIS_VARIANT", None)
+if variant == "":
     variant = None  # Empty string should be treated as None
+
+n_train_tokens = int(os.environ.get("N_TRAIN_TOKENS", 643041))
 
 # Validate variant if provided
 if variant:
     from constants import ANALYSIS_VARIANTS
+
     if variant not in ANALYSIS_VARIANTS:
-        logger.error(f"Invalid ANALYSIS_VARIANT: {variant}. Must be one of {ANALYSIS_VARIANTS}")
+        logger.error(
+            f"Invalid ANALYSIS_VARIANT: {variant}. Must be one of {ANALYSIS_VARIANTS}"
+        )
         sys.exit(1)
     logger.info(f"Training variant: {variant}")
 else:
@@ -124,6 +139,7 @@ for seed in range(10):
                 seed=seed,
                 tokenizer_name="gpt2",
                 analysis_variant=variant,
+                n_train_tokens=n_train_tokens,
                 resume_training=resume_mode,
             )
         )
@@ -241,14 +257,18 @@ def run_experiment(exp: Experiment, device_queue, device_type="cuda"):
 
         # Set up mixed precision training if supported
         use_amp = device_type == "cuda"
-        scaler = torch.amp.GradScaler('cuda') if use_amp else None
+        scaler = torch.amp.GradScaler("cuda") if use_amp else None
 
         # Enable gradient checkpointing to save memory (if supported)
         try:
             model.gradient_checkpointing_enable()
-            logger.info(f"[{device_label}] Gradient checkpointing enabled for memory efficiency")
+            logger.info(
+                f"[{device_label}] Gradient checkpointing enabled for memory efficiency"
+            )
         except AttributeError:
-            logger.info(f"[{device_label}] Model does not support gradient checkpointing")
+            logger.info(
+                f"[{device_label}] Model does not support gradient checkpointing"
+            )
 
         # Training loop
         for epoch in tqdm(range(start_epoch, max_epochs)):
@@ -262,7 +282,7 @@ def run_experiment(exp: Experiment, device_queue, device_type="cuda"):
 
                 # Forward pass with or without mixed precision
                 if use_amp:
-                    with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                    with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
                         outputs = model(input_ids=input_ids, labels=input_ids)
                         loss = outputs.loss
                 else:
@@ -362,7 +382,7 @@ def run_experiment(exp: Experiment, device_queue, device_type="cuda"):
 
 if __name__ == "__main__":
     # Check if we should run sequentially (for subprocess compatibility)
-    USE_MULTIPROCESSING = os.environ.get('NO_MULTIPROCESSING', '0') != '1'
+    USE_MULTIPROCESSING = os.environ.get("NO_MULTIPROCESSING", "0") != "1"
 
     # Filter experiments based on resume mode
     if resume_mode:
@@ -374,19 +394,23 @@ if __name__ == "__main__":
             is_complete, has_weights, epochs_done = check_model_complete(
                 exp.name,
                 exp.stop_criteria["train_loss"],
-                exp.stop_criteria["min_epochs"]
+                exp.stop_criteria["min_epochs"],
             )
 
             if is_complete:
                 # Model has completed training - skip it
-                logger.info(f"Skipping {exp.name} - already complete (epochs: {epochs_done})")
+                logger.info(
+                    f"Skipping {exp.name} - already complete (epochs: {epochs_done})"
+                )
             elif has_weights:
                 # Model has weights and can be resumed
                 logger.info(f"Resuming {exp.name} from epoch {epochs_done}")
                 experiments_to_run.append(exp)
             elif epochs_done > 0:
                 # Loss logs exist but no weights (e.g., after cloning repo) - need to restart
-                logger.info(f"Starting {exp.name} from scratch - no weights available (removing existing logs)")
+                logger.info(
+                    f"Starting {exp.name} from scratch - no weights available (removing existing logs)"
+                )
                 model_dir = MODELS_DIR / exp.name
                 if model_dir.exists():
                     # Remove only this specific model's directory to start fresh
@@ -410,10 +434,12 @@ if __name__ == "__main__":
     # Use already detected device configuration
     if device_type == "cuda":
         # Check for MAX_GPUS environment variable to optionally limit GPU usage
-        max_gpus = int(os.environ.get('MAX_GPUS', '0')) or device_count
+        max_gpus = int(os.environ.get("MAX_GPUS", "0")) or device_count
         gpu_count = min(device_count, max_gpus)
         if gpu_count < device_count:
-            print(f"Using {gpu_count} GPUs (limited by MAX_GPUS) out of {device_count} available")
+            print(
+                f"Using {gpu_count} GPUs (limited by MAX_GPUS) out of {device_count} available"
+            )
         else:
             print(f"Using all {gpu_count} available GPUs")
     elif device_type == "mps":
@@ -441,7 +467,9 @@ if __name__ == "__main__":
 
         for exp in experiments:
             pool.apply_async(
-                run_experiment, (exp, device_queue, device_type), error_callback=error_callback
+                run_experiment,
+                (exp, device_queue, device_type),
+                error_callback=error_callback,
             )
         pool.close()
         pool.join()
@@ -451,6 +479,7 @@ if __name__ == "__main__":
         if device_type == "cuda" and gpu_count > 1:
             # Multiple GPUs but running sequentially
             import queue
+
             device_queue = queue.Queue()
             for gpu in range(gpu_count):
                 device_queue.put(gpu)

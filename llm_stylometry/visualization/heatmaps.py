@@ -1,10 +1,9 @@
 """Generate heatmap figures from the paper."""
 
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
-from pathlib import Path
 from tqdm import tqdm
 
 
@@ -12,9 +11,9 @@ def generate_loss_heatmap_figure(
     data_path="data/model_results.pkl",
     output_path=None,
     figsize=(8, 6),
-    font='Helvetica',
+    font="Helvetica",
     variant=None,
-    apply_fairness=True
+    apply_fairness=True,
 ):
     """
     Generate Figure 3: Loss heatmap (confusion matrix).
@@ -31,8 +30,8 @@ def generate_loss_heatmap_figure(
         matplotlib figure object
     """
     # Set font
-    plt.rcParams['font.family'] = font
-    plt.rcParams['font.sans-serif'] = [font]
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
 
     # Load data
     df = pd.read_pickle(data_path)
@@ -40,63 +39,80 @@ def generate_loss_heatmap_figure(
     # Filter by variant
     if variant is None:
         # Baseline: exclude variant models
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
+        if "variant" in df.columns:
+            df = df[df["variant"].isna()].copy()
     else:
         # Specific variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
-        df = df[df['variant'] == variant].copy()
+        if "variant" not in df.columns:
+            raise ValueError("No variant column in data")
+        df = df[df["variant"] == variant].copy()
 
     # Apply fairness threshold for variants
     if variant is not None and apply_fairness:
         from llm_stylometry.analysis.fairness import (
+            apply_fairness_threshold,
             compute_fairness_threshold,
-            apply_fairness_threshold
         )
 
         threshold = compute_fairness_threshold(df, min_epochs=500)
         df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
 
-
     # Define authors in requested order
-    AUTHORS = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
+    AUTHORS = [
+        "baum",
+        "thompson",
+        "austen",
+        "dickens",
+        "fitzgerald",
+        "melville",
+        "twain",
+        "wells",
+    ]
 
     # Collect final epoch losses for each model
     all_losses = []
 
-    for model_name in tqdm(df['model_name'].unique(), desc="Processing models"):
-        model_df = df[df['model_name'] == model_name]
+    for model_name in tqdm(df["model_name"].unique(), desc="Processing models"):
+        model_df = df[df["model_name"] == model_name]
 
         # Get the last loss value for each evaluation dataset
-        final_losses = model_df.groupby(['loss_dataset']).tail(1)
-        final_losses = final_losses[final_losses['loss_dataset'].str.lower().isin(AUTHORS)]
+        final_losses = model_df.groupby(["loss_dataset"]).tail(1)
+        final_losses = final_losses[
+            final_losses["loss_dataset"].str.lower().isin(AUTHORS)
+        ]
 
-        all_losses.append(final_losses[['train_author', 'loss_dataset', 'loss_value']])
+        all_losses.append(final_losses[["train_author", "loss_dataset", "loss_value"]])
 
     # Combine all data
     loss_df = pd.concat(all_losses, ignore_index=True)
 
     # Capitalize author names
-    loss_df['training_author'] = loss_df['train_author'].str.capitalize()
-    loss_df['evaluation_author'] = loss_df['loss_dataset'].str.capitalize()
+    loss_df["training_author"] = loss_df["train_author"].str.capitalize()
+    loss_df["evaluation_author"] = loss_df["loss_dataset"].str.capitalize()
 
     # Calculate average loss for each combination
     avg_loss = (
-        loss_df.groupby(['training_author', 'evaluation_author'])['loss_value']
+        loss_df.groupby(["training_author", "evaluation_author"])["loss_value"]
         .mean()
         .reset_index()
     )
 
     # Pivot to create the heatmap matrix
     heatmap_data = avg_loss.pivot(
-        index='training_author',
-        columns='evaluation_author',
-        values='loss_value'
+        index="training_author", columns="evaluation_author", values="loss_value"
     )
 
     # Define the order to match all_losses figure
-    new_order = ["Baum", "Thompson", "Austen", "Dickens", "Fitzgerald", "Melville", "Twain", "Wells"]
+    new_order = [
+        "Baum",
+        "Thompson",
+        "Austen",
+        "Dickens",
+        "Fitzgerald",
+        "Melville",
+        "Twain",
+        "Wells",
+    ]
 
     # Reorder rows and columns
     heatmap_data = heatmap_data.reindex(index=new_order, columns=new_order)
@@ -128,8 +144,11 @@ def generate_loss_heatmap_figure(
         # Add variant suffix to filename if variant specified
         if variant:
             from pathlib import Path
+
             output_path = Path(output_path)
-            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
+            output_path = str(
+                output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}"
+            )
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig

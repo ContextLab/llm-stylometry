@@ -18,12 +18,12 @@ Minimal viable configuration:
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'code'))
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "code"))
+
+import argparse
 
 from experiment import Experiment
-from constants import AUTHORS, MODELS_DIR, get_data_dir
-import argparse
-import torch
 
 
 def create_test_models(
@@ -36,7 +36,7 @@ def create_test_models(
     n_embd=64,
     n_layer=2,
     n_head=2,
-    batch_size=4
+    batch_size=4,
 ):
     """
     Create comprehensive test models for statistical testing.
@@ -62,22 +62,24 @@ def create_test_models(
         seeds = list(range(10))  # 0-9 for statistical tests
 
     if variants is None:
-        variants = ['baseline', 'content', 'function', 'pos']
+        variants = ["baseline", "content", "function", "pos"]
 
-    print("="*60)
+    print("=" * 60)
     print("Creating Comprehensive Test Models")
-    print("="*60)
+    print("=" * 60)
     print(f"Authors: {len(authors)} - {authors}")
     print(f"Seeds: {len(seeds)} - {seeds}")
     print(f"Variants: {len(variants)} - {variants}")
     print(f"Total models: {len(authors) * len(seeds) * len(variants)}")
     print(f"Epochs per model: {n_epochs}")
     print(f"Training tokens: {n_train_tokens}")
-    print(f"\nEstimated time: ~{len(authors) * len(seeds) * len(variants) * 2} minutes (~2min/model)")
-    print("="*60)
+    print(
+        f"\nEstimated time: ~{len(authors) * len(seeds) * len(variants) * 2} minutes (~2min/model)"
+    )
+    print("=" * 60)
 
     response = input("\nProceed with training? [y/N]: ")
-    if response.lower() != 'y':
+    if response.lower() != "y":
         print("Cancelled.")
         return
 
@@ -90,7 +92,7 @@ def create_test_models(
         print(f"{'='*60}")
 
         # Convert 'baseline' to None for Experiment
-        analysis_variant = None if variant_name == 'baseline' else variant_name
+        analysis_variant = None if variant_name == "baseline" else variant_name
 
         for author in authors:
             for seed in seeds:
@@ -111,8 +113,8 @@ def create_test_models(
                         stop_criteria={
                             "train_loss": 1.5,
                             "min_epochs": n_epochs,
-                            "max_epochs": n_epochs
-                        }
+                            "max_epochs": n_epochs,
+                        },
                     )
 
                     train_model(exp)
@@ -124,61 +126,59 @@ def create_test_models(
                     models_failed += 1
 
     print(f"\n{'='*60}")
-    print(f"Training Complete")
+    print("Training Complete")
     print(f"{'='*60}")
     print(f"Models created: {models_created}")
     print(f"Models failed: {models_failed}")
 
     # Consolidate results
-    print(f"\nConsolidating results...")
+    print("\nConsolidating results...")
     import subprocess
+
     result = subprocess.run(
-        [sys.executable, 'code/consolidate_model_results.py'],
+        [sys.executable, "code/consolidate_model_results.py"],
         capture_output=True,
-        text=True
+        text=True,
     )
 
     if result.returncode == 0:
         print("✓ Consolidation successful")
-        print(f"  Output: data/model_results.pkl")
+        print("  Output: data/model_results.pkl")
     else:
         print(f"✗ Consolidation failed: {result.stderr}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Create comprehensive test models for statistical testing'
+        description="Create comprehensive test models for statistical testing"
     )
     parser.add_argument(
-        '--authors',
-        nargs='+',
-        default=None,
-        help='List of authors (default: all 8)'
+        "--authors", nargs="+", default=None, help="List of authors (default: all 8)"
     )
     parser.add_argument(
-        '--seeds',
-        nargs='+',
+        "--seeds",
+        nargs="+",
         type=int,
         default=None,
-        help='List of seeds (default: 0-9)'
+        help="List of seeds (default: 0-9)",
     )
     parser.add_argument(
-        '--variants',
-        nargs='+',
+        "--variants",
+        nargs="+",
         default=None,
-        help='List of variants (default: baseline, content, function, pos)'
+        help="List of variants (default: baseline, content, function, pos)",
     )
     parser.add_argument(
-        '--epochs',
+        "--epochs",
         type=int,
         default=50,
-        help='Number of epochs per model (default: 50)'
+        help="Number of epochs per model (default: 50)",
     )
     parser.add_argument(
-        '--tokens',
+        "--tokens",
         type=int,
         default=5000,
-        help='Training tokens per model (default: 5000)'
+        help="Training tokens per model (default: 5000)",
     )
 
     args = parser.parse_args()
@@ -188,9 +188,9 @@ def main():
         seeds=args.seeds,
         variants=args.variants,
         n_epochs=args.epochs,
-        n_train_tokens=args.tokens
+        n_train_tokens=args.tokens,
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

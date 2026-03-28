@@ -1,7 +1,7 @@
 """Fairness-based loss thresholding for variant model comparisons."""
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def compute_fairness_threshold(df, min_epochs=500):
@@ -33,31 +33,37 @@ def compute_fairness_threshold(df, min_epochs=500):
         Fairness threshold: 1.2720
     """
     # Validate required columns
-    required_cols = ['loss_dataset', 'epochs_completed', 'loss_value', 'train_author', 'seed']
+    required_cols = [
+        "loss_dataset",
+        "epochs_completed",
+        "loss_value",
+        "train_author",
+        "seed",
+    ]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
 
     # Filter for training losses only
-    train_df = df[df['loss_dataset'] == 'train'].copy()
+    train_df = df[df["loss_dataset"] == "train"].copy()
 
     if len(train_df) == 0:
         raise ValueError("No training loss data found (loss_dataset == 'train')")
 
     # Filter for epochs <= min_epochs
-    train_df = train_df[train_df['epochs_completed'] <= min_epochs]
+    train_df = train_df[train_df["epochs_completed"] <= min_epochs]
 
     if len(train_df) == 0:
         raise ValueError(f"No data found with epochs_completed <= {min_epochs}")
 
     # Group by (train_author, seed) - each unique model
-    grouped = train_df.groupby(['train_author', 'seed'])
+    grouped = train_df.groupby(["train_author", "seed"])
 
     if len(grouped) == 0:
         raise ValueError("No models found after grouping by train_author and seed")
 
     # For each model, find minimum loss_value
-    min_losses = grouped['loss_value'].min()
+    min_losses = grouped["loss_value"].min()
 
     if len(min_losses) == 0 or min_losses.isna().all():
         raise ValueError("Could not compute minimum losses (all NaN)")
@@ -103,7 +109,13 @@ def apply_fairness_threshold(df, threshold, use_first_crossing=True):
         ...     assert final_loss <= threshold + 0.001
     """
     # Validate required columns
-    required_cols = ['loss_dataset', 'epochs_completed', 'loss_value', 'train_author', 'seed']
+    required_cols = [
+        "loss_dataset",
+        "epochs_completed",
+        "loss_value",
+        "train_author",
+        "seed",
+    ]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
@@ -114,37 +126,39 @@ def apply_fairness_threshold(df, threshold, use_first_crossing=True):
     # Find training loss trajectories and cutoff epochs for each model
     cutoff_epochs = {}
 
-    for (author, seed), group in df.groupby(['train_author', 'seed']):
+    for (author, seed), group in df.groupby(["train_author", "seed"]):
         # Get training losses for this model
-        train_data = group[group['loss_dataset'] == 'train'].sort_values('epochs_completed')
+        train_data = group[group["loss_dataset"] == "train"].sort_values(
+            "epochs_completed"
+        )
 
         if len(train_data) == 0:
             raise ValueError(f"No training data for model {author} seed {seed}")
 
         # Find epochs where loss <= threshold
-        below_threshold = train_data[train_data['loss_value'] <= threshold]
+        below_threshold = train_data[train_data["loss_value"] <= threshold]
 
         if len(below_threshold) == 0:
             # Model never reaches threshold - use all epochs
-            cutoff_epoch = train_data['epochs_completed'].max()
+            cutoff_epoch = train_data["epochs_completed"].max()
         else:
             if use_first_crossing:
                 # Use first epoch crossing threshold
-                cutoff_epoch = below_threshold['epochs_completed'].min()
+                cutoff_epoch = below_threshold["epochs_completed"].min()
             else:
                 # Use last epoch <= threshold
-                cutoff_epoch = below_threshold['epochs_completed'].max()
+                cutoff_epoch = below_threshold["epochs_completed"].max()
 
         cutoff_epochs[(author, seed)] = cutoff_epoch
 
     # Truncate all rows (train + eval datasets) at cutoff epoch for each model
     truncated_rows = []
 
-    for (author, seed), group in df.groupby(['train_author', 'seed']):
+    for (author, seed), group in df.groupby(["train_author", "seed"]):
         cutoff = cutoff_epochs.get((author, seed))
         if cutoff is not None:
             # Keep only rows where epochs_completed <= cutoff
-            truncated = group[group['epochs_completed'] <= cutoff]
+            truncated = group[group["epochs_completed"] <= cutoff]
             truncated_rows.append(truncated)
 
     if len(truncated_rows) == 0:

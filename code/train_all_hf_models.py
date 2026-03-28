@@ -6,20 +6,21 @@ Uses the same parallel training pattern as the main experiments,
 but with HF-specific configuration (target loss 0.1, only training loss evaluation).
 """
 
-import sys
-import os
 import logging
+import sys
 from pathlib import Path
+
 import torch
 import torch.multiprocessing as mp
 
 # Add code directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from experiment import Experiment
-from constants import AUTHORS, MODELS_DIR
-from main import run_experiment
 import shutil
+
+from constants import AUTHORS, MODELS_DIR
+from experiment import Experiment
+from main import run_experiment
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,11 +60,11 @@ def prepare_hf_experiments(authors, target_loss=0.1, max_epochs=50000):
             seed=0,
             tokenizer_name="gpt2",
             stop_criteria={
-                'train_loss': target_loss,
-                'min_epochs': 0,  # No minimum, already trained
-                'max_epochs': max_epochs
+                "train_loss": target_loss,
+                "min_epochs": 0,  # No minimum, already trained
+                "max_epochs": max_epochs,
             },
-            resume_training=True
+            resume_training=True,
         )
 
         # Use seed=0 model name directly
@@ -80,51 +81,41 @@ def prepare_hf_experiments(authors, target_loss=0.1, max_epochs=50000):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(
-        description='Train HuggingFace models in parallel using multiprocessing'
+        description="Train HuggingFace models in parallel using multiprocessing"
     )
     parser.add_argument(
-        'authors',
-        nargs='+',
-        choices=AUTHORS,
-        help='Authors to train (one or more)'
+        "authors", nargs="+", choices=AUTHORS, help="Authors to train (one or more)"
     )
     parser.add_argument(
-        '--target-loss',
+        "--target-loss",
         type=float,
         default=0.1,
-        help='Target training loss (default: 0.1)'
+        help="Target training loss (default: 0.1)",
     )
     parser.add_argument(
-        '--max-epochs',
-        type=int,
-        default=50000,
-        help='Maximum epochs (default: 50000)'
+        "--max-epochs", type=int, default=50000, help="Maximum epochs (default: 50000)"
     )
     parser.add_argument(
-        '--max-gpus',
-        type=int,
-        default=8,
-        help='Maximum GPUs to use (default: 8)'
+        "--max-gpus", type=int, default=8, help="Maximum GPUs to use (default: 8)"
     )
 
     args = parser.parse_args()
 
-    print("="*60)
+    print("=" * 60)
     print("Training HuggingFace Models (Parallel)")
-    print("="*60)
+    print("=" * 60)
     print(f"Authors: {', '.join(args.authors)} ({len(args.authors)} total)")
     print(f"Target loss: {args.target_loss}")
     print(f"Max epochs: {args.max_epochs}")
     print(f"Max GPUs: {args.max_gpus}")
-    print("="*60)
+    print("=" * 60)
     print()
 
     # Prepare experiments
     experiments = prepare_hf_experiments(
-        authors=args.authors,
-        target_loss=args.target_loss,
-        max_epochs=args.max_epochs
+        authors=args.authors, target_loss=args.target_loss, max_epochs=args.max_epochs
     )
 
     if len(experiments) == 0:
@@ -178,7 +169,7 @@ def main():
             pool.apply_async(
                 run_experiment,
                 (exp, device_queue, device_type),
-                error_callback=error_callback
+                error_callback=error_callback,
             )
 
         pool.close()
@@ -191,12 +182,12 @@ def main():
             run_experiment(exp, device_queue, device_type)
 
     print()
-    print("="*60)
+    print("=" * 60)
     print("Training Complete - Copying to models_hf/")
-    print("="*60)
+    print("=" * 60)
 
     # Copy completed models to models_hf/ (preserve seed=0 originals)
-    models_hf_dir = Path('models_hf')
+    models_hf_dir = Path("models_hf")
     models_hf_dir.mkdir(exist_ok=True)
 
     for exp in experiments:
@@ -215,9 +206,9 @@ def main():
             print(f"WARNING: Source model not found: {source_model_path}")
 
     print()
-    print("="*60)
+    print("=" * 60)
     print("All models saved to models_hf/")
-    print("="*60)
+    print("=" * 60)
 
     return 0
 

@@ -8,9 +8,10 @@ Each book is ONE example (not split by lines/paragraphs).
 import argparse
 import json
 from pathlib import Path
+
+from book_titles import get_book_title
 from datasets import Dataset
 from huggingface_hub import HfApi, create_repo
-from book_titles import get_book_title
 
 
 def create_author_dataset(author, data_dir):
@@ -25,22 +26,18 @@ def create_author_dataset(author, data_dir):
         Dataset object
     """
     data_dir = Path(data_dir)
-    txt_files = sorted(data_dir.glob('*.txt'))
+    txt_files = sorted(data_dir.glob("*.txt"))
 
     # Build dataset with one row per book
-    data = {
-        'filename': [],
-        'title': [],
-        'text': []
-    }
+    data = {"filename": [], "title": [], "text": []}
 
     for txt_file in txt_files:
-        text = txt_file.read_text(encoding='utf-8')
+        text = txt_file.read_text(encoding="utf-8")
         title = get_book_title(txt_file.name)
 
-        data['filename'].append(txt_file.name)
-        data['title'].append(title)
-        data['text'].append(text)
+        data["filename"].append(txt_file.name)
+        data["title"].append(title)
+        data["text"].append(text)
 
     # Create Dataset
     dataset = Dataset.from_dict(data)
@@ -56,7 +53,7 @@ def upload_dataset(author, creds, dry_run=False):
 
     print(f"\n{'='*60}")
     print(f"Uploading {author} corpus")
-    print('='*60)
+    print("=" * 60)
 
     # Verify data exists
     if not data_dir.exists():
@@ -76,21 +73,17 @@ def upload_dataset(author, creds, dry_run=False):
         return True
 
     # Create API
-    api = HfApi(token=creds['token'])
+    api = HfApi(token=creds["token"])
 
     # Create repo
     print(f"\nCreating repository: {repo_id}")
     create_repo(
-        repo_id,
-        repo_type="dataset",
-        exist_ok=True,
-        private=False,
-        token=creds['token']
+        repo_id, repo_type="dataset", exist_ok=True, private=False, token=creds["token"]
     )
 
     # Push dataset
     print("Pushing dataset to HuggingFace...")
-    dataset.push_to_hub(repo_id, token=creds['token'])
+    dataset.push_to_hub(repo_id, token=creds["token"])
 
     print(f"✓ Upload complete: https://huggingface.co/datasets/{repo_id}")
 
@@ -98,14 +91,14 @@ def upload_dataset(author, creds, dry_run=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Upload author dataset to HuggingFace')
-    parser.add_argument('--author', required=True, help='Author name')
-    parser.add_argument('--dry-run', action='store_true', help='Test without uploading')
+    parser = argparse.ArgumentParser(description="Upload author dataset to HuggingFace")
+    parser.add_argument("--author", required=True, help="Author name")
+    parser.add_argument("--dry-run", action="store_true", help="Test without uploading")
 
     args = parser.parse_args()
 
     # Load credentials
-    with open('.huggingface/credentials.json') as f:
+    with open(".huggingface/credentials.json") as f:
         creds = json.load(f)
 
     success = upload_dataset(args.author, creds, args.dry_run)
@@ -115,4 +108,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

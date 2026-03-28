@@ -1,10 +1,10 @@
-import torch
-from pathlib import Path
 import logging
-from torch.optim import AdamW
-from constants import MODELS_DIR
 import random
+
 import numpy as np
+import torch
+from constants import MODELS_DIR
+from torch.optim import AdamW
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +72,14 @@ def load_checkpoint(model_class, model_name, device):
         try:
             # torch.set_rng_state() requires CPU tensor
             rng_state = training_state["torch_random_state"]
-            if rng_state.device.type != 'cpu':
+            if rng_state.device.type != "cpu":
                 rng_state = rng_state.cpu()
             torch.set_rng_state(rng_state)
             logger.info("Restored PyTorch random state")
         except Exception as e:
-            logger.warning(f"Could not restore PyTorch RNG state: {e}. Continuing with random initialization.")
+            logger.warning(
+                f"Could not restore PyTorch RNG state: {e}. Continuing with random initialization."
+            )
 
     if "cuda_random_state" in training_state and torch.cuda.is_available():
         try:
@@ -85,11 +87,16 @@ def load_checkpoint(model_class, model_name, device):
             cuda_states = training_state["cuda_random_state"]
             if isinstance(cuda_states, list):
                 # Move each state to CPU if needed (set_rng_state_all handles device placement)
-                cuda_states = [s.cpu() if hasattr(s, 'cpu') and s.device.type != 'cpu' else s for s in cuda_states]
+                cuda_states = [
+                    s.cpu() if hasattr(s, "cpu") and s.device.type != "cpu" else s
+                    for s in cuda_states
+                ]
             torch.cuda.set_rng_state_all(cuda_states)
             logger.info("Restored CUDA random state")
         except Exception as e:
-            logger.warning(f"Could not restore CUDA RNG state: {e}. Continuing with random initialization.")
+            logger.warning(
+                f"Could not restore CUDA RNG state: {e}. Continuing with random initialization."
+            )
 
     logger.info(
         f"Checkpoint loaded for {model_name} from epochs_completed={epochs_completed}"

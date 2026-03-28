@@ -39,7 +39,7 @@ AUTHORS = [
 ]
 
 # Analysis variants
-ANALYSIS_VARIANTS = ['content', 'function', 'pos']
+ANALYSIS_VARIANTS = ["content", "function", "pos"]
 
 
 def get_data_dir(variant=None):
@@ -56,7 +56,9 @@ def get_data_dir(variant=None):
         return CLEANED_DATA_DIR
 
     if variant not in ANALYSIS_VARIANTS:
-        raise ValueError(f"Invalid variant: {variant}. Must be one of {ANALYSIS_VARIANTS}")
+        raise ValueError(
+            f"Invalid variant: {variant}. Must be one of {ANALYSIS_VARIANTS}"
+        )
 
     variant_dir = CLEANED_DATA_DIR / f"{variant}_only"
     if not variant_dir.exists():

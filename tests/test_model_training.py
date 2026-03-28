@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 """Test model training with tiny models and datasets."""
 
-import pytest
+import json
 import sys
 import tempfile
 from pathlib import Path
-import torch
+
 import pandas as pd
+import pytest
+import torch
 from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer
-import json
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -33,10 +34,10 @@ class TestModelTraining:
         config = GPT2Config(
             vocab_size=1000,  # Tiny vocabulary
             n_positions=128,  # Short sequences
-            n_embd=32,       # Tiny embeddings
-            n_layer=2,       # Only 2 layers
-            n_head=2,        # Only 2 attention heads
-            n_ctx=128
+            n_embd=32,  # Tiny embeddings
+            n_layer=2,  # Only 2 layers
+            n_head=2,  # Only 2 attention heads
+            n_ctx=128,
         )
 
         # Create model
@@ -48,7 +49,7 @@ class TestModelTraining:
 
         # Save model config for reference
         config_path = Path(self.temp_dir) / "tiny_model_config.json"
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             json.dump(config.to_dict(), f, indent=2)
 
         assert config_path.exists(), "Config not saved"
@@ -72,11 +73,7 @@ class TestModelTraining:
         """Test a single training step with tiny model."""
         # Create tiny model
         config = GPT2Config(
-            vocab_size=1000,
-            n_positions=64,
-            n_embd=16,
-            n_layer=1,
-            n_head=1
+            vocab_size=1000, n_positions=64, n_embd=16, n_layer=1, n_head=1
         )
         model = GPT2LMHeadModel(config)
         model.to(self.device)
@@ -108,7 +105,7 @@ class TestModelTraining:
             n_positions=128,
             n_embd=32,
             n_layer=2,
-            n_head=2
+            n_head=2,
         )
         model = GPT2LMHeadModel(config)
         model.eval()  # Set to eval mode
@@ -121,12 +118,14 @@ class TestModelTraining:
         texts = [
             "The cat sat on the mat.",
             "The dog ran in the park.",
-            "Hello world, this is a test."
+            "Hello world, this is a test.",
         ]
 
         losses = []
         for text in texts:
-            inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
+            inputs = tokenizer(
+                text, return_tensors="pt", truncation=True, max_length=128
+            )
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
             with torch.no_grad():
@@ -135,17 +134,15 @@ class TestModelTraining:
 
         # Verify losses are computed
         assert all(loss > 0 for loss in losses), "All losses should be positive"
-        assert len(set(losses)) == len(losses), "Losses should be different for different texts"
+        assert len(set(losses)) == len(
+            losses
+        ), "Losses should be different for different texts"
 
     def test_save_and_load_model(self):
         """Test saving and loading a model."""
         # Create model
         config = GPT2Config(
-            vocab_size=1000,
-            n_positions=64,
-            n_embd=16,
-            n_layer=1,
-            n_head=1
+            vocab_size=1000, n_positions=64, n_embd=16, n_layer=1, n_head=1
         )
         model = GPT2LMHeadModel(config)
 
@@ -157,7 +154,9 @@ class TestModelTraining:
         loaded_model = GPT2LMHeadModel.from_pretrained(model_path)
 
         # Compare parameters
-        for (n1, p1), (n2, p2) in zip(model.named_parameters(), loaded_model.named_parameters()):
+        for (n1, p1), (n2, p2) in zip(
+            model.named_parameters(), loaded_model.named_parameters()
+        ):
             assert n1 == n2, f"Parameter names don't match: {n1} vs {n2}"
             assert torch.allclose(p1, p2), f"Parameter values don't match for {n1}"
 
@@ -174,21 +173,23 @@ class TestModelTraining:
                 for epoch in epochs:
                     for eval_author in authors:
                         loss = 5.0 / epoch if author == eval_author else 6.0 / epoch
-                        data.append({
-                            'model_name': f'{author}_seed{seed}',
-                            'train_author': author,
-                            'seed': seed,
-                            'epochs_completed': epoch,
-                            'loss_dataset': eval_author,
-                            'loss_value': loss
-                        })
+                        data.append(
+                            {
+                                "model_name": f"{author}_seed{seed}",
+                                "train_author": author,
+                                "seed": seed,
+                                "epochs_completed": epoch,
+                                "loss_dataset": eval_author,
+                                "loss_value": loss,
+                            }
+                        )
 
         df = pd.DataFrame(data)
 
         # Verify DataFrame structure
         assert len(df) > 0, "No data generated"
-        assert 'loss_value' in df.columns, "Missing loss_value column"
-        assert df['loss_value'].min() > 0, "Loss values should be positive"
+        assert "loss_value" in df.columns, "Missing loss_value column"
+        assert df["loss_value"].min() > 0, "Loss values should be positive"
 
         # Save for inspection
         df_path = Path(self.temp_dir) / "synthetic_results.pkl"
@@ -199,7 +200,8 @@ class TestModelTraining:
     def teardown_class(cls):
         """Clean up temporary directory."""
         import shutil
-        if hasattr(cls, 'temp_dir') and Path(cls.temp_dir).exists():
+
+        if hasattr(cls, "temp_dir") and Path(cls.temp_dir).exists():
             shutil.rmtree(cls.temp_dir)
 
 

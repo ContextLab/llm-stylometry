@@ -19,8 +19,11 @@ llm-stylometry/
 ├── tests/                # Test suite
 ├── run_llm_stylometry.sh # Main CLI wrapper
 ├── remote_train.sh       # GPU cluster training
+├── remote_train_ntokens.sh # Dataset-size sweep on GPU cluster
 ├── check_remote_status.sh # Monitor remote training
-└── sync_models.sh        # Download trained models
+├── check_ntokens_status.sh # Monitor dataset-size sweep
+├── sync_models.sh        # Download trained models
+└── sync_ntokens.sh       # Download dataset-size sweep results
 ```
 
 See folder-specific README files for detailed documentation.
@@ -153,6 +156,18 @@ Training 320 models (baseline + 3 variants) requires a CUDA GPU. See `models/REA
 ./run_llm_stylometry.sh -t -r             # Resume from checkpoints
 ```
 
+**Dataset-size experiments:**
+
+Pre-computed results are available in `data/model_results_ntokens.pkl.gz`, so retraining is not required to generate figures or run analyses. To retrain locally at specific token levels:
+```bash
+N_TRAIN_TOKENS=128608 python code/main.py   # ~20% of full corpus
+N_TRAIN_TOKENS=257216 python code/main.py   # ~40%
+N_TRAIN_TOKENS=385825 python code/main.py   # ~60%
+N_TRAIN_TOKENS=514433 python code/main.py   # ~80%
+```
+
+The full sweep uses 19 token levels from ~33k to ~643k. See `code/constants.py` for the complete list.
+
 **Remote training:**
 
 Requires GPU cluster with SSH access. Create `.ssh/credentials_mycluster.json`:
@@ -168,7 +183,56 @@ Then from local machine:
 ./sync_models.sh --cluster mycluster -a         # Download when complete
 ```
 
-Trains in detached screen session on GPU server. See script help for full options.
+**Remote dataset-size sweep:**
+```bash
+./remote_train_ntokens.sh --cluster mycluster                    # Train all 19 token levels
+./remote_train_ntokens.sh --cluster mycluster --tokens 128608,257216  # Specific levels only
+./remote_train_ntokens.sh --cluster mycluster -r                 # Resume from checkpoints
+./check_ntokens_status.sh --cluster mycluster                    # Monitor sweep progress
+./sync_ntokens.sh --cluster mycluster                            # Download results (configs + logs, not weights)
+```
+
+All remote scripts train in detached screen sessions on the GPU server. See script help (`-h`) for full options.
+
+## Additional Analyses
+
+### Sigmoid Fit Analysis
+
+Fits a sigmoid curve to classification accuracy as a function of log training tokens, reporting the minimum dataset size needed for >=95% expected accuracy:
+
+```bash
+python code/fit_sigmoid.py
+```
+
+**Output:**
+- `paper/figs/source/accuracy_vs_tokens_sigmoid.pdf` (Figure 6)
+- `data/sigmoid_fit_results.json` (fit parameters and threshold)
+
+Uses pre-computed results from `data/model_results_ntokens.pkl.gz` (no retraining needed).
+
+### Embedding Comparison
+
+Compares our cross-entropy approach against text-embedding nearest-neighbor classification using three models from the MTEB leaderboard:
+
+| Model | Parameters |
+|-|-|
+| nomic-ai/nomic-embed-text-v1.5 | 137M |
+| BAAI/bge-m3 | 568M |
+| Qwen/Qwen3-Embedding-4B | 4.0B |
+
+**Prerequisites:**
+```bash
+pip install sentence-transformers
+```
+
+**Usage:**
+```bash
+python code/embedding_comparison.py                                        # Run all 3 models
+python code/embedding_comparison.py --model nomic-ai/nomic-embed-text-v1.5 # Single model
+python code/embedding_comparison.py --figures-only                          # Generate figures from cached results
+```
+
+Results are cached in `data/embedding_results/` so subsequent runs with `--figures-only` skip embedding computation.
 
 ## Data
 
@@ -232,6 +296,10 @@ from llm_stylometry.visualization import (
     generate_3d_mds_figure,          # Figure 4: MDS visualization
     generate_oz_losses_figure        # Figure 5: Oz analysis
 )
+
+# Additional standalone analyses (run as scripts)
+# Figure 6: Sigmoid fit — python code/fit_sigmoid.py
+# Figure 7: T-test ntokens — python code/generate_figures.py --figure 7
 
 # Fairness-based loss thresholding (for variant comparisons)
 from llm_stylometry.analysis.fairness import (

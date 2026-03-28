@@ -3,10 +3,10 @@
 Comprehensive CLI for LLM Stylometry: model training and figure generation.
 """
 
-import sys
-import os
 import argparse
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 # Add package to path
@@ -14,11 +14,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # Set matplotlib to non-interactive backend
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # Import safe_print for Windows compatibility
-from llm_stylometry.cli_utils import safe_print, format_header, is_windows
+from llm_stylometry.cli_utils import format_header, is_windows, safe_print
 
 
 def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
@@ -32,6 +33,7 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     warning = "[WARNING]" if is_windows() else "⚠️"
     # Check device availability
     import torch
+
     device_info = ""
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
@@ -41,7 +43,9 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     else:
         device_info = "CPU only (training will be slow)"
 
-    safe_print(f"\n{warning}  Warning: This will train 80 models (8 authors × 10 seeds)")
+    safe_print(
+        f"\n{warning}  Warning: This will train 80 models (8 authors × 10 seeds)"
+    )
     safe_print(f"   Device: {device_info}")
     if variant:
         safe_print(f"   Variant: {variant}_only")
@@ -51,7 +55,7 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
 
     if not no_confirm:
         response = input("\nProceed with training? [y/N]: ")
-        if response.lower() != 'y':
+        if response.lower() != "y":
             safe_print("Training cancelled.")
             return False
     else:
@@ -60,8 +64,8 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
 
     # Handle models directory based on resume flag
     import shutil
-    import glob
-    models_dir = Path('models')
+
+    models_dir = Path("models")
 
     if not resume:
         # Remove only the models for the current variant
@@ -71,7 +75,9 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
                 pattern = f"*_variant={variant}_*"
                 variant_models = list(models_dir.glob(pattern))
                 if variant_models:
-                    safe_print(f"\nRemoving existing {variant} variant models ({len(variant_models)} directories)...")
+                    safe_print(
+                        f"\nRemoving existing {variant} variant models ({len(variant_models)} directories)..."
+                    )
                     for model_path in variant_models:
                         shutil.rmtree(model_path)
                     safe_print(f"Existing {variant} variant models removed.")
@@ -79,10 +85,15 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
                     safe_print(f"\nNo existing {variant} variant models found.")
             else:
                 # For baseline training, only remove baseline models (no variant in name)
-                baseline_models = [p for p in models_dir.iterdir()
-                                   if p.is_dir() and '_variant=' not in p.name]
+                baseline_models = [
+                    p
+                    for p in models_dir.iterdir()
+                    if p.is_dir() and "_variant=" not in p.name
+                ]
                 if baseline_models:
-                    safe_print(f"\nRemoving existing baseline models ({len(baseline_models)} directories)...")
+                    safe_print(
+                        f"\nRemoving existing baseline models ({len(baseline_models)} directories)..."
+                    )
                     for model_path in baseline_models:
                         shutil.rmtree(model_path)
                     safe_print("Existing baseline models removed.")
@@ -97,9 +108,9 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
             resume = False  # Fall back to fresh training if no models exist
 
     # Prepare data if needed
-    if not Path('data/cleaned').exists():
+    if not Path("data/cleaned").exists():
         safe_print("\nCleaning data first...")
-        result = subprocess.run([sys.executable, 'code/clean.py'], capture_output=True)
+        result = subprocess.run([sys.executable, "code/clean.py"], capture_output=True)
         if result.returncode != 0:
             safe_print(f"Error cleaning data: {result.stderr.decode()}")
             return False
@@ -109,35 +120,37 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     try:
         # Set environment variables for training
         env = os.environ.copy()
-        env['DISABLE_TQDM'] = '1'  # Disable progress bars in subprocess
+        env["DISABLE_TQDM"] = "1"  # Disable progress bars in subprocess
         # Only disable multiprocessing if we have a single GPU or non-GPU device
         # With multiple GPUs, we want parallel training
         if torch.cuda.is_available():
             gpu_count = torch.cuda.device_count()
             if gpu_count <= 1:
-                env['NO_MULTIPROCESSING'] = '1'
+                env["NO_MULTIPROCESSING"] = "1"
                 safe_print("Single GPU detected - using sequential mode")
             else:
-                safe_print(f"Multiple GPUs detected ({gpu_count}) - using parallel training")
+                safe_print(
+                    f"Multiple GPUs detected ({gpu_count}) - using parallel training"
+                )
         else:
             # Non-CUDA device (CPU or MPS)
-            env['NO_MULTIPROCESSING'] = '1'
+            env["NO_MULTIPROCESSING"] = "1"
             safe_print("Non-CUDA device - using sequential mode")
         # Set PyTorch memory management for better GPU memory usage
-        env['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+        env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
         # Pass through max GPUs limit if specified
         if max_gpus:
-            env['MAX_GPUS'] = str(max_gpus)
+            env["MAX_GPUS"] = str(max_gpus)
             safe_print(f"Limiting to {max_gpus} GPU(s)")
         # Pass through resume flag if specified
         if resume:
-            env['RESUME_TRAINING'] = '1'
+            env["RESUME_TRAINING"] = "1"
         # Pass through analysis variant if specified
         if variant:
-            env['ANALYSIS_VARIANT'] = variant
+            env["ANALYSIS_VARIANT"] = variant
             safe_print(f"Training {variant} variant models")
         # Run without capturing output so we can see progress
-        result = subprocess.run([sys.executable, 'code/main.py'], env=env, check=False)
+        result = subprocess.run([sys.executable, "code/main.py"], env=env, check=False)
         if result.returncode != 0:
             safe_print(f"Error: Training script exited with code {result.returncode}")
             return False
@@ -149,13 +162,15 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     safe_print("\nConsolidating model results...")
     try:
         # Build consolidation command with variant if specified
-        consolidate_cmd = [sys.executable, 'code/consolidate_model_results.py']
+        consolidate_cmd = [sys.executable, "code/consolidate_model_results.py"]
         if variant:
-            consolidate_cmd.extend(['--variant', variant])
+            consolidate_cmd.extend(["--variant", variant])
 
         result = subprocess.run(consolidate_cmd, check=False)
         if result.returncode != 0:
-            safe_print(f"Error: Consolidation script exited with code {result.returncode}")
+            safe_print(
+                f"Error: Consolidation script exited with code {result.returncode}"
+            )
             return False
     except Exception as e:
         safe_print(f"Error running consolidation script: {e}")
@@ -166,40 +181,55 @@ def train_models(max_gpus=None, no_confirm=False, resume=False, variant=None):
     return True
 
 
-def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir='paper/figs/source', variant=None):
+def generate_figure(
+    figure_name,
+    data_path="data/model_results.pkl",
+    output_dir="paper/figs/source",
+    variant=None,
+):
     """Generate a specific figure (main or supplemental)."""
     from llm_stylometry.visualization import (
-        generate_all_losses_figure,
-        generate_stripplot_figure,
-        generate_t_test_figure,
-        generate_t_test_avg_figure,
-        generate_loss_heatmap_figure,
         generate_3d_mds_figure,
-        generate_oz_losses_figure
+        generate_all_losses_figure,
+        generate_loss_heatmap_figure,
+        generate_oz_losses_figure,
+        generate_stripplot_figure,
+        generate_t_test_avg_figure,
+        generate_t_test_figure,
     )
 
     # Main figures (baseline)
     figure_map = {
-        '1a': ('all_losses', generate_all_losses_figure, 'all_losses.pdf'),
-        '1b': ('stripplot', generate_stripplot_figure, 'stripplot.pdf'),
-        '2a': ('t_test', generate_t_test_figure, 't_test.pdf'),
-        '2b': ('t_test_avg', generate_t_test_avg_figure, 't_test_avg.pdf'),
-        '3': ('heatmap', generate_loss_heatmap_figure, 'average_loss_heatmap.pdf'),
-        '4': ('mds', generate_3d_mds_figure, '3d_MDS_plot.pdf'),
-        '5': ('oz', generate_oz_losses_figure, 'oz_losses.pdf'),
+        "1a": ("all_losses", generate_all_losses_figure, "all_losses.pdf"),
+        "1b": ("stripplot", generate_stripplot_figure, "stripplot.pdf"),
+        "2a": ("t_test", generate_t_test_figure, "t_test.pdf"),
+        "2b": ("t_test_avg", generate_t_test_avg_figure, "t_test_avg.pdf"),
+        "3": ("heatmap", generate_loss_heatmap_figure, "average_loss_heatmap.pdf"),
+        "4": ("mds", generate_3d_mds_figure, "3d_MDS_plot.pdf"),
+        "5": ("oz", generate_oz_losses_figure, "oz_losses.pdf"),
     }
 
     # Supplemental figures (variants)
     # S1-S3: Figure 1 variants, S4-S6: Figure 2 variants, S7-S8: Figures 3-4 variants
     supplemental_map = {
-        's1a': ('1a', 'content'), 's1b': ('1b', 'content'),
-        's2a': ('1a', 'function'), 's2b': ('1b', 'function'),
-        's3a': ('1a', 'pos'), 's3b': ('1b', 'pos'),
-        's4a': ('2a', 'content'), 's4b': ('2b', 'content'),
-        's5a': ('2a', 'function'), 's5b': ('2b', 'function'),
-        's6a': ('2a', 'pos'), 's6b': ('2b', 'pos'),
-        's7a': ('3', 'content'), 's7b': ('3', 'function'), 's7c': ('3', 'pos'),
-        's8a': ('4', 'content'), 's8b': ('4', 'function'), 's8c': ('4', 'pos'),
+        "s1a": ("1a", "content"),
+        "s1b": ("1b", "content"),
+        "s2a": ("1a", "function"),
+        "s2b": ("1b", "function"),
+        "s3a": ("1a", "pos"),
+        "s3b": ("1b", "pos"),
+        "s4a": ("2a", "content"),
+        "s4b": ("2b", "content"),
+        "s5a": ("2a", "function"),
+        "s5b": ("2b", "function"),
+        "s6a": ("2a", "pos"),
+        "s6b": ("2b", "pos"),
+        "s7a": ("3", "content"),
+        "s7b": ("3", "function"),
+        "s7c": ("3", "pos"),
+        "s8a": ("4", "content"),
+        "s8b": ("4", "function"),
+        "s8c": ("4", "pos"),
     }
 
     # Check if it's a supplemental figure
@@ -210,14 +240,64 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
         figure_name = main_fig
         safe_print(f"Supplemental Figure {figure_name.upper()}: {supp_variant} variant")
 
+    # Figures 6 and 7 are baseline-only with lazy imports
+    if figure_name in ("6", "7"):
+        if variant is not None:
+            safe_print(f"Figure {figure_name} is baseline-only; variant flag ignored")
+        output_path = Path(output_dir)
+        if figure_name == "6":
+            safe_print("Generating Figure 6: accuracy sigmoid...")
+            try:
+                from fit_sigmoid import generate_accuracy_sigmoid_figure
+
+                fig, _popt = generate_accuracy_sigmoid_figure(
+                    data_path="data/model_results_ntokens.pkl.gz",
+                    output_path=str(output_path / "accuracy_vs_tokens_sigmoid.pdf"),
+                )
+                plt.close(fig)
+                checkmark = "[OK]" if is_windows() else "✓"
+                safe_print(
+                    f"  {checkmark} Generated: {output_path / 'accuracy_vs_tokens_sigmoid.pdf'}"
+                )
+                return True
+            except Exception as e:
+                cross = "[FAIL]" if is_windows() else "✗"
+                safe_print(f"  {cross} Error: {str(e)}")
+                return False
+        else:  # figure_name == '7'
+            safe_print("Generating Figure 7: t-test ntokens...")
+            try:
+                from llm_stylometry.visualization.t_tests import (
+                    generate_t_test_ntokens_figure,
+                )
+
+                fig = generate_t_test_ntokens_figure(
+                    data_path="data/model_results_ntokens.pkl.gz",
+                    output_path=str(output_path / "t_test_ntokens.pdf"),
+                )
+                plt.close(fig)
+                checkmark = "[OK]" if is_windows() else "✓"
+                safe_print(
+                    f"  {checkmark} Generated: {output_path / 't_test_ntokens.pdf'}"
+                )
+                return True
+            except Exception as e:
+                cross = "[FAIL]" if is_windows() else "✗"
+                safe_print(f"  {cross} Error: {str(e)}")
+                return False
+
     if figure_name not in figure_map:
         safe_print(f"Unknown figure: {figure_name}")
-        safe_print(f"Available: {', '.join(figure_map.keys())} or supplemental: {', '.join(supplemental_map.keys())}")
+        safe_print(
+            f"Available: {', '.join(figure_map.keys())}, 6, 7 or supplemental: {', '.join(supplemental_map.keys())}"
+        )
         return False
 
     # Skip Figure 5 for variants with clear message
-    if figure_name == '5' and variant is not None:
-        safe_print(f"Skipping Figure 5 (Oz losses) for {variant} variant - requires contested/non-Oz datasets")
+    if figure_name == "5" and variant is not None:
+        safe_print(
+            f"Skipping Figure 5 (Oz losses) for {variant} variant - requires contested/non-Oz datasets"
+        )
         return True  # Return True to indicate intentional skip, not failure
 
     name, func, filename = figure_map[figure_name]
@@ -225,9 +305,13 @@ def generate_figure(figure_name, data_path='data/model_results.pkl', output_dir=
 
     safe_print(f"Generating Figure {figure_name.upper()}: {name}...")
     try:
-        kwargs = {'data_path': data_path, 'output_path': str(output_path), 'variant': variant}
-        if name in ['all_losses', 'stripplot', 't_test', 't_test_avg', 'oz']:
-            kwargs['show_legend'] = False
+        kwargs = {
+            "data_path": data_path,
+            "output_path": str(output_path),
+            "variant": variant,
+        }
+        if name in ["all_losses", "stripplot", "t_test", "t_test_avg", "oz"]:
+            kwargs["show_legend"] = False
         fig = func(**kwargs)
 
         # Handle None return (intentional skip)
@@ -260,13 +344,13 @@ def run_single_classification_variant(args_tuple):
     variant_name = variant if variant else "baseline"
 
     try:
+        from pathlib import Path
+
         from llm_stylometry.classification import run_classification_experiment
         from llm_stylometry.core.constants import AUTHORS
         from llm_stylometry.visualization import (
-            generate_classification_accuracy_figure,
-            generate_word_cloud_figure
+            generate_word_cloud_figure,
         )
-        from pathlib import Path
 
         # Determine result path
         result_path = f"data/classifier_results/{variant_name}.pkl"
@@ -274,19 +358,14 @@ def run_single_classification_variant(args_tuple):
         # Run experiment only if results don't exist or skip_experiment is False
         if not skip_experiment or not Path(result_path).exists():
             result_path = run_classification_experiment(
-                variant=variant,
-                max_splits=1000,
-                seed=42
+                variant=variant, max_splits=1000, seed=42
             )
 
         # Generate word clouds (per-variant)
         # Overall word cloud
         wc_overall = f"{output_dir}/wordcloud_overall_{variant_name}.pdf"
         generate_word_cloud_figure(
-            data_path=result_path,
-            author=None,
-            output_path=wc_overall,
-            variant=variant
+            data_path=result_path, author=None, output_path=wc_overall, variant=variant
         )
 
         # Per-author word clouds
@@ -296,20 +375,21 @@ def run_single_classification_variant(args_tuple):
                 data_path=result_path,
                 author=author,
                 output_path=wc_author,
-                variant=variant
+                variant=variant,
             )
 
         return (variant_name, True, None)
 
-    except Exception as e:
+    except Exception:
         import traceback
+
         return (variant_name, False, traceback.format_exc())
 
 
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description='LLM Stylometry CLI: Train models and generate figures',
+        description="LLM Stylometry CLI: Train models and generate figures",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -318,82 +398,87 @@ Examples:
   %(prog)s --figure 4         # Generate only Figure 4 (MDS plot)
   %(prog)s --train            # Train models from scratch, then generate figures
   %(prog)s --list             # List available figures
-        """
+        """,
     )
 
     parser.add_argument(
-        '--figure', '-f',
-        help='Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)',
-        default=None
-    )
-
-    parser.add_argument(
-        '--train', '-t',
-        action='store_true',
-        help='Train models from scratch before generating figures'
-    )
-
-    parser.add_argument(
-        '--data', '-d',
-        help='Path to model_results.pkl (auto-detected based on variant if not specified)',
-        default=None
-    )
-
-    parser.add_argument(
-        '--output', '-o',
-        help='Output directory for figures (default: paper/figs/source)',
-        default='paper/figs/source'
-    )
-
-    parser.add_argument(
-        '--list', '-l',
-        action='store_true',
-        help='List available figures'
-    )
-
-    parser.add_argument(
-        '--max-gpus', '-g',
-        type=int,
-        help='Maximum number of GPUs to use for training (default: all available)',
-        default=None
-    )
-
-    parser.add_argument(
-        '--no-confirm', '-y',
-        action='store_true',
-        help='Skip confirmation prompts (useful for non-interactive mode)'
-    )
-
-    parser.add_argument(
-        '--resume', '-r',
-        action='store_true',
-        help='Resume training from existing checkpoints (use with --train)'
-    )
-
-    parser.add_argument(
-        '--variant',
-        choices=['content', 'function', 'pos'],
+        "--figure",
+        "-f",
+        help="Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5, 6, 7)",
         default=None,
-        help='Analysis variant for training (content-only, function-only, or POS-only)'
     )
 
     parser.add_argument(
-        '--no-fairness',
-        action='store_true',
-        help='Disable fairness-based loss thresholding for variant figures (default: fairness enabled for variants)'
+        "--train",
+        "-t",
+        action="store_true",
+        help="Train models from scratch before generating figures",
     )
 
     parser.add_argument(
-        '--classify',
-        action='store_true',
-        help='Run text classification experiment instead of GPT-2 training'
+        "--data",
+        "-d",
+        help="Path to model_results.pkl (auto-detected based on variant if not specified)",
+        default=None,
     )
 
     parser.add_argument(
-        '--classify-variant',
-        action='append',
-        dest='classify_variants',
-        help='Variant(s) for classification (can specify multiple for parallel execution)'
+        "--output",
+        "-o",
+        help="Output directory for figures (default: paper/figs/source)",
+        default="paper/figs/source",
+    )
+
+    parser.add_argument(
+        "--list", "-l", action="store_true", help="List available figures"
+    )
+
+    parser.add_argument(
+        "--max-gpus",
+        "-g",
+        type=int,
+        help="Maximum number of GPUs to use for training (default: all available)",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--no-confirm",
+        "-y",
+        action="store_true",
+        help="Skip confirmation prompts (useful for non-interactive mode)",
+    )
+
+    parser.add_argument(
+        "--resume",
+        "-r",
+        action="store_true",
+        help="Resume training from existing checkpoints (use with --train)",
+    )
+
+    parser.add_argument(
+        "--variant",
+        choices=["content", "function", "pos"],
+        default=None,
+        help="Analysis variant for training (content-only, function-only, or POS-only)",
+    )
+
+    parser.add_argument(
+        "--no-fairness",
+        action="store_true",
+        help="Disable fairness-based loss thresholding for variant figures (default: fairness enabled for variants)",
+    )
+
+    parser.add_argument(
+        "--classify",
+        action="store_true",
+        help="Run text classification experiment instead of GPT-2 training",
+    )
+
+    parser.add_argument(
+        "--classify-variant",
+        action="append",
+        dest="classify_variants",
+        help="Variant(s) for classification (can specify multiple for parallel execution)",
     )
 
     args = parser.parse_args()
@@ -407,6 +492,8 @@ Examples:
         safe_print("  3  - Figure 3: Confusion matrix heatmap")
         safe_print("  4  - Figure 4: 3D MDS plot")
         safe_print("  5  - Figure 5: Oz authorship analysis")
+        safe_print("  6  - Figure 6: Accuracy sigmoid (baseline-only)")
+        safe_print("  7  - Figure 7: t-test ntokens (baseline-only)")
         safe_print("\nSupplemental Figures (variants):")
         safe_print("  s1a, s1b - Supp. Fig. 1: Content-only (Figs 1A, 1B)")
         safe_print("  s2a, s2b - Supp. Fig. 2: Function-only (Figs 1A, 1B)")
@@ -428,13 +515,18 @@ Examples:
     # Auto-detect data path if not specified
     if args.data is None:
         if args.variant:
-            args.data = f'data/model_results_{args.variant}.pkl'
+            args.data = f"data/model_results_{args.variant}.pkl"
         else:
-            args.data = 'data/model_results.pkl'
+            args.data = "data/model_results.pkl"
 
     # Train models if requested
     if args.train:
-        if not train_models(max_gpus=args.max_gpus, no_confirm=args.no_confirm, resume=args.resume, variant=args.variant):
+        if not train_models(
+            max_gpus=args.max_gpus,
+            no_confirm=args.no_confirm,
+            resume=args.resume,
+            variant=args.variant,
+        ):
             return 1
 
     # Run classification experiment if requested
@@ -443,8 +535,6 @@ Examples:
         safe_print("Running Text Classification Experiment")
         safe_print("=" * 60)
 
-        from llm_stylometry.classification import run_classification_experiment
-        from llm_stylometry.core.constants import AUTHORS
         from multiprocessing import Pool, cpu_count
 
         # Determine which variants to run
@@ -452,7 +542,7 @@ Examples:
         if args.classify_variants:
             # Variants explicitly specified via --classify-variant flags
             for v in args.classify_variants:
-                if v == 'baseline':
+                if v == "baseline":
                     variants_to_run.append(None)
                 else:
                     variants_to_run.append(v)
@@ -465,11 +555,15 @@ Examples:
                 # No variants specified at all: default to baseline only
                 variants_to_run = [None]
 
-        safe_print(f"\nVariants to run: {[v if v else 'baseline' for v in variants_to_run]}")
-        safe_print(f"Max CV splits per variant: 1,000")
+        safe_print(
+            f"\nVariants to run: {[v if v else 'baseline' for v in variants_to_run]}"
+        )
+        safe_print("Max CV splits per variant: 1,000")
 
         if len(variants_to_run) > 1:
-            safe_print(f"Running {len(variants_to_run)} variants in parallel on {cpu_count()} CPUs")
+            safe_print(
+                f"Running {len(variants_to_run)} variants in parallel on {cpu_count()} CPUs"
+            )
 
         # Determine if we should skip experiment (load existing results)
         # Skip only if --train flag is NOT set
@@ -482,7 +576,9 @@ Examples:
         try:
             if len(variants_to_run) == 1:
                 # Single variant - run directly
-                variant_name, success, error = run_single_classification_variant(variant_args[0])
+                variant_name, success, error = run_single_classification_variant(
+                    variant_args[0]
+                )
                 if not success:
                     safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
                     safe_print(error)
@@ -499,18 +595,25 @@ Examples:
                 for variant_name, success, error in results:
                     if not success:
                         failed.append(variant_name)
-                        safe_print(f"\n✗ ERROR: Classification failed for {variant_name}")
+                        safe_print(
+                            f"\n✗ ERROR: Classification failed for {variant_name}"
+                        )
                         safe_print(error)
                     else:
                         safe_print(f"\n✓ Classification complete for {variant_name}")
 
                 if failed:
-                    safe_print(f"\n✗ {len(failed)}/{len(variants_to_run)} classifications failed")
+                    safe_print(
+                        f"\n✗ {len(failed)}/{len(variants_to_run)} classifications failed"
+                    )
                     return 1
 
             # Generate single grouped accuracy bar chart combining all conditions
             safe_print("\nGenerating grouped accuracy bar chart...")
-            from llm_stylometry.visualization import generate_classification_accuracy_figure
+            from llm_stylometry.visualization import (
+                generate_classification_accuracy_figure,
+            )
+
             acc_output = f"{args.output}/classification_accuracy.pdf"
             generate_classification_accuracy_figure(output_path=acc_output)
             safe_print(f"✓ Generated: {acc_output}")
@@ -523,6 +626,7 @@ Examples:
         except Exception as e:
             safe_print(f"\n✗ ERROR: Classification experiment failed: {e}")
             import traceback
+
             traceback.print_exc()
             return 1
 
@@ -543,7 +647,9 @@ Examples:
 
     # Generate specific figure if requested
     if args.figure:
-        success = generate_figure(args.figure, args.data, args.output, variant=args.variant)
+        success = generate_figure(
+            args.figure, args.data, args.output, variant=args.variant
+        )
         return 0 if success else 1
 
     safe_print("\n" + "=" * 60)
@@ -552,76 +658,92 @@ Examples:
 
     # Import visualization functions
     from llm_stylometry.visualization import (
-        generate_all_losses_figure,
-        generate_stripplot_figure,
-        generate_t_test_figure,
-        generate_t_test_avg_figure,
-        generate_loss_heatmap_figure,
         generate_3d_mds_figure,
-        generate_oz_losses_figure
+        generate_all_losses_figure,
+        generate_loss_heatmap_figure,
+        generate_oz_losses_figure,
+        generate_stripplot_figure,
+        generate_t_test_avg_figure,
+        generate_t_test_figure,
     )
 
     figures = [
-        ('Figure 1A: Training curves',
-         lambda: generate_all_losses_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/all_losses.pdf',
-             show_legend=False,
-             variant=args.variant,
-             apply_fairness=not args.no_fairness
-         )),
-        ('Figure 1B: Strip plot',
-         lambda: generate_stripplot_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/stripplot.pdf',
-             show_legend=False,
-             variant=args.variant,
-             apply_fairness=not args.no_fairness
-         )),
-        ('Figure 2A: Individual t-tests',
-         lambda: generate_t_test_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/t_test.pdf',
-             show_legend=False,
-             variant=args.variant
-         )),
-        ('Figure 2B: Average t-test',
-         lambda: generate_t_test_avg_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/t_test_avg.pdf',
-             show_legend=False,
-             variant=args.variant
-         )),
-        ('Figure 3: Confusion matrix',
-         lambda: generate_loss_heatmap_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/average_loss_heatmap.pdf',
-             variant=args.variant,
-             apply_fairness=not args.no_fairness
-         )),
-        ('Figure 4: 3D MDS plot',
-         lambda: generate_3d_mds_figure(
-             data_path=args.data,
-             output_path=f'{args.output}/3d_MDS_plot.pdf',
-             variant=args.variant,
-             apply_fairness=not args.no_fairness
-         )),
+        (
+            "Figure 1A: Training curves",
+            lambda: generate_all_losses_figure(
+                data_path=args.data,
+                output_path=f"{args.output}/all_losses.pdf",
+                show_legend=False,
+                variant=args.variant,
+                apply_fairness=not args.no_fairness,
+            ),
+        ),
+        (
+            "Figure 1B: Strip plot",
+            lambda: generate_stripplot_figure(
+                data_path=args.data,
+                output_path=f"{args.output}/stripplot.pdf",
+                show_legend=False,
+                variant=args.variant,
+                apply_fairness=not args.no_fairness,
+            ),
+        ),
+        (
+            "Figure 2A: Individual t-tests",
+            lambda: generate_t_test_figure(
+                data_path=args.data,
+                output_path=f"{args.output}/t_test.pdf",
+                show_legend=False,
+                variant=args.variant,
+            ),
+        ),
+        (
+            "Figure 2B: Average t-test",
+            lambda: generate_t_test_avg_figure(
+                data_path=args.data,
+                output_path=f"{args.output}/t_test_avg.pdf",
+                show_legend=False,
+                variant=args.variant,
+            ),
+        ),
+        (
+            "Figure 3: Confusion matrix",
+            lambda: generate_loss_heatmap_figure(
+                data_path=args.data,
+                output_path=f"{args.output}/average_loss_heatmap.pdf",
+                variant=args.variant,
+                apply_fairness=not args.no_fairness,
+            ),
+        ),
+        (
+            "Figure 4: 3D MDS plot",
+            lambda: generate_3d_mds_figure(
+                data_path=args.data,
+                output_path=f"{args.output}/3d_MDS_plot.pdf",
+                variant=args.variant,
+                apply_fairness=not args.no_fairness,
+            ),
+        ),
     ]
 
     # Only include Figure 5 for baseline (no variant)
     if args.variant is None:
         figures.append(
-            ('Figure 5: Oz losses',
-             lambda: generate_oz_losses_figure(
-                 data_path=args.data,
-                 output_path=f'{args.output}/oz_losses.pdf',
-                 show_legend=False,
-                 variant=args.variant,
-                 apply_fairness=not args.no_fairness
-             ))
+            (
+                "Figure 5: Oz losses",
+                lambda: generate_oz_losses_figure(
+                    data_path=args.data,
+                    output_path=f"{args.output}/oz_losses.pdf",
+                    show_legend=False,
+                    variant=args.variant,
+                    apply_fairness=not args.no_fairness,
+                ),
+            )
         )
     else:
-        safe_print(f"\nNote: Skipping Figure 5 for {args.variant} variant (requires contested/non-Oz datasets)")
+        safe_print(
+            f"\nNote: Skipping Figure 5 for {args.variant} variant (requires contested/non-Oz datasets)"
+        )
 
     success_count = 0
     failed_figures = []
@@ -645,17 +767,17 @@ Examples:
     safe_print("=" * 60)
 
     expected_files = [
-        (f'{args.output}/all_losses.pdf', 'Figure 1A'),
-        (f'{args.output}/stripplot.pdf', 'Figure 1B'),
-        (f'{args.output}/t_test.pdf', 'Figure 2A'),
-        (f'{args.output}/t_test_avg.pdf', 'Figure 2B'),
-        (f'{args.output}/average_loss_heatmap.pdf', 'Figure 3'),
-        (f'{args.output}/3d_MDS_plot.pdf', 'Figure 4'),
+        (f"{args.output}/all_losses.pdf", "Figure 1A"),
+        (f"{args.output}/stripplot.pdf", "Figure 1B"),
+        (f"{args.output}/t_test.pdf", "Figure 2A"),
+        (f"{args.output}/t_test_avg.pdf", "Figure 2B"),
+        (f"{args.output}/average_loss_heatmap.pdf", "Figure 3"),
+        (f"{args.output}/3d_MDS_plot.pdf", "Figure 4"),
     ]
 
     # Only verify Figure 5 for baseline
     if args.variant is None:
-        expected_files.append((f'{args.output}/oz_losses.pdf', 'Figure 5'))
+        expected_files.append((f"{args.output}/oz_losses.pdf", "Figure 5"))
 
     for file_path, name in expected_files:
         path = Path(file_path)

@@ -33,7 +33,7 @@ Usage: $0 [OPTIONS]
 
 OPTIONS:
     -h, --help              Show this help message
-    -f, --figure FIGURE     Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5)
+    -f, --figure FIGURE     Generate specific figure (1a, 1b, 2a, 2b, 3, 4, 5, 6, 7)
     -t, --train             Train models from scratch before generating figures
     -r, --resume            Resume training from existing checkpoints (use with -t)
     -y, --yes, --no-confirm Skip confirmation prompts (non-interactive mode)
@@ -81,6 +81,8 @@ FIGURES:
     3  - Figure 3: Confusion matrix heatmap (average_loss_heatmap.pdf)
     4  - Figure 4: 3D MDS plot (3d_MDS_plot.pdf)
     5  - Figure 5: Oz authorship analysis (oz_losses.pdf) [baseline only]
+    6  - Figure 6: Accuracy vs tokens sigmoid (accuracy_vs_tokens_sigmoid.pdf)
+    7  - Figure 7: t-test vs tokens (t_test_ntokens.pdf)
 
 EOF
 }
@@ -286,7 +288,7 @@ setup_environment() {
     # Install other dependencies
     pip install --upgrade pip
     pip install "numpy<2" scipy transformers matplotlib seaborn pandas tqdm
-    pip install cleantext plotly scikit-learn wordcloud nltk
+    pip install cleantext plotly scikit-learn wordcloud nltk sentence-transformers pyarrow
 
     # Install the package
     pip install -e .
@@ -519,8 +521,52 @@ if [ "$CLASSIFY" = true ]; then
     PYTHON_CMD="$PYTHON_CMD --classify"
 fi
 
+# Handle figures 6 and 7 separately (they use different scripts)
+generate_figure_6() {
+    if [ -n "$VARIANT" ]; then
+        print_warning "Figure 6 is baseline-only; variant flag ignored"
+    fi
+    if [ ! -f "data/sigmoid_fit_results.json" ]; then
+        print_warning "data/sigmoid_fit_results.json not found; running fit_sigmoid.py first..."
+        python code/fit_sigmoid.py
+    fi
+    print_info "Generating Figure 6: Accuracy vs tokens sigmoid..."
+    python code/fit_sigmoid.py
+}
+
+generate_figure_7() {
+    if [ -n "$VARIANT" ]; then
+        print_warning "Figure 7 is baseline-only; variant flag ignored"
+    fi
+    if [ ! -f "data/model_results_ntokens.pkl.gz" ]; then
+        print_warning "data/model_results_ntokens.pkl.gz not found; pre-computed results are needed"
+    fi
+    if [ ! -f "data/sigmoid_fit_results.json" ]; then
+        print_info "data/sigmoid_fit_results.json not found; running fit_sigmoid.py first..."
+        python code/fit_sigmoid.py
+    fi
+    print_info "Generating Figure 7: t-test vs tokens..."
+    python code/generate_ntokens_figures.py
+}
+
+if [ "$FIGURE" = "6" ]; then
+    generate_figure_6
+    print_success "Done!"
+    exit 0
+elif [ "$FIGURE" = "7" ]; then
+    generate_figure_7
+    print_success "Done!"
+    exit 0
+fi
+
 # Execute the Python script
 print_info "Running: $PYTHON_CMD"
 eval $PYTHON_CMD
+
+# If generating all figures (no specific figure requested), also generate figures 6 and 7
+if [ -z "$FIGURE" ] && [ "$LIST_FIGURES" = false ] && [ "$SETUP_ONLY" = false ] && [ "$CLASSIFY" != true ]; then
+    generate_figure_6
+    generate_figure_7
+fi
 
 print_success "Done!"

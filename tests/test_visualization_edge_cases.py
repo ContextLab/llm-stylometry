@@ -8,17 +8,18 @@ in t-test figures. All tests use REAL data and REAL figure generation
 Related to issue #25: Austen models not appearing in function-only variant figures.
 """
 
-import pytest
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-from pathlib import Path
 import subprocess
 import tempfile
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pytest
 
 from llm_stylometry.visualization import (
-    generate_t_test_figure,
     generate_t_test_avg_figure,
+    generate_t_test_figure,
 )
 from llm_stylometry.visualization.t_tests import calculate_t_statistics
 
@@ -36,7 +37,7 @@ class TestNegativeTStatistics:
         2. Austen has negative t-statistic values
         3. Y-axis limits encompass all Austen values
         """
-        data_path = 'data/model_results_function.pkl'
+        data_path = "data/model_results_function.pkl"
 
         # Check if data file exists
         if not Path(data_path).exists():
@@ -46,9 +47,7 @@ class TestNegativeTStatistics:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "test_fig.pdf"
             fig = generate_t_test_figure(
-                data_path=data_path,
-                output_path=str(output_path),
-                variant='function'
+                data_path=data_path, output_path=str(output_path), variant="function"
             )
 
             # Extract axes from figure
@@ -59,26 +58,34 @@ class TestNegativeTStatistics:
 
             # Load data and calculate t-statistics to verify
             df = pd.read_pickle(data_path)
-            df = df[df['variant'] == 'function'].copy()
+            df = df[df["variant"] == "function"].copy()
             t_raws_df, _ = calculate_t_statistics(df)
 
             # Check Austen data exists
-            austen_data = t_raws_df[t_raws_df['Author'] == 'Austen']
+            austen_data = t_raws_df[t_raws_df["Author"] == "Austen"]
             assert len(austen_data) > 0, "Austen data should be present"
 
             # Check that Austen has some negative t-statistics
-            austen_min = austen_data['t_raw'].min()
-            assert austen_min < 0, f"Austen should have negative t-stats, got min={austen_min}"
+            austen_min = austen_data["t_raw"].min()
+            assert (
+                austen_min < 0
+            ), f"Austen should have negative t-stats, got min={austen_min}"
 
             # Check that y-axis limits encompass Austen data
-            austen_max = austen_data['t_raw'].max()
-            assert y_min <= austen_min, f"Y-min ({y_min}) should be <= Austen min ({austen_min})"
-            assert y_max >= austen_max, f"Y-max ({y_max}) should be >= Austen max ({austen_max})"
+            austen_max = austen_data["t_raw"].max()
+            assert (
+                y_min <= austen_min
+            ), f"Y-min ({y_min}) should be <= Austen min ({austen_min})"
+            assert (
+                y_max >= austen_max
+            ), f"Y-max ({y_max}) should be >= Austen max ({austen_max})"
 
             # Verify lines were actually plotted
             lines = ax.get_lines()
             # Should have 8 authors + 1 threshold line
-            assert len(lines) >= 8, f"Should have at least 8 author lines, got {len(lines)}"
+            assert (
+                len(lines) >= 8
+            ), f"Should have at least 8 author lines, got {len(lines)}"
 
             # Check that at least one line has negative y-values
             has_negative = False
@@ -95,10 +102,13 @@ class TestNegativeTStatistics:
 class TestYLimContainsAllData:
     """Test that y-axis limits contain all data for all variants."""
 
-    @pytest.mark.parametrize("variant,data_file", [
-        (None, 'data/model_results.pkl'),
-        ('function', 'data/model_results_function.pkl'),
-    ])
+    @pytest.mark.parametrize(
+        "variant,data_file",
+        [
+            (None, "data/model_results.pkl"),
+            ("function", "data/model_results_function.pkl"),
+        ],
+    )
     def test_ylim_contains_all_data(self, variant, data_file):
         """
         Test that y-axis limits contain all t-statistic values.
@@ -112,9 +122,7 @@ class TestYLimContainsAllData:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "test_fig.pdf"
             fig = generate_t_test_figure(
-                data_path=data_file,
-                output_path=str(output_path),
-                variant=variant
+                data_path=data_file, output_path=str(output_path), variant=variant
             )
 
             # Extract axes and limits
@@ -124,19 +132,23 @@ class TestYLimContainsAllData:
             # Load data and calculate t-statistics
             df = pd.read_pickle(data_file)
             if variant is None:
-                if 'variant' in df.columns:
-                    df = df[df['variant'].isna()].copy()
+                if "variant" in df.columns:
+                    df = df[df["variant"].isna()].copy()
             else:
-                df = df[df['variant'] == variant].copy()
+                df = df[df["variant"] == variant].copy()
 
             t_raws_df, _ = calculate_t_statistics(df)
 
             # Check all t-statistics are within limits
-            data_min = t_raws_df['t_raw'].min()
-            data_max = t_raws_df['t_raw'].max()
+            data_min = t_raws_df["t_raw"].min()
+            data_max = t_raws_df["t_raw"].max()
 
-            assert y_min <= data_min, f"Y-min ({y_min}) should be <= data min ({data_min})"
-            assert y_max >= data_max, f"Y-max ({y_max}) should be >= data max ({data_max})"
+            assert (
+                y_min <= data_min
+            ), f"Y-min ({y_min}) should be <= data min ({data_min})"
+            assert (
+                y_max >= data_max
+            ), f"Y-max ({y_max}) should be >= data max ({data_max})"
 
             plt.close(fig)
 
@@ -151,7 +163,7 @@ class TestBaselineRegression:
         This is a regression test to ensure our fix doesn't break
         the baseline case where all authors should have positive t-stats.
         """
-        data_path = 'data/model_results.pkl'
+        data_path = "data/model_results.pkl"
 
         if not Path(data_path).exists():
             pytest.skip(f"Data file {data_path} not found")
@@ -162,7 +174,7 @@ class TestBaselineRegression:
             fig = generate_t_test_figure(
                 data_path=data_path,
                 output_path=str(output_path),
-                variant=None  # Baseline
+                variant=None,  # Baseline
             )
 
             # Extract axes
@@ -171,14 +183,16 @@ class TestBaselineRegression:
 
             # Load data and calculate t-statistics
             df = pd.read_pickle(data_path)
-            if 'variant' in df.columns:
-                df = df[df['variant'].isna()].copy()
+            if "variant" in df.columns:
+                df = df[df["variant"].isna()].copy()
 
             t_raws_df, _ = calculate_t_statistics(df)
 
             # All t-statistics should be positive for baseline
-            data_min = t_raws_df['t_raw'].min()
-            assert data_min >= 0, f"Baseline should have all positive t-stats, got min={data_min}"
+            data_min = t_raws_df["t_raw"].min()
+            assert (
+                data_min >= 0
+            ), f"Baseline should have all positive t-stats, got min={data_min}"
 
             # Y-min should be at or slightly below 0
             assert y_min <= 0, f"Y-min should be <= 0, got {y_min}"
@@ -190,10 +204,13 @@ class TestBaselineRegression:
 class TestThresholdLineVisibility:
     """Test that threshold line is always visible."""
 
-    @pytest.mark.parametrize("variant,data_file", [
-        (None, 'data/model_results.pkl'),
-        ('function', 'data/model_results_function.pkl'),
-    ])
+    @pytest.mark.parametrize(
+        "variant,data_file",
+        [
+            (None, "data/model_results.pkl"),
+            ("function", "data/model_results_function.pkl"),
+        ],
+    )
     def test_threshold_line_visible(self, variant, data_file):
         """
         Test that p<0.001 threshold line (t=3.291) is always visible.
@@ -209,9 +226,7 @@ class TestThresholdLineVisibility:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "test_fig.pdf"
             fig = generate_t_test_figure(
-                data_path=data_file,
-                output_path=str(output_path),
-                variant=variant
+                data_path=data_file, output_path=str(output_path), variant=variant
             )
 
             # Extract axes and limits
@@ -219,8 +234,9 @@ class TestThresholdLineVisibility:
             y_min, y_max = ax.get_ylim()
 
             # Check threshold is within visible range
-            assert y_min < threshold < y_max, \
-                f"Threshold {threshold} should be within y-limits ({y_min}, {y_max})"
+            assert (
+                y_min < threshold < y_max
+            ), f"Threshold {threshold} should be within y-limits ({y_min}, {y_max})"
 
             # Check that a horizontal line at threshold exists
             found_threshold_line = False
@@ -245,7 +261,7 @@ class TestAverageFigure:
 
         Uses REAL function variant data where averaged t-stats may be negative.
         """
-        data_path = 'data/model_results_function.pkl'
+        data_path = "data/model_results_function.pkl"
 
         if not Path(data_path).exists():
             pytest.skip(f"Data file {data_path} not found")
@@ -254,9 +270,7 @@ class TestAverageFigure:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "test_avg_fig.pdf"
             fig = generate_t_test_avg_figure(
-                data_path=data_path,
-                output_path=str(output_path),
-                variant='function'
+                data_path=data_path, output_path=str(output_path), variant="function"
             )
 
             # Extract axes
@@ -265,19 +279,25 @@ class TestAverageFigure:
 
             # Load data and calculate t-statistics
             df = pd.read_pickle(data_path)
-            df = df[df['variant'] == 'function'].copy()
+            df = df[df["variant"] == "function"].copy()
             t_raws_df, _ = calculate_t_statistics(df)
 
             # Check y-limits encompass all averaged values
-            data_min = t_raws_df['t_raw'].min()
-            data_max = t_raws_df['t_raw'].max()
+            data_min = t_raws_df["t_raw"].min()
+            data_max = t_raws_df["t_raw"].max()
 
-            assert y_min <= data_min, f"Y-min ({y_min}) should be <= data min ({data_min})"
-            assert y_max >= data_max, f"Y-max ({y_max}) should be >= data max ({data_max})"
+            assert (
+                y_min <= data_min
+            ), f"Y-min ({y_min}) should be <= data min ({data_min})"
+            assert (
+                y_max >= data_max
+            ), f"Y-max ({y_max}) should be >= data max ({data_max})"
 
             # If there are negative values, y_min should be negative
             if data_min < 0:
-                assert y_min < 0, f"Y-min should be negative when data has negatives, got {y_min}"
+                assert (
+                    y_min < 0
+                ), f"Y-min should be negative when data has negatives, got {y_min}"
 
             plt.close(fig)
 
@@ -292,18 +312,18 @@ class TestEdgeCases:
         Creates a modified dataset with all negative values to test
         edge case handling.
         """
-        data_path = 'data/model_results_function.pkl'
+        data_path = "data/model_results_function.pkl"
 
         if not Path(data_path).exists():
             pytest.skip(f"Data file {data_path} not found")
 
         # Load real data and modify to make all t-stats negative
         df = pd.read_pickle(data_path)
-        df = df[df['variant'] == 'function'].copy()
+        df = df[df["variant"] == "function"].copy()
 
         # Swap train_author and loss_dataset to invert t-statistics
         # This makes models perform worse on their own author
-        df['train_author'], df['loss_dataset'] = df['loss_dataset'], df['train_author']
+        df["train_author"], df["loss_dataset"] = df["loss_dataset"], df["train_author"]
 
         # Save to temporary file
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -314,7 +334,7 @@ class TestEdgeCases:
             fig = generate_t_test_figure(
                 data_path=str(temp_data),
                 output_path=str(output_path),
-                variant='function'
+                variant="function",
             )
 
             # Extract axes
@@ -335,7 +355,7 @@ class TestEdgeCases:
 
         Uses REAL baseline data.
         """
-        data_path = 'data/model_results.pkl'
+        data_path = "data/model_results.pkl"
 
         if not Path(data_path).exists():
             pytest.skip(f"Data file {data_path} not found")
@@ -345,7 +365,7 @@ class TestEdgeCases:
             fig = generate_t_test_figure(
                 data_path=data_path,
                 output_path=str(output_path),
-                variant=None  # Baseline
+                variant=None,  # Baseline
             )
 
             # Extract axes
@@ -372,34 +392,33 @@ class TestCLIIntegration:
         Verifies PDF is generated and contains expected content.
         """
         # Check if script exists
-        script_path = Path('./run_llm_stylometry.sh')
+        script_path = Path("./run_llm_stylometry.sh")
         if not script_path.exists():
             pytest.skip("CLI script not found")
 
         # Check if function variant data exists
-        if not Path('data/model_results_function.pkl').exists():
+        if not Path("data/model_results_function.pkl").exists():
             pytest.skip("Function variant data not found")
 
         # Run CLI command
         result = subprocess.run(
-            ['./run_llm_stylometry.sh', '-f', '2a', '--function-only', '--no-setup'],
+            ["./run_llm_stylometry.sh", "-f", "2a", "--function-only", "--no-setup"],
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=120,
         )
 
         # Check command succeeded
         assert result.returncode == 0, f"CLI failed with: {result.stderr}"
 
         # Check PDF was generated
-        pdf_path = Path('paper/figs/source/t_test_function.pdf')
+        pdf_path = Path("paper/figs/source/t_test_function.pdf")
         assert pdf_path.exists(), "PDF should be generated"
         assert pdf_path.stat().st_size > 1000, "PDF should not be empty"
 
         # For deeper validation, we can re-generate and check
         fig = generate_t_test_figure(
-            data_path='data/model_results_function.pkl',
-            variant='function'
+            data_path="data/model_results_function.pkl", variant="function"
         )
 
         # Verify Austen line exists and has data
@@ -419,5 +438,5 @@ class TestCLIIntegration:
         plt.close(fig)
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -7,17 +7,18 @@ Verifies that data loaders work correctly with variant data.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'code'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "code"))
 
-from constants import AUTHORS, ANALYSIS_VARIANTS, get_data_dir
-from data_utils import sample_book_path, tokenize_texts, sample_tokens
+from constants import ANALYSIS_VARIANTS, get_data_dir
+from data_utils import sample_book_path, sample_tokens, tokenize_texts
 from tokenizer_utils import get_tokenizer
+
 
 def test_variant_data_loading():
     """Test data loading for all variants."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Test: Data Loading for All Variants")
-    print("="*60)
+    print("=" * 60)
 
     tokenizer = get_tokenizer("gpt2")
     test_seed = 42
@@ -61,23 +62,28 @@ def test_variant_data_loading():
         sample_text = tokenizer.decode(sampled[:100])
         print(f"Sample text: {sample_text[:100]}...")
 
-        if variant == 'content':
-            assert '<FUNC>' in sample_text, "Expected <FUNC> tokens in content variant"
+        if variant == "content":
+            assert "<FUNC>" in sample_text, "Expected <FUNC> tokens in content variant"
             print("✓ Found <FUNC> tokens in content variant")
-        elif variant == 'function':
-            assert '<CONTENT>' in sample_text, "Expected <CONTENT> tokens in function variant"
+        elif variant == "function":
+            assert (
+                "<CONTENT>" in sample_text
+            ), "Expected <CONTENT> tokens in function variant"
             print("✓ Found <CONTENT> tokens in function variant")
-        elif variant == 'pos':
+        elif variant == "pos":
             # Check for POS tags (NOUN, VERB, etc.)
-            has_pos_tags = any(tag in sample_text for tag in ['NOUN', 'VERB', 'ADJ', 'ADP'])
+            has_pos_tags = any(
+                tag in sample_text for tag in ["NOUN", "VERB", "ADJ", "ADP"]
+            )
             assert has_pos_tags, "Expected POS tags in pos variant"
             print("✓ Found POS tags in pos variant")
 
         print(f"✓ Variant {variant or 'baseline'} data loading successful")
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✓ ALL VARIANT DATA LOADING TESTS PASSED")
-    print("="*60)
+    print("=" * 60)
+
 
 if __name__ == "__main__":
     test_variant_data_loading()

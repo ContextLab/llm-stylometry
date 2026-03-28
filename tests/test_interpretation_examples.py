@@ -7,7 +7,6 @@ Uses real data and functions - no mocks or simulations.
 """
 
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -23,19 +22,16 @@ def test_oz_analysis_variants():
         pytest.skip("Visualization module not available")
 
     # Need actual data with Baum/Thompson models
-    test_data = Path('tests/data/test_model_results.pkl')
+    test_data = Path("tests/data/test_model_results.pkl")
     if not test_data.exists():
         pytest.skip("Test data not found")
 
     # Test generating Oz analysis for each variant
-    variants = [None, 'content', 'function', 'pos']
+    variants = [None, "content", "function", "pos"]
 
     for variant in variants:
         try:
-            fig = generate_oz_losses_figure(
-                data_path=str(test_data),
-                variant=variant
-            )
+            fig = generate_oz_losses_figure(data_path=str(test_data), variant=variant)
 
             if fig is not None:
                 # Verify figure has expected structure
@@ -43,7 +39,9 @@ def test_oz_analysis_variants():
                 assert len(axes) > 0, f"Figure has no axes for variant {variant}"
 
                 # Check data exists (may not have all variants in test data)
-                assert hasattr(fig, 'get_axes'), f"Invalid figure object for variant {variant}"
+                assert hasattr(
+                    fig, "get_axes"
+                ), f"Invalid figure object for variant {variant}"
         except (ValueError, KeyError) as e:
             # Expected if variant data doesn't exist or insufficient Oz data
             if variant is not None:
@@ -62,18 +60,17 @@ def test_confusion_matrix_variants():
     except ImportError:
         pytest.skip("Visualization module not available")
 
-    test_data = Path('tests/data/test_model_results.pkl')
+    test_data = Path("tests/data/test_model_results.pkl")
     if not test_data.exists():
         pytest.skip("Test data not found")
 
     # Generate confusion matrices for each variant
-    variants = [None, 'content', 'function', 'pos']
+    variants = [None, "content", "function", "pos"]
 
     for variant in variants:
         try:
             fig = generate_loss_heatmap_figure(
-                data_path=str(test_data),
-                variant=variant
+                data_path=str(test_data), variant=variant
             )
 
             if fig is not None:
@@ -91,22 +88,22 @@ def test_confusion_matrix_variants():
 def test_comparison_workflow():
     """Test the complete workflow from INTERPRETATION.md Step 2."""
 
-    test_data = Path('tests/data/test_model_results.pkl')
+    test_data = Path("tests/data/test_model_results.pkl")
     if not test_data.exists():
         pytest.skip("Test data not found")
 
     # Step 2: Compute statistics for all variants using --all
     result = subprocess.run(
-        ['./run_stats.sh', '--all', '-d', str(test_data)],
+        ["./run_stats.sh", "--all", "-d", str(test_data)],
         capture_output=True,
         text=True,
-        timeout=300
+        timeout=300,
     )
 
     # May fail if insufficient data for all variants
     if result.returncode != 0:
         output = result.stdout + result.stderr
-        if 'Insufficient' in output:
+        if "Insufficient" in output:
             pytest.skip("Insufficient test data for --all workflow")
         else:
             pytest.fail(f"Stats --all failed: {result.stderr}")
@@ -115,43 +112,47 @@ def test_comparison_workflow():
     output = result.stdout + result.stderr
 
     # Should process multiple variants
-    variant_mentions = sum([
-        'baseline' in output.lower(),
-        'content' in output.lower(),
-        'function' in output.lower(),
-        'pos' in output.lower()
-    ])
+    variant_mentions = sum(
+        [
+            "baseline" in output.lower(),
+            "content" in output.lower(),
+            "function" in output.lower(),
+            "pos" in output.lower(),
+        ]
+    )
     assert variant_mentions >= 2, "Expected --all to process multiple variants"
 
     # Should have t-statistics or similar output
-    has_stats = any([
-        't-statistic' in output.lower(),
-        't-test' in output.lower(),
-        'average' in output.lower()
-    ])
+    has_stats = any(
+        [
+            "t-statistic" in output.lower(),
+            "t-test" in output.lower(),
+            "average" in output.lower(),
+        ]
+    )
     assert has_stats, "Missing expected statistical output"
 
 
 def test_workflow_figure_generation():
     """Test generating Figure 5: baseline should work, variants should skip."""
 
-    test_data = Path('tests/data/test_model_results.pkl')
+    test_data = Path("tests/data/test_model_results.pkl")
     if not test_data.exists():
         pytest.skip("Test data not found")
 
     # Test generating Figure 5 (Oz analysis) - baseline only
-    variants = [None, 'content', 'function', 'pos']
+    variants = [None, "content", "function", "pos"]
 
     for variant in variants:
-        cmd = ['./run_llm_stylometry.sh', '-f', '5', '-d', str(test_data), '--no-setup']
+        cmd = ["./run_llm_stylometry.sh", "-f", "5", "-d", str(test_data), "--no-setup"]
         if variant:
             # Use correct flag format for each variant
-            if variant == 'content':
-                cmd.append('-co')
-            elif variant == 'function':
-                cmd.append('-fo')
-            elif variant == 'pos':
-                cmd.append('-pos')
+            if variant == "content":
+                cmd.append("-co")
+            elif variant == "function":
+                cmd.append("-fo")
+            elif variant == "pos":
+                cmd.append("-pos")
 
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
@@ -159,22 +160,31 @@ def test_workflow_figure_generation():
 
         if variant:
             # Variants should skip Figure 5 (Oz analysis is baseline-only)
-            assert result.returncode == 0, f"Figure 5 should skip gracefully for {variant}: {result.stderr}"
-            assert 'Skipping Figure 5' in output, f"Expected skip message for {variant}"
+            assert (
+                result.returncode == 0
+            ), f"Figure 5 should skip gracefully for {variant}: {result.stderr}"
+            assert "Skipping Figure 5" in output, f"Expected skip message for {variant}"
         else:
             # Baseline should succeed
             if result.returncode != 0:
-                if any(x in output for x in ['No data', 'Insufficient', 'KeyError', 'ValueError']):
+                if any(
+                    x in output
+                    for x in ["No data", "Insufficient", "KeyError", "ValueError"]
+                ):
                     # Expected if data missing
                     pytest.skip("Insufficient Oz data for baseline test")
                 else:
                     # Unexpected failure
-                    pytest.fail(f"Figure 5 generation failed for baseline: {result.stderr}")
+                    pytest.fail(
+                        f"Figure 5 generation failed for baseline: {result.stderr}"
+                    )
 
             # Verify file creation for baseline
-            output_path = Path('paper/figs/source') / 'oz_losses.pdf'
+            output_path = Path("paper/figs/source") / "oz_losses.pdf"
             if output_path.exists():
-                assert output_path.stat().st_size > 1000, f"Output file too small: {output_path}"
+                assert (
+                    output_path.stat().st_size > 1000
+                ), f"Output file too small: {output_path}"
 
 
 def test_variant_transformation_examples():
@@ -189,14 +199,15 @@ def test_variant_transformation_examples():
     content_result = []
     for token in tokens:
         if token.lower() in ENGLISH_STOP_WORDS:
-            content_result.append('<FUNC>')
+            content_result.append("<FUNC>")
         else:
             content_result.append(token)
-    content_output = ' '.join(content_result)
+    content_output = " ".join(content_result)
 
     # Should match documentation
-    assert content_output == "<FUNC> quick brown fox jumps <FUNC> <FUNC> lazy dog", \
-        f"Content-only transformation incorrect: {content_output}"
+    assert (
+        content_output == "<FUNC> quick brown fox jumps <FUNC> <FUNC> lazy dog"
+    ), f"Content-only transformation incorrect: {content_output}"
 
     # Test Function-Only transformation
     function_result = []
@@ -204,24 +215,35 @@ def test_variant_transformation_examples():
         if token.lower() in ENGLISH_STOP_WORDS:
             function_result.append(token)
         else:
-            function_result.append('<CONTENT>')
-    function_output = ' '.join(function_result)
+            function_result.append("<CONTENT>")
+    function_output = " ".join(function_result)
 
     # Should match documentation
-    assert function_output == "The <CONTENT> <CONTENT> <CONTENT> <CONTENT> over the <CONTENT> <CONTENT>", \
-        f"Function-only transformation incorrect: {function_output}"
+    assert (
+        function_output
+        == "The <CONTENT> <CONTENT> <CONTENT> <CONTENT> over the <CONTENT> <CONTENT>"
+    ), f"Function-only transformation incorrect: {function_output}"
 
     # Verify function words identified correctly
     function_words = [t for t in tokens if t.lower() in ENGLISH_STOP_WORDS]
-    assert function_words == ['The', 'over', 'the'], \
-        f"Function words incorrect: {function_words}"
+    assert function_words == [
+        "The",
+        "over",
+        "the",
+    ], f"Function words incorrect: {function_words}"
 
     # Verify content words identified correctly
     content_words = [t for t in tokens if t.lower() not in ENGLISH_STOP_WORDS]
-    assert content_words == ['quick', 'brown', 'fox', 'jumps', 'lazy', 'dog'], \
-        f"Content words incorrect: {content_words}"
+    assert content_words == [
+        "quick",
+        "brown",
+        "fox",
+        "jumps",
+        "lazy",
+        "dog",
+    ], f"Content words incorrect: {content_words}"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run tests
-    pytest.main([__file__, '-v'])
+    pytest.main([__file__, "-v"])

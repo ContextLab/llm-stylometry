@@ -1,6 +1,6 @@
-import torch
-import torch.nn.functional as F
 import logging
+
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +15,15 @@ def evaluate_model(model, eval_dataloader, device):
     with torch.no_grad():
         for batch_idx, batch in enumerate(eval_dataloader):
             # Use mixed precision for evaluation too
-            with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+            with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
                 input_ids = batch["input_ids"].to(device)
                 # Only use attention_mask if it exists
                 if "attention_mask" in batch:
                     attention_mask = batch["attention_mask"].to(device)
                     outputs = model(
-                        input_ids=input_ids, attention_mask=attention_mask, labels=input_ids
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        labels=input_ids,
                     )
                 else:
                     outputs = model(input_ids=input_ids, labels=input_ids)

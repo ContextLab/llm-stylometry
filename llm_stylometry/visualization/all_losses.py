@@ -1,11 +1,11 @@
 """Generate all losses figure from the paper."""
 
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from pathlib import Path
-import numpy as np
 
 
 def generate_all_losses_figure(
@@ -13,9 +13,9 @@ def generate_all_losses_figure(
     output_path=None,
     figsize=(8, 6),
     show_legend=False,
-    font='Helvetica',
+    font="Helvetica",
     variant=None,
-    apply_fairness=True
+    apply_fairness=True,
 ):
     """
     Generate Figure 1A: Training curves showing cross-entropy loss over epochs.
@@ -33,8 +33,8 @@ def generate_all_losses_figure(
         matplotlib figure object
     """
     # Set font
-    plt.rcParams['font.family'] = font
-    plt.rcParams['font.sans-serif'] = [font]
+    plt.rcParams["font.family"] = font
+    plt.rcParams["font.sans-serif"] = [font]
 
     # Load data
     df = pd.read_pickle(data_path)
@@ -42,31 +42,42 @@ def generate_all_losses_figure(
     # Filter by variant
     if variant is None:
         # Baseline: exclude variant models
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
+        if "variant" in df.columns:
+            df = df[df["variant"].isna()].copy()
     else:
         # Specific variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data")
-        df = df[df['variant'] == variant].copy()
+        if "variant" not in df.columns:
+            raise ValueError("No variant column in data")
+        df = df[df["variant"] == variant].copy()
 
     # Apply fairness threshold for variants
     if variant is not None and apply_fairness:
         from llm_stylometry.analysis.fairness import (
+            apply_fairness_threshold,
             compute_fairness_threshold,
-            apply_fairness_threshold
         )
 
         threshold = compute_fairness_threshold(df, min_epochs=500)
         df = apply_fairness_threshold(df, threshold, use_first_crossing=True)
 
     # Define authors in requested order
-    AUTHORS = ["baum", "thompson", "austen", "dickens", "fitzgerald", "melville", "twain", "wells"]
+    AUTHORS = [
+        "baum",
+        "thompson",
+        "austen",
+        "dickens",
+        "fitzgerald",
+        "melville",
+        "twain",
+        "wells",
+    ]
 
     # Prepare data exactly as in original all_losses.py
     plot_df = df[df["loss_dataset"].isin(AUTHORS + ["train"])].copy()
     # Keep proper capitalization for authors
-    plot_df["loss_dataset"] = plot_df["loss_dataset"].apply(lambda x: x.capitalize() if x != "train" else "Train")
+    plot_df["loss_dataset"] = plot_df["loss_dataset"].apply(
+        lambda x: x.capitalize() if x != "train" else "Train"
+    )
     plot_df["train_author"] = plot_df["train_author"].str.capitalize()
 
     # Keep only rows up to min-epoch for each train_author
@@ -76,7 +87,9 @@ def generate_all_losses_figure(
         .groupby("train_author")
         .min()
     )
-    plot_df = plot_df[plot_df["epochs_completed"] <= plot_df["train_author"].map(min_epochs)]
+    plot_df = plot_df[
+        plot_df["epochs_completed"] <= plot_df["train_author"].map(min_epochs)
+    ]
 
     # Define fixed hue order and color palette for consistent mapping
     unique_authors = sorted(plot_df["train_author"].unique())
@@ -174,7 +187,9 @@ def generate_all_losses_figure(
         # Add variant suffix to filename if variant specified
         if variant:
             output_path = Path(output_path)
-            output_path = str(output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}")
+            output_path = str(
+                output_path.parent / f"{output_path.stem}_{variant}{output_path.suffix}"
+            )
         fig.savefig(output_path, format="pdf", bbox_inches="tight")
 
     return fig

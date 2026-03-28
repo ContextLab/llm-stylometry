@@ -1,7 +1,7 @@
 """Experiment configuration for training models on different authors."""
 
-from pathlib import Path
 import random
+
 from ..core.constants import AUTHORS, CLEANED_DATA_DIR, DEFAULT_CONFIG
 
 

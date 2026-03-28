@@ -10,6 +10,8 @@
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{placeins}
+\usepackage{float}
+\usepackage{caption}
 \usepackage{booktabs}
 \usepackage{longtable}
 
@@ -156,7 +158,7 @@ denote bootstrap-estimated 95\% confidence intervals across authors.}
 
 \begin{figure*}[h]
   \centering
-  \includegraphics[width=\textwidth]{figs/t_stats_content_only.pdf}
+  \includegraphics[width=\textwidth]{figs/t_stats_pos.pdf}
 
 
 \caption{\textbf{Same vs. other author comparisons, by model, using only parts
@@ -205,6 +207,28 @@ words (A), only function words (B), and only parts of speech (C).}
 
 \clearpage
 
+
+
+\begin{center}
+  \includegraphics[width=\textwidth]{figs/source/embedding_purity.pdf}
+  \captionof{figure}{\textbf{Chunk-level purity for embedding-based attribution.}
+  Distribution of purity scores (fraction of chunks voting for the modal
+  author) across books, grouped by author and model. Higher purity indicates
+  stronger consensus among chunk-level predictions.}
+  \label{fig:embedding-purity}
+\end{center}
+
+\begin{center}
+  \includegraphics[width=\textwidth]{figs/source/embedding_confusion.pdf}
+  \captionof{figure}{\textbf{Confusion matrices for embedding-based attribution.}
+  Each panel shows the percentage of books by each true author (rows) that
+  were classified as each predicted author (columns). Diagonal entries
+  represent correct attributions.}
+  \label{fig:embedding-confusion}
+\end{center}
+
+\clearpage
+
 \begin{table}[h]
 \centering
 \small
@@ -232,7 +256,6 @@ to the other authors' randomly sampled texts.}
 
 \label{tab:t-tests-content}
 \end{table}
-
 
 \begin{table}[h]
 \centering
@@ -288,6 +311,27 @@ author's model (after training is complete) to the author's held-out text and
 to the other authors' randomly sampled texts.}
 
 \label{tab:t-tests-pos}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Parameters} & \textbf{Book accuracy} & \textbf{Avg.\ purity} \\
+\midrule
+nomic-embed-text-v1.5 & 137M & 81.0\% (68/84) & 0.666 \\
+bge-m3 & 568M & 76.2\% (64/84) & 0.694 \\
+Qwen3-Embedding-4B & 4.0B & 70.2\% (59/84) & 0.703 \\
+\midrule
+Predictive comparison (ours) & 0.8M $\times$ 8 & 100\% (84/84) & --- \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Book-level attribution accuracy for embedding-based
+nearest-neighbor classification versus our predictive comparison approach.}
+Purity denotes the fraction of held-out chunks assigned to the modal
+(predicted) author. Our approach trains one small GPT-2 model per author from
+scratch; embedding methods use a single pre-trained model for all authors.}
+\label{tab:embedding-comparison}
 \end{table}
 
 

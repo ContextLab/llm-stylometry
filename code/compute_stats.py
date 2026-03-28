@@ -3,14 +3,15 @@
 Compute statistics for LLM stylometry paper reproduction.
 """
 
-import pickle
-import pandas as pd
-import numpy as np
-from scipy import stats
 from pathlib import Path
-from constants import AUTHORS
 
-def load_data(data_path='data/model_results.pkl', variant=None):
+import numpy as np
+import pandas as pd
+from constants import AUTHORS
+from scipy import stats
+
+
+def load_data(data_path="data/model_results.pkl", variant=None):
     """
     Load and filter model results by variant.
 
@@ -21,19 +22,24 @@ def load_data(data_path='data/model_results.pkl', variant=None):
     Returns:
         DataFrame filtered to specified variant
     """
-    with open(data_path, 'rb') as f:
-        df = pickle.load(f)
+    data_path = Path(data_path)
+    if data_path.suffix == ".parquet":
+        df = pd.read_parquet(data_path)
+    else:
+        df = pd.read_pickle(data_path)
 
     # Filter by variant
     if variant is None:
         # Baseline: exclude any models with variant column set
-        if 'variant' in df.columns:
-            df = df[df['variant'].isna()].copy()
+        if "variant" in df.columns:
+            df = df[df["variant"].isna()].copy()
     else:
         # Specific variant: filter to that variant
-        if 'variant' not in df.columns:
-            raise ValueError(f"No variant column in data. Cannot filter for variant '{variant}'")
-        df = df[df['variant'] == variant].copy()
+        if "variant" not in df.columns:
+            raise ValueError(
+                f"No variant column in data. Cannot filter for variant '{variant}'"
+            )
+        df = df[df["variant"] == variant].copy()
 
     return df
 
@@ -49,25 +55,31 @@ def find_threshold_crossing_epochs(df, p_threshold=0.001):
     crossing_authors = {}
 
     for author in AUTHORS:
-        author_df = df[df['train_author'] == author].copy()
-        epochs = sorted(author_df['epochs_completed'].unique())
+        author_df = df[df["train_author"] == author].copy()
+        epochs = sorted(author_df["epochs_completed"].unique())
 
         # Track if we've seen above-threshold epochs before crossing
         seen_above_threshold = False
 
         for epoch in epochs:
-            epoch_df = author_df[author_df['epochs_completed'] == epoch]
+            epoch_df = author_df[author_df["epochs_completed"] == epoch]
 
             # Get self losses
-            self_losses = epoch_df[epoch_df['loss_dataset'] == author]['loss_value'].values
+            self_losses = epoch_df[epoch_df["loss_dataset"] == author][
+                "loss_value"
+            ].values
 
             # Get other losses
             other_authors = [a for a in AUTHORS if a != author]
-            other_losses = epoch_df[epoch_df['loss_dataset'].isin(other_authors)]['loss_value'].values
+            other_losses = epoch_df[epoch_df["loss_dataset"].isin(other_authors)][
+                "loss_value"
+            ].values
 
             if len(self_losses) >= 10 and len(other_losses) >= 70:
                 # Perform t-test (other vs self)
-                t_stat, p_value = stats.ttest_ind(other_losses, self_losses, equal_var=False)
+                t_stat, p_value = stats.ttest_ind(
+                    other_losses, self_losses, equal_var=False
+                )
 
                 if p_value >= p_threshold:
                     seen_above_threshold = True
@@ -86,7 +98,7 @@ def find_average_threshold_crossing(df, p_threshold=0.001):
     Returns:
         tuple: (epoch, avg_t_stat, p_value) or (None, None, None)
     """
-    epochs = sorted(df['epochs_completed'].unique())
+    epochs = sorted(df["epochs_completed"].unique())
 
     seen_above_threshold = False
 
@@ -95,12 +107,18 @@ def find_average_threshold_crossing(df, p_threshold=0.001):
         author_t_stats = []
 
         for author in AUTHORS:
-            author_df = df[(df['train_author'] == author) & (df['epochs_completed'] == epoch)]
+            author_df = df[
+                (df["train_author"] == author) & (df["epochs_completed"] == epoch)
+            ]
 
             # Get self and other losses
-            self_losses = author_df[author_df['loss_dataset'] == author]['loss_value'].values
+            self_losses = author_df[author_df["loss_dataset"] == author][
+                "loss_value"
+            ].values
             other_authors = [a for a in AUTHORS if a != author]
-            other_losses = author_df[author_df['loss_dataset'].isin(other_authors)]['loss_value'].values
+            other_losses = author_df[author_df["loss_dataset"].isin(other_authors)][
+                "loss_value"
+            ].values
 
             if len(self_losses) > 0 and len(other_losses) > 0:
                 # Simple t-statistic
@@ -139,17 +157,25 @@ def compute_average_t_test(df, epoch=500):
         for author in AUTHORS:
             # Get all data for this author-seed combination
             # Filter by author and seed columns (works for both baseline and variants)
-            model_df = df[(df['train_author'] == author) & (df['seed'] == seed)]
+            model_df = df[(df["train_author"] == author) & (df["seed"] == seed)]
 
             # Get data at the specified epoch (or closest if not exact)
-            epoch_data = model_df[model_df['epochs_completed'] <= epoch].groupby('loss_dataset').tail(1)
+            epoch_data = (
+                model_df[model_df["epochs_completed"] <= epoch]
+                .groupby("loss_dataset")
+                .tail(1)
+            )
 
             # Get self losses
-            self_losses = epoch_data[epoch_data['loss_dataset'] == author]['loss_value'].values
+            self_losses = epoch_data[epoch_data["loss_dataset"] == author][
+                "loss_value"
+            ].values
 
             # Get other losses
             other_authors = [a for a in AUTHORS if a != author]
-            other_losses = epoch_data[epoch_data['loss_dataset'].isin(other_authors)]['loss_value'].values
+            other_losses = epoch_data[epoch_data["loss_dataset"].isin(other_authors)][
+                "loss_value"
+            ].values
 
             if len(self_losses) > 0 and len(other_losses) > 0:
                 # Use mean values if we only have one sample
@@ -161,7 +187,9 @@ def compute_average_t_test(df, epoch=500):
                         t_stat = mean_diff / (std_other / np.sqrt(len(other_losses)))
                         author_t_stats.append(t_stat)
                 else:
-                    t_stat, _ = stats.ttest_ind(other_losses, self_losses, equal_var=False)
+                    t_stat, _ = stats.ttest_ind(
+                        other_losses, self_losses, equal_var=False
+                    )
                     if not np.isnan(t_stat):
                         author_t_stats.append(t_stat)
 
@@ -177,6 +205,53 @@ def compute_average_t_test(df, epoch=500):
     return None, None, None
 
 
+def compute_final_attribution_accuracy(df):
+    """
+    Compute final-epoch attribution accuracy using minimum final loss.
+
+    Returns:
+        DataFrame with one row per n_train_tokens value if present, otherwise one
+        row with overall accuracy.
+    """
+    final_df = (
+        df[df["loss_dataset"].isin(AUTHORS)]
+        .groupby(["model_name", "loss_dataset"])
+        .tail(1)
+        .copy()
+    )
+
+    columns = ["model_name", "train_author", "loss_dataset"]
+    if "n_train_tokens" in final_df.columns:
+        columns.append("n_train_tokens")
+
+    predictions = final_df.loc[
+        final_df.groupby("model_name")["loss_value"].idxmin(),
+        columns,
+    ].copy()
+    predictions = predictions.rename(columns={"loss_dataset": "predicted_author"})
+    predictions["correct"] = (
+        predictions["predicted_author"] == predictions["train_author"]
+    )
+
+    if "n_train_tokens" in predictions.columns:
+        return (
+            predictions.groupby("n_train_tokens")["correct"]
+            .agg(["sum", "count", "mean"])
+            .reset_index()
+            .sort_values("n_train_tokens")
+        )
+
+    return pd.DataFrame(
+        [
+            {
+                "sum": int(predictions["correct"].sum()),
+                "count": len(predictions),
+                "mean": predictions["correct"].mean(),
+            }
+        ]
+    )
+
+
 def generate_author_comparison_table(df):
     """
     Generate table of t-tests comparing each author's model losses.
@@ -186,35 +261,50 @@ def generate_author_comparison_table(df):
         tuple: (pandas DataFrame, LaTeX string)
     """
     # Get final epoch data
-    final_df = df.groupby(['train_author', 'loss_dataset', 'seed']).tail(1)
+    final_df = df.groupby(["train_author", "loss_dataset", "seed"]).tail(1)
 
     # Use the same author order as in the figures
-    author_order = ['baum', 'thompson', 'austen', 'dickens', 'fitzgerald', 'melville', 'twain', 'wells']
+    author_order = [
+        "baum",
+        "thompson",
+        "austen",
+        "dickens",
+        "fitzgerald",
+        "melville",
+        "twain",
+        "wells",
+    ]
 
     results = []
     for author in author_order:
-        author_df = final_df[final_df['train_author'] == author]
+        author_df = final_df[final_df["train_author"] == author]
 
         # Get self losses (model trained on author, tested on same author)
-        self_losses = author_df[author_df['loss_dataset'] == author]['loss_value'].values
+        self_losses = author_df[author_df["loss_dataset"] == author][
+            "loss_value"
+        ].values
 
         # Get other losses (model trained on author, tested on other authors)
         other_authors = [a for a in AUTHORS if a != author]
-        other_losses = author_df[author_df['loss_dataset'].isin(other_authors)]['loss_value'].values
+        other_losses = author_df[author_df["loss_dataset"].isin(other_authors)][
+            "loss_value"
+        ].values
 
         if len(self_losses) >= 10 and len(other_losses) >= 70:
             # Perform t-test (other vs self)
             t_result = stats.ttest_ind(other_losses, self_losses, equal_var=False)
 
-            results.append({
-                'Model': author.capitalize(),
-                't-stat': f'{t_result.statistic:.2f}',
-                'df': f'{t_result.df:.2f}',
-                'p-value': f'{t_result.pvalue:.2e}',
-                't_stat_val': t_result.statistic,
-                'df_val': t_result.df,
-                'p_val': t_result.pvalue
-            })
+            results.append(
+                {
+                    "Model": author.capitalize(),
+                    "t-stat": f"{t_result.statistic:.2f}",
+                    "df": f"{t_result.df:.2f}",
+                    "p-value": f"{t_result.pvalue:.2e}",
+                    "t_stat_val": t_result.statistic,
+                    "df_val": t_result.df,
+                    "p_val": t_result.pvalue,
+                }
+            )
 
     df_table = pd.DataFrame(results)
 
@@ -226,15 +316,15 @@ def generate_author_comparison_table(df):
         "\\begin{tabular}{lccc}",
         "\\hline",
         "\\textbf{Model} & \\textbf{$t$-stat} & \\textbf{df} & \\textbf{$p$-value}\\\\",
-        "\\hline"
+        "\\hline",
     ]
 
     for _, row in df_table.iterrows():
         # Format p-value in scientific notation
-        p_val = row['p_val']
+        p_val = row["p_val"]
         if p_val < 0.01:
             exponent = int(np.floor(np.log10(p_val)))
-            mantissa = p_val / (10 ** exponent)
+            mantissa = p_val / (10**exponent)
             p_str = f"${mantissa:.2f} \\times 10^{{{exponent}}}$"
         else:
             p_str = f"${p_val:.4f}$"
@@ -273,12 +363,18 @@ def compute_cross_variant_comparisons(all_variant_data, epoch=500):
 
         for author in AUTHORS:
             # Get final epoch data for this author
-            author_df = df[(df['train_author'] == author) & (df['epochs_completed'] == epoch)]
+            author_df = df[
+                (df["train_author"] == author) & (df["epochs_completed"] == epoch)
+            ]
 
             # Get self and other losses
-            self_losses = author_df[author_df['loss_dataset'] == author]['loss_value'].values
+            self_losses = author_df[author_df["loss_dataset"] == author][
+                "loss_value"
+            ].values
             other_authors = [a for a in AUTHORS if a != author]
-            other_losses = author_df[author_df['loss_dataset'].isin(other_authors)]['loss_value'].values
+            other_losses = author_df[author_df["loss_dataset"].isin(other_authors)][
+                "loss_value"
+            ].values
 
             if len(self_losses) > 0 and len(other_losses) > 0:
                 # Compute t-statistic
@@ -289,7 +385,9 @@ def compute_cross_variant_comparisons(all_variant_data, epoch=500):
                         t_stat = mean_diff / (std_other / np.sqrt(len(other_losses)))
                         t_values.append(t_stat)
                 else:
-                    t_stat, _ = stats.ttest_ind(other_losses, self_losses, equal_var=False)
+                    t_stat, _ = stats.ttest_ind(
+                        other_losses, self_losses, equal_var=False
+                    )
                     if not np.isnan(t_stat):
                         t_values.append(t_stat)
 
@@ -308,13 +406,15 @@ def compute_cross_variant_comparisons(all_variant_data, epoch=500):
                 # T-test comparing distributions
                 t_result = stats.ttest_ind(t_vals_1, t_vals_2, equal_var=False)
 
-                results.append({
-                    'Comparison': f'{var1} vs {var2}',
-                    't-stat': f'{t_result.statistic:.2f}',
-                    'df': f'{t_result.df:.2f}',
-                    'p-value': f'{t_result.pvalue:.2e}',
-                    'mean_diff': f'{np.mean(t_vals_1) - np.mean(t_vals_2):.2f}'
-                })
+                results.append(
+                    {
+                        "Comparison": f"{var1} vs {var2}",
+                        "t-stat": f"{t_result.statistic:.2f}",
+                        "df": f"{t_result.df:.2f}",
+                        "p-value": f"{t_result.pvalue:.2e}",
+                        "mean_diff": f"{np.mean(t_vals_1) - np.mean(t_vals_2):.2f}",
+                    }
+                )
 
     return pd.DataFrame(results)
 
@@ -323,25 +423,37 @@ def main():
     """Main function to compute and display all statistics."""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Compute statistics for LLM stylometry')
+    parser = argparse.ArgumentParser(
+        description="Compute statistics for LLM stylometry"
+    )
     parser.add_argument(
-        '--variant',
-        choices=['content', 'function', 'pos'],
+        "--variant",
+        choices=["content", "function", "pos"],
         default=None,
-        help='Analysis variant to compute stats for (default: baseline)'
+        help="Analysis variant to compute stats for (default: baseline)",
     )
     parser.add_argument(
-        '--data',
-        default='data/model_results.pkl',
-        help='Path to model results file (default: data/model_results.pkl)'
+        "--data",
+        default="data/model_results.pkl",
+        help="Path to model results file (default: data/model_results.pkl)",
     )
     parser.add_argument(
-        '--cross-variant-comparison',
-        action='store_true',
-        help='Compute pairwise comparisons across all variants'
+        "--cross-variant-comparison",
+        action="store_true",
+        help="Compute pairwise comparisons across all variants",
+    )
+    parser.add_argument(
+        "--n-tokens",
+        action="store_true",
+        help="Report final attribution accuracy and threshold crossings by n_train_tokens and exit",
     )
 
     args = parser.parse_args()
+
+    assert not (args.n_tokens and args.variant is not None), (
+        "--n-tokens is for baseline + n_train_tokens results only; "
+        "do not pass --variant"
+    )
 
     # Handle cross-variant comparison mode
     if args.cross_variant_comparison:
@@ -351,8 +463,17 @@ def main():
 
         # Load all variant data
         all_variant_data = {}
-        for var_name, var_key in [('baseline', None), ('content', 'content'), ('function', 'function'), ('pos', 'pos')]:
-            pkl_file = f"data/model_results.pkl" if var_key is None else f"data/model_results_{var_key}.pkl"
+        for var_name, var_key in [
+            ("baseline", None),
+            ("content", "content"),
+            ("function", "function"),
+            ("pos", "pos"),
+        ]:
+            pkl_file = (
+                "data/model_results.pkl"
+                if var_key is None
+                else f"data/model_results_{var_key}.pkl"
+            )
             if Path(pkl_file).exists():
                 all_variant_data[var_name] = load_data(pkl_file, var_key)
             else:
@@ -362,7 +483,9 @@ def main():
             print("Error: Need at least 2 variants for comparison")
             return
 
-        print(f"\nLoaded {len(all_variant_data)} conditions: {list(all_variant_data.keys())}")
+        print(
+            f"\nLoaded {len(all_variant_data)} conditions: {list(all_variant_data.keys())}"
+        )
 
         # Compute pairwise comparisons
         print("\nPairwise T-Test Comparisons (Epoch 500)")
@@ -389,6 +512,42 @@ def main():
     print("\nLoading data...")
     df = load_data(data_path=args.data, variant=args.variant)
 
+    if args.n_tokens:
+        print("\nFinal-Epoch Attribution Accuracy")
+        print("-" * 40)
+
+        if "n_train_tokens" not in df.columns:
+            raise ValueError("No n_train_tokens column in data")
+
+        accuracy_df = compute_final_attribution_accuracy(df)
+
+        for _, row in accuracy_df.iterrows():
+            accuracy = 100 * row["mean"]
+            print(
+                f"{int(row['n_train_tokens']):>6} tokens: "
+                f"{int(row['sum'])}/{int(row['count'])} correct ({accuracy:.1f}%)"
+            )
+        print("\nIndividual Author Threshold Crossings by n_train_tokens (p < 0.001)")
+        print("-" * 60)
+
+        for n_train_tokens in sorted(df["n_train_tokens"].dropna().unique()):
+            print(f"\n{int(n_train_tokens):>6} tokens")
+            crossing_authors = find_threshold_crossing_epochs(
+                df[df["n_train_tokens"] == n_train_tokens]
+            )
+            for author in AUTHORS:
+                if author in crossing_authors:
+                    epoch, t_stat, p_value = crossing_authors[author]
+                    print(
+                        f"{author.capitalize():<12}: "
+                        f"Epoch {epoch:3d} (t={t_stat:.2f}, p={p_value:.2e})"
+                    )
+                else:
+                    print(f"{author.capitalize():<12}: No threshold crossing detected")
+
+        print("\n" + "=" * 60)
+        return
+
     # 1. Find threshold crossing epochs per author
     print("\n1. Individual Author Threshold Crossings (p < 0.001)")
     print("-" * 40)
@@ -397,7 +556,9 @@ def main():
         for author in AUTHORS:
             if author in crossing_authors:
                 epoch, t_stat, p_value = crossing_authors[author]
-                print(f"{author.capitalize():<12}: Epoch {epoch:3d} (t={t_stat:.2f}, p={p_value:.2e})")
+                print(
+                    f"{author.capitalize():<12}: Epoch {epoch:3d} (t={t_stat:.2f}, p={p_value:.2e})"
+                )
             else:
                 print(f"{author.capitalize():<12}: No threshold crossing detected")
     else:
@@ -424,7 +585,7 @@ def main():
         # Format p-value in scientific notation
         if p_value < 1e-10:
             exponent = int(np.floor(np.log10(p_value)))
-            mantissa = p_value / (10 ** exponent)
+            mantissa = p_value / (10**exponent)
             print(f"(p-value in scientific notation: {mantissa:.1f} × 10^{exponent})")
     else:
         print("Insufficient data for t-test")
@@ -435,7 +596,7 @@ def main():
     table, latex_table = generate_author_comparison_table(df)
 
     # Display DataFrame table
-    print("\n" + table[['Model', 't-stat', 'df', 'p-value']].to_string(index=False))
+    print("\n" + table[["Model", "t-stat", "df", "p-value"]].to_string(index=False))
 
     # Display LaTeX table
     print("\n\nLaTeX Table Format:")
@@ -447,3 +608,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # To generate ntokens stats:
+    #   python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --n-tokens
