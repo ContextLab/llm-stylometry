@@ -45,7 +45,7 @@ def consolidate_model_results(
     # Auto-determine output path based on variant
     if output_path is None:
         if include_ntokens:
-            output_path = "data/model_results_ntokens.parquet"
+            output_path = "data/model_results_ntokens.pkl.gz"
         elif variant:
             output_path = f"data/model_results_{variant}.pkl"
         else:

@@ -538,8 +538,8 @@ generate_figure_7() {
     if [ -n "$VARIANT" ]; then
         print_warning "Figure 7 is baseline-only; variant flag ignored"
     fi
-    if [ ! -f "data/model_results_ntokens.parquet" ]; then
-        print_warning "data/model_results_ntokens.parquet not found; pre-computed results are needed"
+    if [ ! -f "data/model_results_ntokens.pkl.gz" ]; then
+        print_warning "data/model_results_ntokens.pkl.gz not found; pre-computed results are needed"
     fi
     if [ ! -f "data/sigmoid_fit_results.json" ]; then
         print_info "data/sigmoid_fit_results.json not found; running fit_sigmoid.py first..."

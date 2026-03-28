@@ -24,7 +24,7 @@ from llm_stylometry.visualization.t_tests import generate_t_test_ntokens_figure
 def main():
     print("Generating t_test_ntokens.pdf...")
     fig = generate_t_test_ntokens_figure(
-        data_path="data/model_results_ntokens.parquet",
+        data_path="data/model_results_ntokens.pkl.gz",
         output_path="paper/figs/source/t_test_ntokens.pdf",
     )
     import matplotlib.pyplot as plt

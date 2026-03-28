@@ -149,12 +149,12 @@ fi
 
 # N-tokens dataset-size analysis
 echo
-if [ -f "data/model_results_ntokens.parquet" ]; then
+if [ -f "data/model_results_ntokens.pkl.gz" ]; then
     print_info "Computing n-tokens dataset-size analysis..."
-    python code/compute_stats.py --data data/model_results_ntokens.parquet --n-tokens
+    python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --n-tokens
     echo
 else
-    print_warning "Skipping n-tokens analysis (data/model_results_ntokens.parquet not found)"
+    print_warning "Skipping n-tokens analysis (data/model_results_ntokens.pkl.gz not found)"
 fi
 
 # Sigmoid fit results

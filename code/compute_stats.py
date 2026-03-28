@@ -609,4 +609,4 @@ def main():
 if __name__ == "__main__":
     main()
     # To generate ntokens stats:
-    #   python code/compute_stats.py --data data/model_results_ntokens.parquet --n-tokens
+    #   python code/compute_stats.py --data data/model_results_ntokens.pkl.gz --n-tokens

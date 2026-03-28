@@ -251,7 +251,7 @@ def generate_figure(
                 from fit_sigmoid import generate_accuracy_sigmoid_figure
 
                 fig, _popt = generate_accuracy_sigmoid_figure(
-                    data_path="data/model_results_ntokens.parquet",
+                    data_path="data/model_results_ntokens.pkl.gz",
                     output_path=str(output_path / "accuracy_vs_tokens_sigmoid.pdf"),
                 )
                 plt.close(fig)
@@ -272,7 +272,7 @@ def generate_figure(
                 )
 
                 fig = generate_t_test_ntokens_figure(
-                    data_path="data/model_results_ntokens.parquet",
+                    data_path="data/model_results_ntokens.pkl.gz",
                     output_path=str(output_path / "t_test_ntokens.pdf"),
                 )
                 plt.close(fig)

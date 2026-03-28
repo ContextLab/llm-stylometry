@@ -409,7 +409,7 @@ def generate_t_test_avg_figure(
 
 
 def _load_ntokens_t_test_panel_data(
-    data_path="data/model_results_ntokens.parquet",
+    data_path="data/model_results_ntokens.pkl.gz",
     cache_path="data/t_test_ntokens_cache",
 ):
     """Load baseline ntokens results and prepare per-size t-test data."""
@@ -583,7 +583,7 @@ def _compute_bootstrap_t_values(data_path, final_epoch=500, n_bootstrap=200, see
 
 
 def generate_t_test_ntokens_figure(
-    data_path="data/model_results_ntokens.parquet",
+    data_path="data/model_results_ntokens.pkl.gz",
     output_path=None,
     figsize=(5, 3.5),
     font="Helvetica",
@@ -702,7 +702,7 @@ def generate_t_test_ntokens_figure(
 
 # Keep old functions for backward compatibility but mark as deprecated
 def generate_t_test_ntokens_grid_figure(
-    data_path="data/model_results_ntokens.parquet",
+    data_path="data/model_results_ntokens.pkl.gz",
     output_path=None,
     figsize=(12, 16),
     font="Helvetica",
@@ -818,7 +818,7 @@ def generate_t_test_ntokens_grid_figure(
 
 
 def generate_t_test_avg_ntokens_figure(
-    data_path="data/model_results_ntokens.parquet",
+    data_path="data/model_results_ntokens.pkl.gz",
     output_path=None,
     figsize=(6, 4),
     show_legend=True,

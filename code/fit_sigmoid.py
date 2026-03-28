@@ -3,7 +3,7 @@
 Fit a sigmoid to classification accuracy as a function of training tokens.
 
 Loads per-author, per-seed accuracy from the dataset-size sweep results
-(data/model_results_ntokens.parquet) and produces a single-panel figure:
+(data/model_results_ntokens.pkl.gz) and produces a single-panel figure:
   - Per-author accuracy dots (colored by author)
   - Black sigmoid curve fit to mean accuracy across authors
   - 95% bootstrap confidence interval ribbon
@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from constants import AUTHORS
 
 
-def load_per_author_accuracy(data_path="data/model_results_ntokens.parquet"):
+def load_per_author_accuracy(data_path="data/model_results_ntokens.pkl.gz"):
     """
     Load per-author, per-n_train_tokens accuracy from the sweep results.
 
@@ -162,7 +162,7 @@ def bootstrap_sigmoid_ci(per_author_df, n_bootstrap=1000, seed=42):
 
 
 def generate_accuracy_sigmoid_figure(
-    data_path="data/model_results_ntokens.parquet",
+    data_path="data/model_results_ntokens.pkl.gz",
     output_path=None,
     figsize=(5, 3.5),
     font="Helvetica",

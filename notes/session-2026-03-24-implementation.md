@@ -40,7 +40,7 @@
 6. Final: compile paper, run all tests, push
 
 ## KEY FILES
-- code/fit_sigmoid.py — sigmoid fit + figure (reads from data/model_results_ntokens.parquet)
+- code/fit_sigmoid.py — sigmoid fit + figure (reads from data/model_results_ntokens.pkl.gz)
 - code/embedding_comparison.py — embedding pipeline (checkpointed per book)
 - code/generate_ntokens_figures.py — t-test ntokens figure
 - llm_stylometry/visualization/t_tests.py — generate_t_test_ntokens_figure (bootstrap CIs)

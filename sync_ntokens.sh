@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
             echo "By default, syncs:"
             echo "  - Model configs (config.json, generation_config.json)"
             echo "  - Loss logs (loss_logs.csv)"
-            echo "  - Consolidated results (model_results_ntokens.parquet)"
+            echo "  - Consolidated results (model_results_ntokens.pkl.gz)"
             echo "  - NOT model weights (model.safetensors, training_state.pt)"
             exit 0
             ;;
@@ -138,7 +138,7 @@ fi
 print_info "Checking for consolidated results..."
 mkdir -p "$PWD/data"
 
-for RFILE in model_results_ntokens.parquet model_results_ntokens.pkl.gz t_test_ntokens_cache; do
+for RFILE in model_results_ntokens.pkl.gz model_results_ntokens.pkl.gz t_test_ntokens_cache; do
     REMOTE_EXISTS=$(eval $SSH_CMD "$USERNAME@$SERVER_ADDRESS" "[ -e \"\$HOME/llm-stylometry/data/$RFILE\" ] && echo yes || echo no")
     if [ "$REMOTE_EXISTS" = "yes" ]; then
         print_info "Downloading data/$RFILE..."

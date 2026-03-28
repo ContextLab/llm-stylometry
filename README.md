@@ -158,7 +158,7 @@ Training 320 models (baseline + 3 variants) requires a CUDA GPU. See `models/REA
 
 **Dataset-size experiments:**
 
-Pre-computed results are available in `data/model_results_ntokens.parquet`, so retraining is not required to generate figures or run analyses. To retrain locally at specific token levels:
+Pre-computed results are available in `data/model_results_ntokens.pkl.gz`, so retraining is not required to generate figures or run analyses. To retrain locally at specific token levels:
 ```bash
 N_TRAIN_TOKENS=128608 python code/main.py   # ~20% of full corpus
 N_TRAIN_TOKENS=257216 python code/main.py   # ~40%
@@ -208,7 +208,7 @@ python code/fit_sigmoid.py
 - `paper/figs/source/accuracy_vs_tokens_sigmoid.pdf` (Figure 6)
 - `data/sigmoid_fit_results.json` (fit parameters and threshold)
 
-Uses pre-computed results from `data/model_results_ntokens.parquet` (no retraining needed).
+Uses pre-computed results from `data/model_results_ntokens.pkl.gz` (no retraining needed).
 
 ### Embedding Comparison
 
