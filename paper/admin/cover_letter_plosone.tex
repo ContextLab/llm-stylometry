@@ -1,0 +1,71 @@
+% See http://texblog.org/2013/11/11/latexs-alternative-letter-class-newlfm/
+% and http://www.ctan.org/tex-archive/macros/latex/contrib/newlfm
+% for more information.
+%
+\documentclass[11pt,stdletter,orderfromtodate,sigleft]{newlfm}
+\usepackage{blindtext, xfrac, animate, hyperref, pxfonts}
+
+  \setlength{\voffset}{-0.45in}
+
+\newlfmP{dateskipbefore=0pt}
+\newlfmP{sigsize=14pt}
+\newlfmP{sigskipbefore=6pt}
+
+\newlfmP{Headlinewd=0pt,Footlinewd=0pt}
+
+\namefrom{\vspace{-0.3in}Jeremy R. Manning}
+\addrfrom{
+	Dartmouth College\\
+    Department of Psychological \& Brain Sciences\\
+    HB 6207 Moore Hall\\
+	Hanover, NH  03755}
+
+\addrto{}
+\dateset{\today}
+
+\greetto{To the editors of \textit{PLOS ONE}:}
+
+
+
+\closeline{Sincerely,}
+
+\begin{document}
+\begin{newlfm}
+
+I have enclosed our manuscript entitled \textit{A Stylometric Application of
+Large Language Models} to be considered for publication as a \textit{Research
+Article}. The manuscript shows that large language models can be used to
+distinguish the writings of different authors: an individual GPT-2 model,
+trained from scratch on the works of a single author, predicts that author's
+held-out text more accurately than text written by others.
+
+Our central claim is supported by a systematic and fully reproducible set of
+experiments. We trained individual models on the works of eight classic authors
+and used cross-entropy loss as a measure of stylistic similarity, an approach we
+term predictive comparison. To confirm that our findings are robust rather than
+artifacts of a single training run, we trained models across multiple random
+seeds and several text representations (full text, content words, function
+words, and part-of-speech sequences). These ablations show that both content
+words and function words contribute to author-specific signatures, whereas
+grammatical structure alone is less distinctive. We further apply the approach
+to a real attribution problem, supporting R. P. Thompson's authorship of the
+well-studied 15\textsuperscript{th} book of the \textit{Oz} series, originally
+attributed to L. F. Baum.
+
+We designed the study with reproducibility as a priority, in keeping with the
+standards of \textit{PLOS ONE}: all code and data needed to reproduce every
+result, figure, and statistical test are openly available at
+\url{https://github.com/ContextLab/llm-stylometry}. We believe the work will
+interest the journal's broad, interdisciplinary readership, including
+researchers in computational linguistics, digital humanities, and machine
+learning.
+
+This manuscript reports original primary research that is not under
+consideration for publication elsewhere. An earlier version has been posted as a
+preprint on arXiv (arXiv:2510.21958), consistent with \textit{PLOS ONE}'s
+preprint policy. Thank you for considering our manuscript; I hope you will find
+it suitable for publication in \textit{PLOS ONE}.
+
+
+\end{newlfm}
+\end{document}
