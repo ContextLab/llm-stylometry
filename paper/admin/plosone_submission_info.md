@@ -138,13 +138,13 @@ All bundled in `plosone_submission.zip` (manuscript + figures + supplement).
 |-|-|-|
 | `main_plos.pdf` | Manuscript | **Embedded figures removed per PLOS editorial request** — only captions remain; PLOS auto-inserts the separately-uploaded figure files into the reviewer PDF. Figureless build of `main.tex` (regenerate by compiling `main_plos.tex`). Provide `.tex` source on acceptance. |
 | `cover_letter_plosone.pdf` | Cover letter | Separate upload, 1 page. |
-| `Fig1.eps`–`Fig7.eps` | Figures | One file per figure, **citation order** (Fig1=loss curves, Fig2=t-stats, Fig3=confusion matrix, Fig4=MDS, Fig5=Oz losses, Fig6=tokens, Fig7=embedding). EPS vector, RGB, fonts embedded, ≤7.5″ wide, <20 MB. Cited in text as "Fig 1"…"Fig 7". Run through PACE (https://pacev2.apexcovantage.com) before upload. |
+| `Fig1.tif`–`Fig7.tif` | Figures (**uploaded to PLOS**) | One file per figure, **citation order** (Fig1=loss curves, Fig2=t-stats, Fig3=confusion matrix, Fig4=MDS, Fig5=Oz losses, Fig6=tokens, Fig7=embedding). TIFF, 8-bit sRGB, 300 dpi, LZW, ≤2250 px wide, <20 MB — in `figures_tif/`. Cited in text as "Fig 1"…"Fig 7". EPS vector versions also available in `figures_eps/` as an alternative. |
 | `supplement.pdf` | Supporting Information | Self-contained; keeps its own figures (the figure-removal rule applies only to the main manuscript). ⚠️ Label items `S1 File`, `S1 Fig`, etc. (each needs "S" + number); cite each (e.g. "S1 File") in the manuscript. |
 
 ## 15. Manuscript-prep checklist before upload
 - [ ] Title page in **sentence case**; short title ≤100 chars.
 - [ ] Abstract ≤300 words, no citations (✅ currently 106).
-- [x] Embedded figures removed from the manuscript file (done — `main_plos.pdf`); figures uploaded separately as `Fig1.eps`–`Fig7.eps`.
+- [x] Embedded figures removed from the manuscript file (done — `main_plos.pdf`); figures uploaded separately to PLOS as `Fig1.tif`–`Fig7.tif` (TIFF; EPS versions kept in `figures_eps/` as a backup).
 - [ ] Supporting Information items labeled `S1 …`, `S2 …` and cited in text.
 - [ ] Data Availability statement entered in the form (and DOI minted if doing Zenodo).
 - [ ] Financial Disclosure + Competing Interests entered in the form, not the manuscript.
