@@ -1,0 +1,6 @@
+% PLOS ONE submission build: identical to main.tex but with embedded figures
+% stripped out (per PLOS editorial request — figure files are uploaded separately
+% and auto-inserted into the reviewer PDF). Figure captions, numbering, and
+% cross-references are preserved. Regenerate with the same toolchain as main.tex.
+\AtBeginDocument{\renewcommand\includegraphics[2][]{}}%
+\input{main}

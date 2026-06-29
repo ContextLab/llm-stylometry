@@ -71,3 +71,6 @@ data/embedding_results/
 data/model_results_ntokens.parquet
 data/t_test_ntokens_cache/
 notes/paper-review-plan.md
+
+# PLOS submission bundle (regenerable archive of already-tracked files)
+paper/admin/plosone_submission.zip
